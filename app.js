@@ -475,8 +475,21 @@ const canvas = document.getElementById('mathCanvas');
         const UNIT_PX = 40;               // 1 unit = 40 pixels
 
         let selectedColor = '#ff8bad'; // Default selected color
-        let functionHistory = [];      // Array to hold { id, exprStr, expr, color, visible }
+        let functionHistory = [];      // Array to hold { id, exprStr, expr, color, visible, isInverse }
         let histIdCounter = 0;
+        let selectedHistoryId = null;
+
+        function getNextColor() {
+            let colors = Array.from(colorBtns).map(b => b.dataset.color);
+            let currIdx = colors.indexOf(selectedColor);
+            let nextIdx = (currIdx + 1) % colors.length;
+            let nextColor = colors[nextIdx];
+            colorBtns.forEach(b => {
+                b.classList.remove('active');
+                if(b.dataset.color === nextColor) b.classList.add('active');
+            });
+            selectedColor = nextColor;
+        }
 
         // --- Event Listeners for new UI ---
         colorBtns.forEach(btn => {
@@ -541,8 +554,8 @@ const canvas = document.getElementById('mathCanvas');
 
         function renderAllExpGraphs() {
             drawExpGrid();
+            document.getElementById('graphLabels').innerHTML = '';
 
-            // X values limit
             const startX = -15;
             const endX = 15;
             const step = 0.05;
@@ -555,28 +568,32 @@ const canvas = document.getElementById('mathCanvas');
                 eCtx.strokeStyle = item.color;
 
                 let firstPoint = true;
+                let prevPx = null;
                 let prevPy = null;
                 let labelCandidates = [];
-
-                for (let xVal = startX; xVal <= endX; xVal += step) {
-                    let yVal;
+                
+                for (let t = startX; t <= endX; t += step) {
+                    let val;
                     try {
-                        yVal = item.expr.evaluate({ x: xVal });
+                        val = item.expr.evaluate({ x: t });
                     } catch (e) {
                         continue;
                     }
 
-                    if (typeof yVal !== 'number' || isNaN(yVal) || !isFinite(yVal)) {
+                    if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) {
                         firstPoint = true;
                         continue;
                     }
 
-                    let px = EXP_CX + xVal * UNIT_PX;
-                    let py = EXP_CY - yVal * UNIT_PX;
-
-                    // jump detection
-                    if (prevPy !== null && Math.abs(py - prevPy) > EXP_CH / 2) {
-                        firstPoint = true; 
+                    let px, py;
+                    if (item.isInverse) {
+                        px = EXP_CX + val * UNIT_PX;
+                        py = EXP_CY - t * UNIT_PX;
+                        if (prevPx !== null && Math.abs(px - prevPx) > EXP_CW / 2) firstPoint = true;
+                    } else {
+                        px = EXP_CX + t * UNIT_PX;
+                        py = EXP_CY - val * UNIT_PX;
+                        if (prevPy !== null && Math.abs(py - prevPy) > EXP_CH / 2) firstPoint = true;
                     }
 
                     if (firstPoint) {
@@ -585,6 +602,7 @@ const canvas = document.getElementById('mathCanvas');
                     } else {
                         eCtx.lineTo(px, py);
                     }
+                    prevPx = px;
                     prevPy = py;
                     
                     if (px >= 0 && px <= EXP_CW && py >= 0 && py <= EXP_CH) {
@@ -599,12 +617,17 @@ const canvas = document.getElementById('mathCanvas');
                     if (targetPt.x > EXP_CW - 80) targetPt.x = EXP_CW - 80;
                     if (targetPt.y < 20) targetPt.y = 20;
 
-                    eCtx.fillStyle = item.color;
-                    eCtx.font = 'bold 16px Outfit, sans-serif';
-                    eCtx.shadowColor = 'rgba(255, 255, 255, 0.9)';
-                    eCtx.shadowBlur = 4;
-                    eCtx.fillText("y=" + item.exprStr, targetPt.x + 10, targetPt.y - 15);
-                    eCtx.shadowBlur = 0;
+                    let eqString = item.isInverse ? 'x = ' + item.expr.toTex() : 'y = ' + item.expr.toTex();
+                    let texStr = '\\textcolor{' + item.color + '}{' + eqString + '}';
+                    let labelDiv = document.createElement('div');
+                    labelDiv.style.position = 'absolute';
+                    labelDiv.style.left = (targetPt.x + 15) + 'px';
+                    labelDiv.style.top = (targetPt.y - 25) + 'px';
+                    labelDiv.style.color = item.color; 
+                    labelDiv.style.fontSize = '18px';
+                    labelDiv.style.textShadow = '0 0 4px rgba(255,255,255,0.9), 0 0 4px rgba(255,255,255,0.9)';
+                    katex.render(texStr, labelDiv, { throwOnError: false });
+                    document.getElementById('graphLabels').appendChild(labelDiv);
                 }
             });
         }
@@ -619,15 +642,23 @@ const canvas = document.getElementById('mathCanvas');
 
             functionHistory.forEach((item) => {
                 const div = document.createElement('div');
-                div.className = 'history-item' + (item.visible ? '' : ' hidden-graph');
+                div.className = 'history-item' + (item.visible ? '' : ' hidden-graph') + (item.id === selectedHistoryId ? ' selected' : '');
                 
+                let texHtml = '';
+                let eqString = item.isInverse ? 'x = ' + item.expr.toTex() : 'y = ' + item.expr.toTex();
+                try {
+                    texHtml = katex.renderToString(eqString, { throwOnError: false, displayMode: false });
+                } catch(e) {
+                    texHtml = eqString;
+                }
+
                 div.innerHTML = `
                     <div class="history-item-header">
                         <div style="display: flex; align-items: center; width: 70%; overflow: hidden;">
-                            <div class="history-item-color" style="background-color: ${item.color};"></div>
-                            <div class="history-item-expr" title="f(x) = ${item.exprStr}">f(x) = ${item.exprStr}</div>
+                            <div class="history-item-color" style="background-color: ${item.color}; flex-shrink: 0;"></div>
+                            <div class="history-item-expr" style="overflow-x: auto; overflow-y: hidden;" title="${eqString}">${texHtml}</div>
                         </div>
-                        <div style="display: flex; gap: 5px;">
+                        <div style="display: flex; gap: 5px; flex-shrink: 0;">
                             <button class="history-btn toggle-btn" data-id="${item.id}" title="보이기/숨기기">
                                 ${item.visible ? '👁️' : '🙈'}
                             </button>
@@ -636,26 +667,17 @@ const canvas = document.getElementById('mathCanvas');
                             </button>
                         </div>
                     </div>
-                    <div class="history-item-controls">
-                        <div class="transform-row">
-                            <span style="font-weight: 600;">대칭:</span>
-                            <button class="transform-btn reflect-x-btn" data-id="${item.id}">x축</button>
-                            <button class="transform-btn reflect-y-btn" data-id="${item.id}">y축</button>
-                            <button class="transform-btn reflect-origin-btn" data-id="${item.id}">원점</button>
-                        </div>
-                        <div class="transform-row">
-                            <span style="font-weight: 600;">평행:</span>
-                            <span>x축</span><input type="number" class="transform-input shift-x-input" id="shiftX_${item.id}" value="0">
-                            <span>y축</span><input type="number" class="transform-input shift-y-input" id="shiftY_${item.id}" value="0">
-                            <button class="transform-btn apply-shift-btn" data-id="${item.id}">적용</button>
-                        </div>
-                    </div>
                 `;
+
+                div.addEventListener('click', (e) => {
+                    if (e.target.closest('.history-btn')) return;
+                    selectedHistoryId = item.id;
+                    updateHistoryUI();
+                });
 
                 historyList.appendChild(div);
             });
 
-            // Attach events
             document.querySelectorAll('.toggle-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const id = parseInt(e.currentTarget.dataset.id);
@@ -672,90 +694,9 @@ const canvas = document.getElementById('mathCanvas');
                 btn.addEventListener('click', (e) => {
                     const id = parseInt(e.currentTarget.dataset.id);
                     functionHistory = functionHistory.filter(f => f.id !== id);
+                    if (selectedHistoryId === id) selectedHistoryId = null;
                     updateHistoryUI();
                     renderAllExpGraphs();
-                });
-            });
-
-            document.querySelectorAll('.reflect-x-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = parseInt(e.currentTarget.dataset.id);
-                    const func = functionHistory.find(f => f.id === id);
-                    if (func) {
-                        let newExprStr = `-(${func.expr.toString()})`;
-                        func.expr = math.parse(newExprStr);
-                        func.exprStr = func.expr.toString();
-                        updateHistoryUI();
-                        renderAllExpGraphs();
-                    }
-                });
-            });
-
-            document.querySelectorAll('.reflect-y-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = parseInt(e.currentTarget.dataset.id);
-                    const func = functionHistory.find(f => f.id === id);
-                    if (func) {
-                        func.expr = func.expr.transform(function(node) {
-                            if (node.isSymbolNode && node.name === 'x') {
-                                return math.parse('(-x)');
-                            }
-                            return node;
-                        });
-                        func.exprStr = func.expr.toString();
-                        updateHistoryUI();
-                        renderAllExpGraphs();
-                    }
-                });
-            });
-
-            document.querySelectorAll('.reflect-origin-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = parseInt(e.currentTarget.dataset.id);
-                    const func = functionHistory.find(f => f.id === id);
-                    if (func) {
-                        func.expr = func.expr.transform(function(node) {
-                            if (node.isSymbolNode && node.name === 'x') {
-                                return math.parse('(-x)');
-                            }
-                            return node;
-                        });
-                        let newExprStr = `-(${func.expr.toString()})`;
-                        func.expr = math.parse(newExprStr);
-                        func.exprStr = func.expr.toString();
-                        updateHistoryUI();
-                        renderAllExpGraphs();
-                    }
-                });
-            });
-
-            document.querySelectorAll('.apply-shift-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = parseInt(e.currentTarget.dataset.id);
-                    const func = functionHistory.find(f => f.id === id);
-                    if (func) {
-                        let dx = parseFloat(document.getElementById(`shiftX_${id}`).value) || 0;
-                        let dy = parseFloat(document.getElementById(`shiftY_${id}`).value) || 0;
-                        
-                        if (dx !== 0) {
-                            let rep = dx > 0 ? `(x - ${dx})` : `(x + ${-dx})`;
-                            func.expr = func.expr.transform(function(node) {
-                                if (node.isSymbolNode && node.name === 'x') {
-                                    return math.parse(rep);
-                                }
-                                return node;
-                            });
-                        }
-                        
-                        let newExprStr = func.expr.toString();
-                        if (dy !== 0) {
-                            newExprStr = `(${newExprStr}) ${dy > 0 ? '+' : '-'} ${Math.abs(dy)}`;
-                        }
-                        func.expr = math.parse(newExprStr);
-                        func.exprStr = func.expr.toString();
-                        updateHistoryUI();
-                        renderAllExpGraphs();
-                    }
                 });
             });
         }
@@ -769,8 +710,7 @@ const canvas = document.getElementById('mathCanvas');
             
             let expr;
             try {
-                expr = math.compile(exprStr);
-                // test evaluation
+                expr = math.parse(exprStr);
                 expr.evaluate({ x: 1 });
                 funcError.innerText = "";
             } catch (err) {
@@ -778,15 +718,108 @@ const canvas = document.getElementById('mathCanvas');
                 return;
             }
 
+            let newId = histIdCounter++;
             functionHistory.push({
-                id: histIdCounter++,
+                id: newId,
                 exprStr: exprStr,
                 expr: expr,
                 color: selectedColor,
-                visible: true
+                visible: true,
+                isInverse: false
+            });
+            
+            selectedHistoryId = newId;
+
+            getNextColor();
+            funcInput.value = '';
+            updateHistoryUI();
+            renderAllExpGraphs();
+        }
+
+        function applyGlobalTransform(action) {
+            if (selectedHistoryId === null) {
+                funcError.innerText = "대칭/평행 이동할 함수를 좌측 목록에서 선택해주신 뒤 눌러주세요.";
+                setTimeout(() => funcError.innerText = "", 2000);
+                return;
+            }
+            const func = functionHistory.find(f => f.id === selectedHistoryId);
+            if (!func) return;
+
+            let newExprStr = func.expr.toString();
+            let newExpr = math.parse(newExprStr);
+            let newIsInverse = func.isInverse;
+
+            if (action === 'refX') {
+                if (newIsInverse) {
+                    newExpr = newExpr.transform(node => {
+                        if (node.isSymbolNode && node.name === 'x') return math.parse('(-x)');
+                        return node;
+                    });
+                } else {
+                    newExpr = math.parse(`-(${newExpr.toString()})`);
+                }
+            } else if (action === 'refY') {
+                if (newIsInverse) {
+                    newExpr = math.parse(`-(${newExpr.toString()})`);
+                } else {
+                    newExpr = newExpr.transform(node => {
+                        if (node.isSymbolNode && node.name === 'x') return math.parse('(-x)');
+                        return node;
+                    });
+                }
+            } else if (action === 'refOrigin') {
+                newExpr = newExpr.transform(node => {
+                    if (node.isSymbolNode && node.name === 'x') return math.parse('(-x)');
+                    return node;
+                });
+                newExpr = math.parse(`-(${newExpr.toString()})`);
+            } else if (action === 'refYX') {
+                newIsInverse = !newIsInverse;
+            } else if (action === 'shift') {
+                let dx = parseFloat(document.getElementById('gShiftX').value) || 0;
+                let dy = parseFloat(document.getElementById('gShiftY').value) || 0;
+                if (dx === 0 && dy === 0) return;
+                
+                if (dx !== 0) {
+                    if (newIsInverse) {
+                        newExpr = math.parse(`(${newExpr.toString()}) + ${dx}`);
+                    } else {
+                        let rep = dx > 0 ? `(x - ${dx})` : `(x + ${-dx})`;
+                        newExpr = newExpr.transform(node => {
+                            if (node.isSymbolNode && node.name === 'x') return math.parse(rep);
+                            return node;
+                        });
+                    }
+                }
+                if (dy !== 0) {
+                    if (newIsInverse) {
+                        let rep = dy > 0 ? `(x - ${dy})` : `(x + ${-dy})`;
+                        newExpr = newExpr.transform(node => {
+                            if (node.isSymbolNode && node.name === 'x') return math.parse(rep);
+                            return node;
+                        });
+                    } else {
+                        newExpr = math.parse(`(${newExpr.toString()}) + ${dy}`);
+                    }
+                }
+            }
+
+            let finalStr = newExpr.toString();
+            newExpr = math.parse(finalStr);
+
+            let newId = histIdCounter++;
+            functionHistory.push({
+                id: newId,
+                exprStr: finalStr,
+                expr: newExpr,
+                color: selectedColor,
+                visible: true,
+                isInverse: newIsInverse
             });
 
-            funcInput.value = ''; // clear input
+            selectedHistoryId = newId;
+
+            getNextColor();
             updateHistoryUI();
             renderAllExpGraphs();
         }
@@ -797,9 +830,32 @@ const canvas = document.getElementById('mathCanvas');
 
         drawBtn.addEventListener('click', addFunction);
         funcInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                addFunction();
-            }
+            if (e.key === 'Enter') addFunction();
+        });
+
+        document.querySelector('.g-ref-x').addEventListener('click', () => applyGlobalTransform('refX'));
+        document.querySelector('.g-ref-y').addEventListener('click', () => applyGlobalTransform('refY'));
+        document.querySelector('.g-ref-o').addEventListener('click', () => applyGlobalTransform('refOrigin'));
+        document.querySelector('.g-ref-yx').addEventListener('click', () => applyGlobalTransform('refYX'));
+        document.querySelector('.g-apply-shift').addEventListener('click', () => applyGlobalTransform('shift'));
+
+        document.querySelectorAll('.k-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.id === 'k-clear') {
+                    funcInput.value = '';
+                } else if (btn.id === 'k-back') {
+                    funcInput.value = funcInput.value.slice(0, -1);
+                } else {
+                    let addition = btn.dataset.val;
+                    if (addition.includes('log') || addition.includes('exp')) {
+                        // insert snippet and maybe move cursor, or just append
+                        funcInput.value += addition;
+                    } else {
+                        funcInput.value += addition;
+                    }
+                }
+                funcInput.focus();
+            });
         });
 
         // Trigger redraw when switching to exp tab

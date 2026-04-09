@@ -554,3 +554,73 @@
             margin-bottom: 10px;
             text-align: center;
         }
+
+        /* --- Keypad & Global Transform UI --- */
+        .keypad-container {
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 2px solid rgba(0,0,0,0.05);
+        }
+
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .k-btn {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 0;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            user-select: none;
+        }
+
+        .k-btn:hover { background: #edf2f7; transform: translateY(-1px); }
+        .k-btn:active { background: #e2e8f0; transform: translateY(1px); }
+
+        .k-oper { background: #ebf4ff; color: #3182ce; border-color: #bee3f8; }
+        .k-oper:hover { background: #bee3f8; }
+
+        .k-func { background: #faf5ff; color: #805ad5; border-color: #e9d8fd; font-size: 14px; }
+        .k-func:hover { background: #e9d8fd; }
+
+        .k-var { background: #f0fff4; color: #38a169; border-color: #c6f6d5; font-style: italic; }
+        .k-var:hover { background: #c6f6d5; }
+
+        .k-action { background: #fff5f5; color: #e53e3e; border-color: #fed7d7; }
+        .k-action:hover { background: #fed7d7; }
+
+        .global-transform-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+            border: 1px solid var(--surface-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            flex-wrap: wrap;
+        }
+
+        .transform-label {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .history-item { cursor: pointer; }
+        .history-item.selected {
+            border: 2px solid #73a5ff;
+            box-shadow: 0 4px 12px rgba(115, 165, 255, 0.2);
+            transform: scale(1.02);
+        }
