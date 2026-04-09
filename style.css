@@ -701,3 +701,12 @@
             box-shadow: 0 4px 12px rgba(115, 165, 255, 0.2);
             transform: scale(1.02);
         }
+
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #a0aec0;
+            padding: 20px 0 10px 0;
+            margin-top: 10px;
+            font-weight: 500;
+        }
