@@ -320,18 +320,19 @@
             display: flex;
             gap: 30px;
             width: 100%;
-            max-width: 1100px;
+            max-width: 1500px;
             align-items: flex-start;
+            justify-content: flex-start;
         }
 
         .history-panel {
-            flex: 0 0 280px;
+            flex: 0 0 350px;
             background: rgba(255, 255, 255, 0.8);
             border-radius: 16px;
             border: 1px solid var(--surface-border);
             padding: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            min-height: 400px;
+            min-height: 500px;
             display: flex;
             flex-direction: column;
         }
@@ -351,19 +352,69 @@
             flex-direction: column;
             gap: 10px;
             overflow-y: auto;
-            max-height: 450px;
+            max-height: 550px;
         }
 
         .history-item {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            align-items: stretch;
             background: #fff;
             border: 1px solid rgba(0,0,0,0.05);
             border-radius: 8px;
-            padding: 10px 12px;
+            padding: 12px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.02);
             transition: all 0.2s;
+        }
+
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .history-item-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .transform-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .transform-btn {
+            background: white;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .transform-btn:hover {
+            background: #edf2f7;
+        }
+
+        .transform-input {
+            width: 40px;
+            padding: 2px 4px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            text-align: center;
         }
 
         .history-item:hover {
@@ -371,7 +422,8 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.05);
         }
 
-        .history-item.hidden-graph {
+        .history-item.hidden-graph .history-item-color,
+        .history-item.hidden-graph .history-item-expr {
             opacity: 0.5;
         }
 

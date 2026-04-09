@@ -1,4 +1,4 @@
-﻿const canvas = document.getElementById('mathCanvas');
+const canvas = document.getElementById('mathCanvas');
         const ctx = canvas.getContext('2d');
         const slider = document.getElementById('angleSlider');
         const rSlider = document.getElementById('rSlider');
@@ -468,8 +468,8 @@
         const colorBtns = document.querySelectorAll('.color-btn');
 
         // Defaults and Constants
-        const EXP_CW = expCanvas.width;   // 700
-        const EXP_CH = expCanvas.height;  // 500
+        const EXP_CW = 1000;   // 1000
+        const EXP_CH = 700;  // 700
         const EXP_CX = EXP_CW / 2;        // 350
         const EXP_CY = EXP_CH / 2;        // 250
         const UNIT_PX = 40;               // 1 unit = 40 pixels
@@ -556,6 +556,7 @@
 
                 let firstPoint = true;
                 let prevPy = null;
+                let labelCandidates = [];
 
                 for (let xVal = startX; xVal <= endX; xVal += step) {
                     let yVal;
@@ -585,8 +586,26 @@
                         eCtx.lineTo(px, py);
                     }
                     prevPy = py;
+                    
+                    if (px >= 0 && px <= EXP_CW && py >= 0 && py <= EXP_CH) {
+                        labelCandidates.push({x: px, y: py});
+                    }
                 }
                 eCtx.stroke();
+                
+                if (labelCandidates.length > 0) {
+                    let targetIdx = Math.floor(labelCandidates.length * 0.85);
+                    let targetPt = labelCandidates[targetIdx];
+                    if (targetPt.x > EXP_CW - 80) targetPt.x = EXP_CW - 80;
+                    if (targetPt.y < 20) targetPt.y = 20;
+
+                    eCtx.fillStyle = item.color;
+                    eCtx.font = 'bold 16px Outfit, sans-serif';
+                    eCtx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+                    eCtx.shadowBlur = 4;
+                    eCtx.fillText("y=" + item.exprStr, targetPt.x + 10, targetPt.y - 15);
+                    eCtx.shadowBlur = 0;
+                }
             });
         }
 
@@ -603,15 +622,33 @@
                 div.className = 'history-item' + (item.visible ? '' : ' hidden-graph');
                 
                 div.innerHTML = `
-                    <div class="history-item-color" style="background-color: ${item.color};"></div>
-                    <div class="history-item-expr">f(x) = ${item.exprStr}</div>
-                    <div style="display: flex; gap: 5px;">
-                        <button class="history-btn toggle-btn" data-id="${item.id}" title="보이기/숨기기">
-                            ${item.visible ? '👁️' : '🙈'}
-                        </button>
-                        <button class="history-btn delete-btn" data-id="${item.id}" title="삭제">
-                            ❌
-                        </button>
+                    <div class="history-item-header">
+                        <div style="display: flex; align-items: center; width: 70%; overflow: hidden;">
+                            <div class="history-item-color" style="background-color: ${item.color};"></div>
+                            <div class="history-item-expr" title="f(x) = ${item.exprStr}">f(x) = ${item.exprStr}</div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="history-btn toggle-btn" data-id="${item.id}" title="보이기/숨기기">
+                                ${item.visible ? '👁️' : '🙈'}
+                            </button>
+                            <button class="history-btn delete-btn" data-id="${item.id}" title="삭제">
+                                ❌
+                            </button>
+                        </div>
+                    </div>
+                    <div class="history-item-controls">
+                        <div class="transform-row">
+                            <span style="font-weight: 600;">대칭:</span>
+                            <button class="transform-btn reflect-x-btn" data-id="${item.id}">x축</button>
+                            <button class="transform-btn reflect-y-btn" data-id="${item.id}">y축</button>
+                            <button class="transform-btn reflect-origin-btn" data-id="${item.id}">원점</button>
+                        </div>
+                        <div class="transform-row">
+                            <span style="font-weight: 600;">평행:</span>
+                            <span>x축</span><input type="number" class="transform-input shift-x-input" id="shiftX_${item.id}" value="0">
+                            <span>y축</span><input type="number" class="transform-input shift-y-input" id="shiftY_${item.id}" value="0">
+                            <button class="transform-btn apply-shift-btn" data-id="${item.id}">적용</button>
+                        </div>
                     </div>
                 `;
 
@@ -637,6 +674,88 @@
                     functionHistory = functionHistory.filter(f => f.id !== id);
                     updateHistoryUI();
                     renderAllExpGraphs();
+                });
+            });
+
+            document.querySelectorAll('.reflect-x-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    const func = functionHistory.find(f => f.id === id);
+                    if (func) {
+                        let newExprStr = `-(${func.expr.toString()})`;
+                        func.expr = math.parse(newExprStr);
+                        func.exprStr = func.expr.toString();
+                        updateHistoryUI();
+                        renderAllExpGraphs();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.reflect-y-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    const func = functionHistory.find(f => f.id === id);
+                    if (func) {
+                        func.expr = func.expr.transform(function(node) {
+                            if (node.isSymbolNode && node.name === 'x') {
+                                return math.parse('(-x)');
+                            }
+                            return node;
+                        });
+                        func.exprStr = func.expr.toString();
+                        updateHistoryUI();
+                        renderAllExpGraphs();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.reflect-origin-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    const func = functionHistory.find(f => f.id === id);
+                    if (func) {
+                        func.expr = func.expr.transform(function(node) {
+                            if (node.isSymbolNode && node.name === 'x') {
+                                return math.parse('(-x)');
+                            }
+                            return node;
+                        });
+                        let newExprStr = `-(${func.expr.toString()})`;
+                        func.expr = math.parse(newExprStr);
+                        func.exprStr = func.expr.toString();
+                        updateHistoryUI();
+                        renderAllExpGraphs();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.apply-shift-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    const func = functionHistory.find(f => f.id === id);
+                    if (func) {
+                        let dx = parseFloat(document.getElementById(`shiftX_${id}`).value) || 0;
+                        let dy = parseFloat(document.getElementById(`shiftY_${id}`).value) || 0;
+                        
+                        if (dx !== 0) {
+                            let rep = dx > 0 ? `(x - ${dx})` : `(x + ${-dx})`;
+                            func.expr = func.expr.transform(function(node) {
+                                if (node.isSymbolNode && node.name === 'x') {
+                                    return math.parse(rep);
+                                }
+                                return node;
+                            });
+                        }
+                        
+                        let newExprStr = func.expr.toString();
+                        if (dy !== 0) {
+                            newExprStr = `(${newExprStr}) ${dy > 0 ? '+' : '-'} ${Math.abs(dy)}`;
+                        }
+                        func.expr = math.parse(newExprStr);
+                        func.exprStr = func.expr.toString();
+                        updateHistoryUI();
+                        renderAllExpGraphs();
+                    }
                 });
             });
         }
