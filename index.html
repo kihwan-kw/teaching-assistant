@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼각함수 시각화 교육 앱 (Trigonometry Visualizer v2)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1 class="main-title">수학 수업 도우미</h1>
+
+    <div class="app-container">
+        
+        <div class="side-index-wrapper">
+            <div class="index-tab" data-unit="exp">지수함수와 로그함수</div>
+            <div class="index-tab active" data-unit="trig">삼각함수</div>
+        </div>
+
+        <div id="unit-exp" class="unit-content">
+            <h2 class="unit-title">지수함수와 로그함수</h2>
+            <div style="min-height: 400px; display: flex; justify-content: center; align-items: center;">
+                <h3 style="color: var(--text-muted); font-weight: 600; font-size: 24px;">아직 내용이 없습니다. (준비 중)</h3>
+            </div>
+        </div>
+
+        <div id="unit-trig" class="unit-content active">
+            <h2 class="unit-title">삼각함수 시각화 교육 앱 (Trigonometry Visualizer v2)</h2>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-func="definition">Definition (정의)</button>
+                <button class="tab-btn" data-func="sin">Sine (사인)</button>
+                <button class="tab-btn" data-func="cos">Cosine (코사인)</button>
+                <button class="tab-btn" data-func="tan">Tangent (탄젠트)</button>
+            </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="mathCanvas" width="1560" height="400"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="info-panel" id="infoText">sin(0°) = <span>0.00</span></div>
+
+            <div class="r-slider-wrapper" id="rSliderWrapper">
+                <div>반지름 r: <span id="rVal">1.0</span></div>
+                <input type="range" id="rSlider" min="0.1" max="2.0" step="0.1" value="1.0" style="width:180px;">
+            </div>
+
+            <div class="slider-container">
+                <span>-360°</span>
+                <input type="range" id="angleSlider" min="-360" max="360" value="0">
+                <span>360°</span>
+                <button class="reset-btn" id="resetBtn">Reset</button>
+            </div>
+        </div>
+        
+        </div> <!-- End of unit-trig -->
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
