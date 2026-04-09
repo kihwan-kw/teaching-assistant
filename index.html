@@ -7,6 +7,7 @@
     <title>삼각함수 시각화 교육 앱 (Trigonometry Visualizer v2)</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
 </head>
 
 <body>
@@ -21,9 +22,43 @@
         </div>
 
         <div id="unit-exp" class="unit-content">
-            <h2 class="unit-title">지수함수와 로그함수</h2>
-            <div style="min-height: 400px; display: flex; justify-content: center; align-items: center;">
-                <h3 style="color: var(--text-muted); font-weight: 600; font-size: 24px;">아직 내용이 없습니다. (준비 중)</h3>
+            <h2 class="unit-title">지수함수와 로그함수 시각화</h2>
+            
+            <div class="exp-main-content">
+                <!-- 좌측 히스토리 패널 -->
+                <div class="history-panel">
+                    <h3 class="history-title">추가된 함수</h3>
+                    <div id="historyList" class="history-list">
+                        <!-- 히스토리 아이템들이 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 우측 컨트롤 및 캔버스 영역 -->
+                <div class="exp-right-panel">
+                    <div class="color-picker" id="colorPicker">
+                        <button class="color-btn active" data-color="#ff8bad" style="background-color: #ff8bad;"></button>
+                        <button class="color-btn" data-color="#73a5ff" style="background-color: #73a5ff;"></button>
+                        <button class="color-btn" data-color="#ffb86c" style="background-color: #ffb86c;"></button>
+                        <button class="color-btn" data-color="#b19cd9" style="background-color: #b19cd9;"></button>
+                        <button class="color-btn" data-color="#68d391" style="background-color: #68d391;"></button>
+                        <button class="color-btn" data-color="#f6ad55" style="background-color: #f6ad55;"></button>
+                        <button class="color-btn" data-color="#fc8181" style="background-color: #fc8181;"></button>
+                        <button class="color-btn" data-color="#4fd1c5" style="background-color: #4fd1c5;"></button>
+                        <button class="color-btn" data-color="#f6e05e" style="background-color: #f6e05e;"></button>
+                        <button class="color-btn" data-color="#b794f4" style="background-color: #b794f4;"></button>
+                    </div>
+
+                    <div class="exp-controls">
+                        <input type="text" id="funcInput" class="func-input" placeholder="함수식 (예: 2^x, log(x, 2), exp(x))">
+                        <button class="draw-btn" id="drawBtn">추가하기</button>
+                    </div>
+                    <div class="error-message" id="funcError"></div>
+
+                    <div class="canvas-wrapper">
+                        <!-- 캔버스 사이즈 조절 700x500 -->
+                        <canvas id="expCanvas" width="700" height="500"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 

@@ -1,4 +1,4 @@
-const canvas = document.getElementById('mathCanvas');
+﻿const canvas = document.getElementById('mathCanvas');
         const ctx = canvas.getContext('2d');
         const slider = document.getElementById('angleSlider');
         const rSlider = document.getElementById('rSlider');
@@ -456,3 +456,237 @@ const canvas = document.getElementById('mathCanvas');
         }
 
         init();
+
+
+        /* --- Exponential & Logarithmic Functions Logic --- */
+        const expCanvas = document.getElementById('expCanvas');
+        const eCtx = expCanvas.getContext('2d');
+        const funcInput = document.getElementById('funcInput');
+        const drawBtn = document.getElementById('drawBtn');
+        const funcError = document.getElementById('funcError');
+        const historyList = document.getElementById('historyList');
+        const colorBtns = document.querySelectorAll('.color-btn');
+
+        // Defaults and Constants
+        const EXP_CW = expCanvas.width;   // 700
+        const EXP_CH = expCanvas.height;  // 500
+        const EXP_CX = EXP_CW / 2;        // 350
+        const EXP_CY = EXP_CH / 2;        // 250
+        const UNIT_PX = 40;               // 1 unit = 40 pixels
+
+        let selectedColor = '#ff8bad'; // Default selected color
+        let functionHistory = [];      // Array to hold { id, exprStr, expr, color, visible }
+        let histIdCounter = 0;
+
+        // --- Event Listeners for new UI ---
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                colorBtns.forEach(b => b.classList.remove('active'));
+                const target = e.target;
+                target.classList.add('active');
+                selectedColor = target.dataset.color;
+            });
+        });
+
+        function drawExpGrid() {
+            eCtx.clearRect(0, 0, EXP_CW, EXP_CH);
+            
+            eCtx.lineWidth = 1;
+            eCtx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+            
+            // Vertical grid lines
+            for (let x = 0; x <= EXP_CW; x += UNIT_PX) {
+                eCtx.beginPath();
+                eCtx.moveTo(x, 0);
+                eCtx.lineTo(x, EXP_CH);
+                eCtx.stroke();
+            }
+            // Horizontal grid lines
+            for (let y = 0; y <= EXP_CH; y += UNIT_PX) {
+                eCtx.beginPath();
+                eCtx.moveTo(0, y);
+                eCtx.lineTo(EXP_CW, y);
+                eCtx.stroke();
+            }
+
+            // Axes
+            eCtx.lineWidth = 2;
+            eCtx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            eCtx.beginPath();
+            eCtx.moveTo(0, EXP_CY);
+            eCtx.lineTo(EXP_CW, EXP_CY); // X axis
+            eCtx.moveTo(EXP_CX, 0);
+            eCtx.lineTo(EXP_CX, EXP_CH); // Y axis
+            eCtx.stroke();
+
+            // Labels
+            eCtx.fillStyle = '#718096';
+            eCtx.font = '12px Outfit, sans-serif';
+            for (let i = -15; i <= 15; i++) {
+                if (i !== 0) {
+                    let px = EXP_CX + i * UNIT_PX;
+                    if (px >= 0 && px <= EXP_CW) {
+                        eCtx.fillText(i, px - 4, EXP_CY + 15);
+                    }
+                    let py = EXP_CY - i * UNIT_PX;
+                    if (py >= 0 && py <= EXP_CH) {
+                        eCtx.fillText(i, EXP_CX + 8, py + 4);
+                    }
+                }
+            }
+            eCtx.fillText('O', EXP_CX - 12, EXP_CY + 15);
+            eCtx.fillText('x', EXP_CW - 15, EXP_CY - 10);
+            eCtx.fillText('y', EXP_CX + 10, 15);
+        }
+
+        function renderAllExpGraphs() {
+            drawExpGrid();
+
+            // X values limit
+            const startX = -15;
+            const endX = 15;
+            const step = 0.05;
+
+            functionHistory.forEach(item => {
+                if (!item.visible) return;
+
+                eCtx.beginPath();
+                eCtx.lineWidth = 3;
+                eCtx.strokeStyle = item.color;
+
+                let firstPoint = true;
+                let prevPy = null;
+
+                for (let xVal = startX; xVal <= endX; xVal += step) {
+                    let yVal;
+                    try {
+                        yVal = item.expr.evaluate({ x: xVal });
+                    } catch (e) {
+                        continue;
+                    }
+
+                    if (typeof yVal !== 'number' || isNaN(yVal) || !isFinite(yVal)) {
+                        firstPoint = true;
+                        continue;
+                    }
+
+                    let px = EXP_CX + xVal * UNIT_PX;
+                    let py = EXP_CY - yVal * UNIT_PX;
+
+                    // jump detection
+                    if (prevPy !== null && Math.abs(py - prevPy) > EXP_CH / 2) {
+                        firstPoint = true; 
+                    }
+
+                    if (firstPoint) {
+                        eCtx.moveTo(px, py);
+                        firstPoint = false;
+                    } else {
+                        eCtx.lineTo(px, py);
+                    }
+                    prevPy = py;
+                }
+                eCtx.stroke();
+            });
+        }
+
+        function updateHistoryUI() {
+            historyList.innerHTML = '';
+            
+            if (functionHistory.length === 0) {
+                historyList.innerHTML = '<div style="text-align: center; color: #a0aec0; margin-top: 20px; font-size: 14px;">추가된 함수가 없습니다.</div>';
+                return;
+            }
+
+            functionHistory.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = 'history-item' + (item.visible ? '' : ' hidden-graph');
+                
+                div.innerHTML = `
+                    <div class="history-item-color" style="background-color: ${item.color};"></div>
+                    <div class="history-item-expr">f(x) = ${item.exprStr}</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="history-btn toggle-btn" data-id="${item.id}" title="보이기/숨기기">
+                            ${item.visible ? '👁️' : '🙈'}
+                        </button>
+                        <button class="history-btn delete-btn" data-id="${item.id}" title="삭제">
+                            ❌
+                        </button>
+                    </div>
+                `;
+
+                historyList.appendChild(div);
+            });
+
+            // Attach events
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    const func = functionHistory.find(f => f.id === id);
+                    if (func) {
+                        func.visible = !func.visible;
+                        updateHistoryUI();
+                        renderAllExpGraphs();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    functionHistory = functionHistory.filter(f => f.id !== id);
+                    updateHistoryUI();
+                    renderAllExpGraphs();
+                });
+            });
+        }
+
+        function addFunction() {
+            const exprStr = funcInput.value.trim();
+            if (!exprStr) {
+                funcError.innerText = "수식을 입력해주세요.";
+                return;
+            }
+            
+            let expr;
+            try {
+                expr = math.compile(exprStr);
+                // test evaluation
+                expr.evaluate({ x: 1 });
+                funcError.innerText = "";
+            } catch (err) {
+                funcError.innerText = "수식이 올바르지 않습니다. (예: 2^x, log(x, 2))";
+                return;
+            }
+
+            functionHistory.push({
+                id: histIdCounter++,
+                exprStr: exprStr,
+                expr: expr,
+                color: selectedColor,
+                visible: true
+            });
+
+            funcInput.value = ''; // clear input
+            updateHistoryUI();
+            renderAllExpGraphs();
+        }
+
+        // Initialize Exponential View
+        drawExpGrid();
+        updateHistoryUI();
+
+        drawBtn.addEventListener('click', addFunction);
+        funcInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addFunction();
+            }
+        });
+
+        // Trigger redraw when switching to exp tab
+        document.querySelector('.index-tab[data-unit="exp"]').addEventListener('click', () => {
+            setTimeout(() => {
+                renderAllExpGraphs();
+            }, 50);
+        });
+
