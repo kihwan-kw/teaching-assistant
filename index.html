@@ -17,22 +17,22 @@
     <h1 class="main-title">수학 수업 도우미</h1>
 
     <div class="app-container">
-        
+
         <div class="side-index-wrapper">
-            <div class="index-tab" data-unit="exp">지수함수와 로그함수</div>
+            <div class="index-tab" data-unit="exp">지수, 로그함수</div>
             <div class="index-tab active" data-unit="trig">삼각함수</div>
         </div>
 
         <div id="unit-exp" class="unit-content">
-            <h2 class="unit-title">지수함수와 로그함수 시각화</h2>
-            
+            <h2 class="unit-title">지수함수와 로그함수의 그래프</h2>
+
             <div class="exp-main-content">
                 <div class="history-panel">
                     <h3 class="history-title">추가된 함수</h3>
                     <div id="historyList" class="history-list">
                         <!-- 히스토리 아이템들이 동적으로 추가됩니다 -->
                     </div>
-                    
+
                     <div class="keypad-container">
                         <div class="keypad-grid" id="funcKeypad">
                             <button class="k-btn" data-val="7">7</button>
@@ -65,7 +65,8 @@
                 <!-- 우측 컨트롤 및 캔버스 영역 -->
                 <div class="exp-right-panel">
                     <div class="color-picker" id="colorPicker">
-                        <button class="color-btn active" data-color="#ff8bad" style="background-color: #ff8bad;"></button>
+                        <button class="color-btn active" data-color="#ff8bad"
+                            style="background-color: #ff8bad;"></button>
                         <button class="color-btn" data-color="#73a5ff" style="background-color: #73a5ff;"></button>
                         <button class="color-btn" data-color="#ffb86c" style="background-color: #ffb86c;"></button>
                         <button class="color-btn" data-color="#b19cd9" style="background-color: #b19cd9;"></button>
@@ -78,7 +79,8 @@
                     </div>
 
                     <div class="exp-controls">
-                        <input type="text" id="funcInput" class="func-input" placeholder="함수식 (예: 2^x, log(x, 2), exp(x))">
+                        <input type="text" id="funcInput" class="func-input"
+                            placeholder="함수식 (예: 2^x, log(x, 2), exp(x))">
                         <button class="draw-btn" id="drawBtn">추가하기</button>
                     </div>
 
@@ -88,7 +90,7 @@
                         <button class="t-btn g-ref-y">y축</button>
                         <button class="t-btn g-ref-o">원점</button>
                         <button class="t-btn g-ref-yx">y=x</button>
-                        
+
                         <span class="transform-label" style="margin-left: 15px;">평행이동:</span>
                         <span>x축</span><input type="number" id="gShiftX" class="transform-input" value="0">
                         <span>y축</span><input type="number" id="gShiftY" class="transform-input" value="0">
@@ -100,14 +102,16 @@
                     <div class="canvas-wrapper">
                         <!-- 캔버스 사이즈 조절 1000x700 -->
                         <canvas id="expCanvas" width="1000" height="700"></canvas>
-                        <div id="graphLabels" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+                        <div id="graphLabels"
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="unit-trig" class="unit-content active">
-            <h2 class="unit-title">삼각함수 시각화 교육 앱 (Trigonometry Visualizer v2)</h2>
+            <h2 class="unit-title">삼각함수의 정의와 그래프</h2>
 
             <div class="tabs">
                 <button class="tab-btn active" data-func="definition">Definition (정의)</button>
@@ -116,26 +120,26 @@
                 <button class="tab-btn" data-func="tan">Tangent (탄젠트)</button>
             </div>
 
-        <div class="canvas-wrapper">
-            <canvas id="mathCanvas" width="1560" height="400"></canvas>
-        </div>
-
-        <div class="controls">
-            <div class="info-panel" id="infoText">sin(0°) = <span>0.00</span></div>
-
-            <div class="r-slider-wrapper" id="rSliderWrapper">
-                <div>반지름 r: <span id="rVal">1.0</span></div>
-                <input type="range" id="rSlider" min="0.1" max="2.0" step="0.1" value="1.0" style="width:180px;">
+            <div class="canvas-wrapper">
+                <canvas id="mathCanvas" width="1560" height="400"></canvas>
             </div>
 
-            <div class="slider-container">
-                <span>-360°</span>
-                <input type="range" id="angleSlider" min="-360" max="360" value="0">
-                <span>360°</span>
-                <button class="reset-btn" id="resetBtn">Reset</button>
+            <div class="controls">
+                <div class="info-panel" id="infoText">sin(0°) = <span>0.00</span></div>
+
+                <div class="r-slider-wrapper" id="rSliderWrapper">
+                    <div>반지름 r: <span id="rVal">1.0</span></div>
+                    <input type="range" id="rSlider" min="0.1" max="2.0" step="0.1" value="1.0" style="width:180px;">
+                </div>
+
+                <div class="slider-container">
+                    <span>-360°</span>
+                    <input type="range" id="angleSlider" min="-360" max="360" value="0">
+                    <span>360°</span>
+                    <button class="reset-btn" id="resetBtn">Reset</button>
+                </div>
             </div>
-        </div>
-        
+
         </div> <!-- End of unit-trig -->
     </div>
 
