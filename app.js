@@ -567,46 +567,96 @@ const canvas = document.getElementById('mathCanvas');
                 eCtx.lineWidth = 3;
                 eCtx.strokeStyle = item.color;
 
-                let firstPoint = true;
-                let prevPx = null;
-                let prevPy = null;
                 let labelCandidates = [];
                 
-                for (let t = startX; t <= endX; t += step) {
+                function getPt(t) {
                     let val;
                     try {
                         val = item.expr.evaluate({ x: t });
                     } catch (e) {
-                        continue;
+                        return null;
                     }
 
                     if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) {
-                        firstPoint = true;
-                        continue;
+                        return null;
                     }
 
                     let px, py;
                     if (item.isInverse) {
                         px = EXP_CX + val * UNIT_PX;
                         py = EXP_CY - t * UNIT_PX;
-                        if (prevPx !== null && Math.abs(px - prevPx) > EXP_CW / 2) firstPoint = true;
                     } else {
                         px = EXP_CX + t * UNIT_PX;
                         py = EXP_CY - val * UNIT_PX;
-                        if (prevPy !== null && Math.abs(py - prevPy) > EXP_CH / 2) firstPoint = true;
+                    }
+                    return { x: px, y: py, t: t, val: val };
+                }
+
+                let rawPoints = [];
+                for (let t = startX; t <= endX; t += step) {
+                    rawPoints.push(getPt(t));
+                }
+
+                let refinedPoints = [];
+                for (let i = 0; i < rawPoints.length - 1; i++) {
+                    let p1 = rawPoints[i];
+                    let p2 = rawPoints[i+1];
+                    
+                    refinedPoints.push(p1);
+                    
+                    if ((p1 === null && p2 !== null) || (p1 !== null && p2 === null)) {
+                        let validT = p1 ? startX + i*step : startX + (i+1)*step;
+                        let invalidT = p1 ? startX + (i+1)*step : startX + i*step;
+                        
+                        let extra = [];
+                        for(let d=0; d<14; d++) {
+                            let midT = (validT + invalidT) / 2;
+                            let midPt = getPt(midT);
+                            if (midPt) {
+                                extra.push(midPt);
+                                validT = midT;
+                            } else {
+                                invalidT = midT;
+                            }
+                        }
+                        if (p1 !== null) {
+                            refinedPoints.push(...extra);
+                        } else {
+                            refinedPoints.push(...extra.reverse());
+                        }
+                    }
+                }
+                refinedPoints.push(rawPoints[rawPoints.length - 1]);
+
+                let MathAbs = Math.abs;
+                let firstPoint = true;
+                let prevPx = null;
+                let prevPy = null;
+
+                for (let i = 0; i < refinedPoints.length; i++) {
+                    let pt = refinedPoints[i];
+                    if (!pt) {
+                        firstPoint = true;
+                        continue;
+                    }
+
+                    if (item.isInverse) {
+                        if (prevPx !== null && MathAbs(pt.x - prevPx) > EXP_CW / 2) firstPoint = true;
+                    } else {
+                        if (prevPy !== null && MathAbs(pt.y - prevPy) > EXP_CH / 2) firstPoint = true;
                     }
 
                     if (firstPoint) {
-                        eCtx.moveTo(px, py);
+                        eCtx.moveTo(pt.x, pt.y);
                         firstPoint = false;
                     } else {
-                        eCtx.lineTo(px, py);
+                        eCtx.lineTo(pt.x, pt.y);
                     }
-                    prevPx = px;
-                    prevPy = py;
+                    prevPx = pt.x;
+                    prevPy = pt.y;
                     
-                    if (px >= 0 && px <= EXP_CW && py >= 0 && py <= EXP_CH) {
-                        labelCandidates.push({x: px, y: py});
+                    if (pt.x >= 0 && pt.x <= EXP_CW && pt.y >= 0 && pt.y <= EXP_CH) {
+                        labelCandidates.push({x: pt.x, y: pt.y});
                     }
                 }
                 eCtx.stroke();
@@ -617,7 +667,14 @@ const canvas = document.getElementById('mathCanvas');
                     if (targetPt.x > EXP_CW - 80) targetPt.x = EXP_CW - 80;
                     if (targetPt.y < 20) targetPt.y = 20;
 
-                    let eqString = item.isInverse ? 'x = ' + item.expr.toTex() : 'y = ' + item.expr.toTex();
+                    let eqString = '';
+                    if (item.isInverse) {
+                        let cloned = item.expr.clone();
+                        cloned = cloned.transform(n => n.isSymbolNode && n.name === 'x' ? math.parse('y') : n);
+                        eqString = 'x = ' + cloned.toTex();
+                    } else {
+                        eqString = 'y = ' + item.expr.toTex();
+                    }
                     let texStr = '\\textcolor{' + item.color + '}{' + eqString + '}';
                     let labelDiv = document.createElement('div');
                     labelDiv.style.position = 'absolute';
@@ -736,6 +793,80 @@ const canvas = document.getElementById('mathCanvas');
             renderAllExpGraphs();
         }
 
+        function invertAST(node) {
+            function containsX(n) {
+                let hasX = false;
+                n.traverse(function(child) {
+                    if (child.isSymbolNode && child.name === 'x') hasX = true;
+                });
+                return hasX;
+            }
+            function solve(n, targetStr) {
+                if (n.isSymbolNode && n.name === 'x') return targetStr;
+                if (n.isParenthesisNode) return solve(n.content, targetStr);
+
+                if (n.isOperatorNode) {
+                    if (n.op === '+') {
+                        let leftHasX = containsX(n.args[0]);
+                        let A = leftHasX ? n.args[0] : n.args[1];
+                        let B = leftHasX ? n.args[1] : n.args[0];
+                        return solve(A, `(${targetStr}) - (${B.toString()})`);
+                    }
+                    if (n.op === '-') {
+                        if (n.args.length === 1) {
+                            return solve(n.args[0], `-(${targetStr})`);
+                        } else {
+                            let leftHasX = containsX(n.args[0]);
+                            if (leftHasX) {
+                                return solve(n.args[0], `(${targetStr}) + (${n.args[1].toString()})`);
+                            } else {
+                                return solve(n.args[1], `(${n.args[0].toString()}) - (${targetStr})`);
+                            }
+                        }
+                    }
+                    if (n.op === '*') {
+                        let leftHasX = containsX(n.args[0]);
+                        let A = leftHasX ? n.args[0] : n.args[1];
+                        let B = leftHasX ? n.args[1] : n.args[0];
+                        return solve(A, `(${targetStr}) / (${B.toString()})`);
+                    }
+                    if (n.op === '/') {
+                        let leftHasX = containsX(n.args[0]);
+                        if (leftHasX) {
+                            return solve(n.args[0], `(${targetStr}) * (${n.args[1].toString()})`);
+                        } else {
+                            return solve(n.args[1], `(${n.args[0].toString()}) / (${targetStr})`);
+                        }
+                    }
+                    if (n.op === '^') {
+                        let leftHasX = containsX(n.args[0]);
+                        if (!leftHasX) {
+                            return solve(n.args[1], `log(${targetStr}, ${n.args[0].toString()})`);
+                        }
+                    }
+                }
+                
+                if (n.isFunctionNode) {
+                    if (n.fn.name === 'log' || n.fn.name === 'log10') {
+                        let base = n.args.length > 1 ? n.args[1].toString() : (n.fn.name === 'log10' ? '10' : '2.718281828459045');
+                        let A = n.args[0];
+                        if (n.fn.name === 'log' && n.args.length === 1) {
+                            return solve(A, `exp(${targetStr})`);
+                        } else {
+                            return solve(A, `(${base})^(${targetStr})`);
+                        }
+                    }
+                    if (n.fn.name === 'exp') {
+                        return solve(n.args[0], `log(${targetStr})`);
+                    }
+                }
+                throw new Error('Unsupported AST format for algebraic inversion.');
+            }
+            
+            let invStr = solve(node, 'x');
+            return math.parse(invStr);
+        }
+
         function applyGlobalTransform(action) {
             if (selectedHistoryId === null) {
                 funcError.innerText = "대칭/평행 이동할 함수를 좌측 목록에서 선택해주신 뒤 눌러주세요.";
@@ -774,7 +905,17 @@ const canvas = document.getElementById('mathCanvas');
                 });
                 newExpr = math.parse(`-(${newExpr.toString()})`);
             } else if (action === 'refYX') {
-                newIsInverse = !newIsInverse;
+                if (newIsInverse) {
+                    newIsInverse = false;
+                } else {
+                    try {
+                        let invAST = invertAST(newExpr);
+                        newExpr = invAST;
+                        newIsInverse = false;
+                    } catch(e) {
+                        newIsInverse = true;
+                    }
+                }
             } else if (action === 'shift') {
                 let dx = parseFloat(document.getElementById('gShiftX').value) || 0;
                 let dy = parseFloat(document.getElementById('gShiftY').value) || 0;
@@ -802,6 +943,12 @@ const canvas = document.getElementById('mathCanvas');
                         newExpr = math.parse(`(${newExpr.toString()}) + ${dy}`);
                     }
                 }
+            }
+
+            try {
+                newExpr = math.simplify(newExpr);
+            } catch (e) {
+                // 파싱 불가능한 복잡한 꼴이거나 에러 시 그대로 둠
             }
 
             let finalStr = newExpr.toString();
