@@ -431,6 +431,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: #cbd5e0;
     border-radius: 10px;
     border: 2px solid rgba(255, 255, 255, 0.8);
+    background-clip: padding-box;
 }
 
 .history-list::-webkit-scrollbar-thumb:hover {
@@ -1015,4 +1016,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .index-tab[data-unit="matrix"].active {
     background: #68d391;
+}
+
+/* --- Integration (구분구적법) UI 추가 스타일 --- */
+.integ-method-btn {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.integ-method-btn.active {
+    background: #fc8181;
+    color: white;
+    border-color: #fc8181;
+    box-shadow: 0 4px 10px rgba(252, 129, 129, 0.3);
 }

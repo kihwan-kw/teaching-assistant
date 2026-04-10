@@ -252,7 +252,6 @@ function drawDefinition() {
     ctx.beginPath();
     ctx.arc(CX, CY, 35, 0, -rad, currentAngle > 0);
     ctx.fillStyle = 'rgba(177, 156, 217, 0.2)';
-    ctx.fill();
     ctx.strokeStyle = activeColors['definition'];
     ctx.lineWidth = 1.5;
     ctx.stroke();
@@ -1210,3 +1209,195 @@ document.querySelector('.index-tab[data-unit="matrix"]').addEventListener('click
 // 초기 실행
 drawOriginal();
 applyMatrixTransform();
+
+/* ========================================================= */
+/* --- Integration (구분구적법: 상합과 하합 조임정리) Logic --- */
+/* ========================================================= */
+const iCanvas = document.getElementById('integCanvas');
+const iCtx = iCanvas.getContext('2d');
+const integFuncInput = document.getElementById('integFuncInput');
+const integA = document.getElementById('integA');
+const integB = document.getElementById('integB');
+const integNSlider = document.getElementById('integNSlider');
+const integNVal = document.getElementById('integNVal');
+const integError = document.getElementById('integError');
+const methodBtns = document.querySelectorAll('.integ-method-btn');
+
+let currentIntegMethod = 'both'; // 'upper', 'lower', 'both'
+let integExpr = null;
+
+const IW = iCanvas.width;
+const IH = iCanvas.height;
+const I_PAD = 40;
+let mapX, mapY;
+
+function initInteg() {
+    integFuncInput.addEventListener('input', drawInteg);
+    integA.addEventListener('input', drawInteg);
+    integB.addEventListener('input', drawInteg);
+
+    integNSlider.addEventListener('input', (e) => {
+        integNVal.innerText = e.target.value;
+        drawInteg();
+    });
+
+    methodBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            methodBtns.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentIntegMethod = e.target.dataset.method;
+            drawInteg();
+        });
+    });
+
+    document.querySelector('.index-tab[data-unit="integ"]').addEventListener('click', () => {
+        setTimeout(drawInteg, 50);
+    });
+
+    drawInteg();
+}
+
+function calculateExactIntegral(expr, a, b) {
+    let sum = 0;
+    let n = 2000;
+    let dx = (b - a) / n;
+    for (let i = 0; i < n; i++) {
+        let x = a + (i + 0.5) * dx;
+        try { sum += expr.evaluate({ x: x }) * dx; } catch (e) { return 0; }
+    }
+    return sum;
+}
+
+function drawInteg() {
+    const exprStr = integFuncInput.value.trim();
+    let a = parseFloat(integA.value);
+    let b = parseFloat(integB.value);
+    let n = parseInt(integNSlider.value);
+
+    if (isNaN(a)) a = 0;
+    if (isNaN(b)) b = 5;
+    if (a >= b) {
+        integError.innerText = "a는 b보다 작아야 합니다.";
+        iCtx.clearRect(0, 0, IW, IH);
+        return;
+    }
+
+    try {
+        integExpr = math.parse(exprStr);
+        integExpr.evaluate({ x: (a + b) / 2 });
+        integError.innerText = "";
+    } catch (err) {
+        integError.innerText = "올바른 수식을 입력하세요.";
+        iCtx.clearRect(0, 0, IW, IH);
+        return;
+    }
+
+    iCtx.clearRect(0, 0, IW, IH);
+
+    // 스케일링 설정
+    let minX = a - (b - a) * 0.1;
+    let maxX = b + (b - a) * 0.1;
+    let minY = 0, maxY = 0;
+
+    for (let x = a; x <= b; x += (b - a) / 100) {
+        let y = integExpr.evaluate({ x: x });
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+    }
+
+    let yRange = maxY - minY;
+    if (yRange === 0) yRange = 10;
+    maxY += yRange * 0.2;
+    minY -= yRange * 0.1;
+    if (minY > 0) minY = -yRange * 0.1;
+
+    mapX = (x) => I_PAD + ((x - minX) / (maxX - minX)) * (IW - 2 * I_PAD);
+    mapY = (y) => IH - I_PAD - ((y - minY) / (maxY - minY)) * (IH - 2 * I_PAD);
+
+    // 축 그리기
+    iCtx.lineWidth = 1.5;
+    iCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+    iCtx.beginPath();
+    iCtx.moveTo(mapX(minX), mapY(0)); iCtx.lineTo(mapX(maxX), mapY(0));
+    iCtx.moveTo(mapX(0), mapY(minY)); iCtx.lineTo(mapX(0), mapY(maxY));
+    iCtx.stroke();
+
+    iCtx.fillStyle = '#718096';
+    iCtx.font = '12px Outfit';
+    iCtx.fillText('O', mapX(0) - 15, mapY(0) + 15);
+    iCtx.fillText('a=' + a, mapX(a) - 10, mapY(0) + 20);
+    iCtx.fillText('b=' + b, mapX(b) - 10, mapY(0) + 20);
+
+    // 상합(Upper), 하합(Lower) 계산 및 그리기
+    let dx = (b - a) / n;
+    let upperSum = 0;
+    let lowerSum = 0;
+
+    for (let i = 0; i < n; i++) {
+        let xStart = a + i * dx;
+        let xEnd = a + (i + 1) * dx;
+
+        // 해당 소구간 내에서 최댓값, 최솟값 찾기 (샘플링 방식)
+        let maxVal = -Infinity;
+        let minVal = Infinity;
+        let samples = 20; // 한 칸을 20번 쪼개서 비교
+
+        for (let j = 0; j <= samples; j++) {
+            let testX = xStart + (j / samples) * dx;
+            let val = integExpr.evaluate({ x: testX });
+            if (val > maxVal) maxVal = val;
+            if (val < minVal) minVal = val;
+        }
+
+        upperSum += maxVal * dx;
+        lowerSum += minVal * dx;
+
+        let px = mapX(xStart);
+        let pWidth = mapX(xEnd) - px;
+
+        // 그리기 (보기 모드에 따라)
+        if (currentIntegMethod === 'upper' || currentIntegMethod === 'both') {
+            // 상합 (빨간색 투명)
+            let pyMax = mapY(maxVal);
+            let pHeightMax = mapY(0) - pyMax;
+            iCtx.fillStyle = currentIntegMethod === 'both' ? 'rgba(252, 129, 129, 0.2)' : 'rgba(252, 129, 129, 0.4)';
+            iCtx.fillRect(px, pyMax, pWidth, pHeightMax);
+            iCtx.strokeStyle = 'rgba(229, 62, 62, 0.8)';
+            iCtx.lineWidth = 1;
+            iCtx.strokeRect(px, pyMax, pWidth, pHeightMax);
+        }
+
+        if (currentIntegMethod === 'lower' || currentIntegMethod === 'both') {
+            // 하합 (파란색 투명 - both 모드일때 상합 위에 덮어그려짐)
+            let pyMin = mapY(minVal);
+            let pHeightMin = mapY(0) - pyMin;
+            iCtx.fillStyle = currentIntegMethod === 'both' ? 'rgba(115, 165, 255, 0.6)' : 'rgba(115, 165, 255, 0.4)';
+            iCtx.fillRect(px, pyMin, pWidth, pHeightMin);
+            iCtx.strokeStyle = 'rgba(49, 130, 206, 0.8)';
+            iCtx.lineWidth = 1;
+            iCtx.strokeRect(px, pyMin, pWidth, pHeightMin);
+        }
+    }
+
+    // 원래 함수 곡선 덮어 그리기
+    iCtx.beginPath();
+    iCtx.strokeStyle = '#2d3748'; // 짙은 회색 곡선
+    iCtx.lineWidth = 3;
+    let first = true;
+    for (let x = minX; x <= maxX; x += (maxX - minX) / 200) {
+        let y = integExpr.evaluate({ x: x });
+        if (first) { iCtx.moveTo(mapX(x), mapY(y)); first = false; }
+        else { iCtx.lineTo(mapX(x), mapY(y)); }
+    }
+    iCtx.stroke();
+
+    // 결과 텍스트 업데이트
+    let exactArea = calculateExactIntegral(integExpr, a, b);
+
+    document.getElementById('integUpperVal').innerText = upperSum.toFixed(4);
+    document.getElementById('integLowerVal').innerText = lowerSum.toFixed(4);
+    document.getElementById('integDiff').innerText = (upperSum - lowerSum).toFixed(4);
+    document.getElementById('integExactVal').innerText = exactArea.toFixed(4);
+}
+
+initInteg();
