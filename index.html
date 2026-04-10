@@ -21,6 +21,7 @@
         </div>
 
         <div class="side-index-wrapper side-index-left">
+            <div class="index-tab" data-unit="matrix">행렬</div>
             <div class="index-tab" data-unit="trig">삼각함수</div>
             <div class="index-tab" data-unit="seq">수열</div>
             <div class="index-tab" data-unit="limit">함수의 극한과 연속</div>
@@ -166,8 +167,86 @@
                     <button class="reset-btn" id="resetBtn">Reset</button>
                 </div>
             </div>
-
         </div> <!-- End of unit-trig -->
+
+        <div id="unit-matrix" class="unit-content">
+            <h2 class="unit-title">행렬과 변환</h2>
+            <div class="matrix-main-content">
+
+                <!-- 왼쪽: 컨트롤 패널 -->
+                <div class="matrix-control-panel">
+
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">📷 이미지 업로드</h3>
+                        <label class="upload-label" for="matrixImageInput">
+                            클릭하여 이미지 선택
+                        </label>
+                        <input type="file" id="matrixImageInput" accept="image/*" style="display:none;">
+                    </div>
+
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">🔢 변환 행렬</h3>
+                        <div class="matrix-input-grid">
+                            <input type="number" class="m-input" id="m00" value="1" step="0.1">
+                            <input type="number" class="m-input" id="m01" value="0" step="0.1">
+                            <input type="number" class="m-input" id="m10" value="0" step="0.1">
+                            <input type="number" class="m-input" id="m11" value="1" step="0.1">
+                        </div>
+                        <div class="matrix-label-grid">
+                            <span>a</span><span>b</span>
+                            <span>c</span><span>d</span>
+                        </div>
+                        <div class="matrix-formula">
+                            (x', y') = (ax + by, cx + dy)
+                        </div>
+                    </div>
+
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">⚡ 프리셋</h3>
+                        <div class="preset-grid">
+                            <button class="preset-btn" data-matrix="1,0,0,1">항등</button>
+                            <button class="preset-btn" data-matrix="0,-1,1,0">90° 회전</button>
+                            <button class="preset-btn" data-matrix="-1,0,0,1">y축 반사</button>
+                            <button class="preset-btn" data-matrix="1,0,0,-1">x축 반사</button>
+                            <button class="preset-btn" data-matrix="0,1,1,0">y=x 반사</button>
+                            <button class="preset-btn" data-matrix="2,0,0,2">2배 확대</button>
+                            <button class="preset-btn" data-matrix="0.5,0,0,0.5">1/2 축소</button>
+                            <button class="preset-btn" data-matrix="1,1,0,1">x축 전단</button>
+                            <button class="preset-btn" data-matrix="1,0,1,1">y축 전단</button>
+                            <button class="preset-btn" data-matrix="-1,0,0,-1">원점 반사</button>
+                        </div>
+                    </div>
+
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">📐 행렬식 & 역행렬</h3>
+                        <div class="matrix-info-box">
+                            <div>det(A) = ad - bc = <span id="detValue" style="font-weight:800; color:#73a5ff;">1</span>
+                            </div>
+                            <div style="margin-top:8px; font-size:13px; color:#718096;" id="detDesc">넓이가 1배로 변환됩니다
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 오른쪽: 캔버스 -->
+                <div class="matrix-canvas-area">
+                    <div class="matrix-canvas-row">
+                        <div class="matrix-canvas-box">
+                            <div class="matrix-canvas-label">원본</div>
+                            <canvas id="matrixOrigCanvas" width="400" height="400"></canvas>
+                        </div>
+                        <div class="matrix-arrow">→</div>
+                        <div class="matrix-canvas-box">
+                            <div class="matrix-canvas-label">변환 후</div>
+                            <canvas id="matrixTransCanvas" width="400" height="400"></canvas>
+                        </div>
+                    </div>
+                    <button class="apply-matrix-btn" id="applyMatrixBtn">행렬 변환 적용</button>
+                </div>
+
+            </div>
+        </div>
 
         <!-- 수열 (Sequences) 파트 빈 공간 -->
         <div id="unit-seq" class="unit-content">

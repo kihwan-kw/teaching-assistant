@@ -1013,3 +1013,201 @@ document.querySelector('.index-tab[data-unit="exp"]').addEventListener('click', 
     }, 50);
 });
 
+/* --- Matrix Transform Logic --- */
+const matrixOrigCanvas = document.getElementById('matrixOrigCanvas');
+const matrixTransCanvas = document.getElementById('matrixTransCanvas');
+const mOrigCtx = matrixOrigCanvas.getContext('2d');
+const mTransCtx = matrixTransCanvas.getContext('2d');
+const matrixImageInput = document.getElementById('matrixImageInput');
+const applyMatrixBtn = document.getElementById('applyMatrixBtn');
+
+let matrixImage = null;
+const M_W = 400;
+const M_H = 400;
+const M_CX = M_W / 2;
+const M_CY = M_H / 2;
+
+function drawMatrixGrid(ctx) {
+    ctx.clearRect(0, 0, M_W, M_H);
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= M_W; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, M_H); ctx.stroke();
+    }
+    for (let y = 0; y <= M_H; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(M_W, y); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(M_CX, 0); ctx.lineTo(M_CX, M_H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, M_CY); ctx.lineTo(M_W, M_CY); ctx.stroke();
+}
+
+function drawOriginal() {
+    drawMatrixGrid(mOrigCtx);
+    if (!matrixImage) {
+        mOrigCtx.fillStyle = '#e2e8f0';
+        mOrigCtx.fillRect(M_CX - 80, M_CY - 80, 160, 160);
+        mOrigCtx.fillStyle = '#a0aec0';
+        mOrigCtx.font = '600 14px Outfit, sans-serif';
+        mOrigCtx.textAlign = 'center';
+        mOrigCtx.fillText('이미지를 업로드하세요', M_CX, M_CY + 5);
+        mOrigCtx.textAlign = 'left';
+        return;
+    }
+    const size = Math.min(M_W, M_H) * 0.7;
+    mOrigCtx.drawImage(matrixImage, M_CX - size / 2, M_CY - size / 2, size, size);
+}
+
+function applyMatrixTransform() {
+    const a = parseFloat(document.getElementById('m00').value) || 0;
+    const b = parseFloat(document.getElementById('m01').value) || 0;
+    const c = parseFloat(document.getElementById('m10').value) || 0;
+    const d = parseFloat(document.getElementById('m11').value) || 0;
+
+    const det = a * d - b * c;
+    document.getElementById('detValue').innerText = det.toFixed(2);
+    const detDesc = document.getElementById('detDesc');
+    if (Math.abs(det) < 0.001) {
+        detDesc.innerText = '⚠️ 행렬식이 0: 역행렬이 존재하지 않습니다';
+        detDesc.style.color = '#e53e3e';
+    } else {
+        detDesc.innerText = `넓이가 ${Math.abs(det).toFixed(2)}배로 변환됩니다`;
+        detDesc.style.color = '#718096';
+    }
+
+    drawMatrixGrid(mTransCtx);
+
+    if (!matrixImage) {
+        // 기본 사각형으로 시연
+        const pts = [[-80, -80], [80, -80], [80, 80], [-80, 80]];
+        const transformed = pts.map(([x, y]) => [a * x + b * y, c * x + d * y]);
+
+        mOrigCtx.clearRect(0, 0, M_W, M_H);
+        drawMatrixGrid(mOrigCtx);
+        mOrigCtx.fillStyle = 'rgba(115,165,255,0.3)';
+        mOrigCtx.strokeStyle = '#73a5ff';
+        mOrigCtx.lineWidth = 2;
+        mOrigCtx.beginPath();
+        pts.forEach(([x, y], i) => {
+            if (i === 0) mOrigCtx.moveTo(M_CX + x, M_CY - y);
+            else mOrigCtx.lineTo(M_CX + x, M_CY - y);
+        });
+        mOrigCtx.closePath();
+        mOrigCtx.fill(); mOrigCtx.stroke();
+
+        mTransCtx.fillStyle = 'rgba(177,156,217,0.3)';
+        mTransCtx.strokeStyle = '#b19cd9';
+        mTransCtx.lineWidth = 2;
+        mTransCtx.beginPath();
+        transformed.forEach(([x, y], i) => {
+            if (i === 0) mTransCtx.moveTo(M_CX + x, M_CY - y);
+            else mTransCtx.lineTo(M_CX + x, M_CY - y);
+        });
+        mTransCtx.closePath();
+        mTransCtx.fill(); mTransCtx.stroke();
+        return;
+    }
+
+    // 이미지가 있을 때: pixel 단위 변환
+    const size = Math.min(M_W, M_H) * 0.7;
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = M_W; offCanvas.height = M_H;
+    const offCtx = offCanvas.getContext('2d');
+    offCtx.drawImage(matrixImage, M_CX - size / 2, M_CY - size / 2, size, size);
+    const srcData = offCtx.getImageData(0, 0, M_W, M_H);
+
+    const outData = mTransCtx.createImageData(M_W, M_H);
+
+    // 역행렬로 역방향 매핑
+    const det2 = a * d - b * c;
+    if (Math.abs(det2) < 0.001) return;
+    const invA = d / det2, invB = -b / det2, invC = -c / det2, invD = a / det2;
+
+    for (let py = 0; py < M_H; py++) {
+        for (let px = 0; px < M_W; px++) {
+            const x = px - M_CX;
+            const y = -(py - M_CY);
+            const srcX = Math.round(invA * x + invB * y + M_CX);
+            const srcY = Math.round(-(invC * x + invD * y) + M_CY);
+            if (srcX >= 0 && srcX < M_W && srcY >= 0 && srcY < M_H) {
+                const si = (srcY * M_W + srcX) * 4;
+                const di = (py * M_W + px) * 4;
+                outData.data[di] = srcData.data[si];
+                outData.data[di + 1] = srcData.data[si + 1];
+                outData.data[di + 2] = srcData.data[si + 2];
+                outData.data[di + 3] = srcData.data[si + 3];
+            }
+        }
+    }
+    mTransCtx.putImageData(outData, 0, 0);
+}
+
+// 이미지 업로드
+document.getElementById('matrixImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    document.querySelector('.upload-label').innerText = '✅ ' + file.name;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+            matrixImage = img;
+            drawOriginal();
+            applyMatrixTransform();
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+// 적용 버튼
+applyMatrixBtn.addEventListener('click', () => {
+    drawOriginal();
+    applyMatrixTransform();
+});
+
+// 행렬 입력 실시간 반영
+['m00', 'm01', 'm10', 'm11'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+        const a = parseFloat(document.getElementById('m00').value) || 0;
+        const b = parseFloat(document.getElementById('m01').value) || 0;
+        const c = parseFloat(document.getElementById('m10').value) || 0;
+        const d = parseFloat(document.getElementById('m11').value) || 0;
+        const det = a * d - b * c;
+        document.getElementById('detValue').innerText = det.toFixed(2);
+        const detDesc = document.getElementById('detDesc');
+        if (Math.abs(det) < 0.001) {
+            detDesc.innerText = '⚠️ 행렬식이 0: 역행렬이 존재하지 않습니다';
+            detDesc.style.color = '#e53e3e';
+        } else {
+            detDesc.innerText = `넓이가 ${Math.abs(det).toFixed(2)}배로 변환됩니다`;
+            detDesc.style.color = '#718096';
+        }
+    });
+});
+
+// 프리셋 버튼
+document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const [a, b, c, d] = btn.dataset.matrix.split(',').map(Number);
+        document.getElementById('m00').value = a;
+        document.getElementById('m01').value = b;
+        document.getElementById('m10').value = c;
+        document.getElementById('m11').value = d;
+        drawOriginal();
+        applyMatrixTransform();
+    });
+});
+
+// 탭 전환 시 초기화
+document.querySelector('.index-tab[data-unit="matrix"]').addEventListener('click', () => {
+    setTimeout(() => {
+        drawOriginal();
+        applyMatrixTransform();
+    }, 50);
+});
+
+// 초기 실행
+drawOriginal();
+applyMatrixTransform();
