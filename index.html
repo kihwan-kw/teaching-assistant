@@ -139,10 +139,10 @@
         </div>
 
         <div id="unit-trig" class="unit-content">
-            <h2 class="unit-title">삼각함수의 정의와 그래프</h2>
 
             <div class="tabs">
-                <button class="tab-btn active" data-func="definition">Definition (정의)</button>
+                <button class="tab-btn active" data-func="radian">호도법(radian)</button>
+                <button class="tab-btn" data-func="definition">Definition (정의)</button>
                 <button class="tab-btn" data-func="sin">Sine (사인)</button>
                 <button class="tab-btn" data-func="cos">Cosine (코사인)</button>
                 <button class="tab-btn" data-func="tan">Tangent (탄젠트)</button>
@@ -154,6 +154,14 @@
 
             <div class="controls">
                 <div class="info-panel" id="infoText">sin(0°) = <span>0.00</span></div>
+
+                <!-- 2. 호도법 전용 퀵 버튼 추가 -->
+                <div id="radianControls" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="t-btn" id="btnRad1" style="font-weight: 800; color: #4fd1c5;">1 라디안 (호=r)</button>
+                    <button class="t-btn" id="btnRad2" style="font-weight: 800; color: #38b2ac;">2 라디안</button>
+                    <button class="t-btn" id="btnRad3" style="font-weight: 800; color: #319795;">3 라디안</button>
+                    <button class="t-btn" id="btnRadPi" style="font-weight: 800; color: #e53e3e;">π 라디안 (180°)</button>
+                </div>
 
                 <div class="r-slider-wrapper" id="rSliderWrapper">
                     <div>반지름 r: <span id="rVal">1.0</span></div>

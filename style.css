@@ -18,6 +18,8 @@
     /* Pastel Orange */
     --def-color: #b19cd9;
     /* Pastel Purple */
+    --rad-color: #4fd1c5;
+    /* 호도법 탭 색상 (Teal) */
 }
 
 body {
@@ -237,6 +239,11 @@ body {
 .tab-btn.active[data-func="definition"] {
     background: var(--def-color);
     box-shadow: 0 6px 15px rgba(177, 156, 217, 0.4);
+}
+
+.tab-btn.active[data-func="radian"] {
+    background: var(--rad-color);
+    box-shadow: 0 6px 15px rgba(79, 209, 197, 0.4);
 }
 
 .canvas-wrapper {
