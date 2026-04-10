@@ -196,7 +196,6 @@ function drawPoint(x, y, borderCol, radius = 5, fillCol = '#ffffff') {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fillStyle = fillCol;
-    ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = borderCol;
     ctx.stroke();
