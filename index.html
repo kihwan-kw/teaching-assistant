@@ -18,13 +18,20 @@
 
     <div class="app-container">
 
-        <div class="side-index-wrapper">
-            <div class="index-tab active" data-unit="exp">지수 로그함수</div>
+        <div class="side-index-wrapper side-index-right">
+            <div class="index-tab active" data-unit="exp">그래프 그리기</div>
+        </div>
+
+        <div class="side-index-wrapper side-index-left">
             <div class="index-tab" data-unit="trig">삼각함수</div>
+            <div class="index-tab" data-unit="seq">수열</div>
+            <div class="index-tab" data-unit="limit">함수의 극한과 연속</div>
+            <div class="index-tab" data-unit="deriv">미분</div>
+            <div class="index-tab" data-unit="integ">적분</div>
         </div>
 
         <div id="unit-exp" class="unit-content active">
-            <h2 class="unit-title">지수함수와 로그함수의 그래프</h2>
+            <h2 class="unit-title">함수 그래프 그리기</h2>
 
             <div class="exp-main-content">
                 <div class="history-panel">
@@ -35,6 +42,7 @@
 
                     <div class="keypad-container">
                         <div class="keypad-grid" id="funcKeypad">
+                            <!-- 숫자 -->
                             <button class="k-btn" data-val="7">7</button>
                             <button class="k-btn" data-val="8">8</button>
                             <button class="k-btn" data-val="9">9</button>
@@ -51,13 +59,34 @@
                             <button class="k-btn" data-val=".">.</button>
                             <button class="k-btn k-var" data-val="x">x</button>
                             <button class="k-btn k-oper" data-val="+">+</button>
+                            <!-- 연산 -->
                             <button class="k-btn k-func" data-val="^">^</button>
                             <button class="k-btn k-func" data-val="(">(</button>
                             <button class="k-btn k-func" data-val=")">)</button>
-                            <button class="k-btn k-func" data-val="log(x, 2)">log</button>
-                            <button class="k-btn k-func" data-val="exp(x)">exp</button>
-                            <button class="k-btn k-action" id="k-back">←</button>
-                            <button class="k-btn k-action" id="k-clear" style="grid-column: span 2;">C</button>
+                            <button class="k-btn k-func" data-val="pi">π</button>
+                            <!-- 지수/로그 -->
+                            <button class="k-btn k-func" data-val="exp(x)">eˣ</button>
+                            <button class="k-btn k-func" data-val="log(x)">ln</button>
+                            <button class="k-btn k-func" data-val="log(x, 10)">log</button>
+                            <button class="k-btn k-func" data-val="log(x, 2)">log₂</button>
+                            <!-- 삼각함수 -->
+                            <button class="k-btn k-func" data-val="sin(x)">sin</button>
+                            <button class="k-btn k-func" data-val="cos(x)">cos</button>
+                            <button class="k-btn k-func" data-val="tan(x)">tan</button>
+                            <button class="k-btn k-func" data-val="pi/">π/</button>
+                            <!-- 역삼각함수 -->
+                            <button class="k-btn k-func" data-val="asin(x)">sin⁻¹</button>
+                            <button class="k-btn k-func" data-val="acos(x)">cos⁻¹</button>
+                            <button class="k-btn k-func" data-val="atan(x)">tan⁻¹</button>
+                            <button class="k-btn k-func" data-val="e">e</button>
+                            <!-- 기타 -->
+                            <button class="k-btn k-func" data-val="sqrt(x)">√</button>
+                            <button class="k-btn k-func" data-val="abs(x)">|x|</button>
+                            <button class="k-btn k-func" data-val="floor(x)">⌊x⌋</button>
+                            <button class="k-btn k-func" data-val="ceil(x)">⌈x⌉</button>
+                            <!-- 액션 -->
+                            <button class="k-btn k-action" id="k-back" style="grid-column: span 2;">← 지우기</button>
+                            <button class="k-btn k-action" id="k-clear" style="grid-column: span 2;">C 전체삭제</button>
                         </div>
                     </div>
                 </div>
@@ -80,7 +109,7 @@
 
                     <div class="exp-controls">
                         <input type="text" id="funcInput" class="func-input"
-                            placeholder="함수식 (예: 2^x, log(x, 2), exp(x))">
+                            placeholder="함수식 (예: 2^x, sin(x), sqrt(x), abs(x))">
                         <button class="draw-btn" id="drawBtn">추가하기</button>
                     </div>
 
@@ -121,7 +150,7 @@
             </div>
 
             <div class="canvas-wrapper">
-                <canvas id="mathCanvas" width="1560" height="400"></canvas>
+                <canvas id="mathCanvas" width="1710" height="500"></canvas>
             </div>
 
             <div class="controls">
@@ -141,6 +170,43 @@
             </div>
 
         </div> <!-- End of unit-trig -->
+
+        <!-- 수열 (Sequences) 파트 빈 공간 -->
+        <div id="unit-seq" class="unit-content">
+            <h2 class="unit-title">수열 (준비 중)</h2>
+            <div
+                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+                수열 시각화 기능을 갖출 새로운 공간이 마련되었습니다!
+            </div>
+        </div> <!-- End of unit-seq -->
+
+        <!-- 함수의 극한과 연속 파트 빈 공간 -->
+        <div id="unit-limit" class="unit-content">
+            <h2 class="unit-title">함수의 극한과 연속 (준비 중)</h2>
+            <div
+                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+                함수의 극한과 연속 시각화 기능을 갖출 단위 공간입니다.
+            </div>
+        </div>
+
+        <!-- 미분 파트 빈 공간 -->
+        <div id="unit-deriv" class="unit-content">
+            <h2 class="unit-title">미분 (준비 중)</h2>
+            <div
+                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+                미분 시각화 기능을 갖출 단위 공간입니다.
+            </div>
+        </div>
+
+        <!-- 적분 파트 빈 공간 -->
+        <div id="unit-integ" class="unit-content">
+            <h2 class="unit-title">적분 (준비 중)</h2>
+            <div
+                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+                적분 시각화 기능을 갖출 단위 공간입니다.
+            </div>
+        </div>
+
     </div>
 
     <div class="footer">
