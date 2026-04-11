@@ -84,23 +84,17 @@ function init() {
             e.target.classList.add('active');
             currentFunc = e.target.dataset.func;
 
-            // ================= 추가된 부분 =================
             if (currentFunc === 'radian' || currentFunc === 'definition') {
-                // 호도법 & 정의 탭: 원을 화면 중앙 쯤으로 옮기고 아주 크게 키움
+                // 호도법 & 정의 탭: 원을 화면 중앙 쯤으로 옮기고 키움
                 CX = canvas.width / 2 - 250;
                 CY = canvas.height / 2;
                 R_BASE = 180;
+                rSliderWrapper.style.display = 'flex';
             } else {
-                // 그래프 탭: 원래 크기와 위치로 복구
+                // 사인/코사인/탄젠트 탭: 원을 다시 좌측으로, 원래 크기로
                 CX = 150;
                 CY = 200;
                 R_BASE = 108;
-            }
-            // =============================================
-
-            if (currentFunc === 'definition' || currentFunc === 'radian') {
-                rSliderWrapper.style.display = 'flex';
-            } else {
                 rSliderWrapper.style.display = 'none';
                 currentR = 1.0;
                 rSlider.value = 1.0;
@@ -114,10 +108,12 @@ function init() {
                 document.getElementById('radianControls').style.display = 'none';
             }
 
+            // 탭 변경 시 리셋 (필요에 따라 주석 처리 가능)
             slider.value = 0;
             currentAngle = 0;
             minReachedAngle = 0;
             maxReachedAngle = 0;
+
             draw();
             updateTextExtended();
         });
@@ -138,7 +134,13 @@ function init() {
     document.getElementById('btnRadPi').addEventListener('click', () => setAngleFromRad(Math.PI));
     // --------------------------------
 
+    // 초기 실행 시 호도법 탭 기본 세팅
+    CX = canvas.width / 2 - 250;
+    CY = canvas.height / 2;
+    R_BASE = 180;
     rSliderWrapper.style.display = 'flex';
+    document.getElementById('radianControls').style.display = 'flex';
+
     draw();
     updateTextExtended();
 }
@@ -229,9 +231,19 @@ function drawUnitCircle() {
 
 function drawCoordinates(x, y) {
     ctx.fillStyle = '#4a5568';
-    ctx.font = '600 18px Outfit, sans-serif';
-    ctx.fillText(`x = ${x.toFixed(2)}`, 20, 40);
-    ctx.fillText(`y = ${y.toFixed(2)}`, 20, 70);
+    if (currentFunc === 'sin' || currentFunc === 'cos' || currentFunc === 'tan') {
+        // 그래프 탭: 좌측 상단에 기존 크기 유지
+        ctx.font = '600 18px Outfit, sans-serif';
+        ctx.fillText(`x = ${x.toFixed(2)}`, 20, 40);
+        ctx.fillText(`y = ${y.toFixed(2)}`, 20, 70);
+    } else {
+        // 호도법 & 정의 탭: 원의 왼쪽 상단에 크고 뚜렷하게 배치
+        ctx.font = '800 24px Outfit, sans-serif';
+        let startX = CX - R_BASE - 150; // 위치 조정
+        let startY = CY - R_BASE + 20;
+        ctx.fillText(`x = ${x.toFixed(2)}`, startX, startY);
+        ctx.fillText(`y = ${y.toFixed(2)}`, startX, startY + 40);
+    }
 }
 
 function drawPoint(x, y, borderCol, radius = 5, fillCol = '#ffffff') {
@@ -318,15 +330,15 @@ function drawDefinition() {
         tanStr = "∞";
     }
     let textStartX = CX + R_BASE + 80; // 원 우측에 배치
-    let textStartY = CY - 30;
+    let textStartY = CY - 40;
 
-    ctx.font = '600 20px Outfit, sans-serif';
+    ctx.font = '800 20px Outfit, sans-serif';
     ctx.fillStyle = activeColors['sin'];
     ctx.fillText(`sin(${currentAngle}°) = ${sinVal.toFixed(2)}`, textStartX, textStartY);
     ctx.fillStyle = activeColors['cos'];
-    ctx.fillText(`cos(${currentAngle}°) = ${cosVal.toFixed(2)}`, textStartX, textStartY + 40);
+    ctx.fillText(`cos(${currentAngle}°) = ${cosVal.toFixed(2)}`, textStartX, textStartY + 50);
     ctx.fillStyle = activeColors['tan'];
-    ctx.fillText(`tan(${currentAngle}°) = ${tanStr}`, textStartX, textStartY + 80);
+    ctx.fillText(`tan(${currentAngle}°) = ${tanStr}`, textStartX, textStartY + 100);
 }
 
 function drawRadianConcept() {
@@ -661,10 +673,10 @@ const historyList = document.getElementById('historyList');
 const colorBtns = document.querySelectorAll('.color-btn');
 
 // Defaults and Constants
-const EXP_CW = 1000;   // 1000
-const EXP_CH = 700;  // 700
-const EXP_CX = EXP_CW / 2;        // 350
-const EXP_CY = EXP_CH / 2;        // 250
+const EXP_CW = 1000;
+const EXP_CH = 700;
+const EXP_CX = EXP_CW / 2;
+const EXP_CY = EXP_CH / 2;
 const UNIT_PX = 40;               // 1 unit = 40 pixels
 
 let selectedColor = '#ff8bad'; // Default selected color

@@ -27,7 +27,7 @@ body {
     background: var(--bg-gradient);
     color: var(--text-main);
     margin: 0;
-    padding: 30px 60px 30px 100px;
+    padding: 30px 80px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -126,28 +126,37 @@ body {
     z-index: 5;
 }
 
+/* 🌟 추가할 코드: 왼쪽 탭들은 그림자가 왼쪽으로 나가도록 수정 */
+.side-index-left .index-tab.active {
+    box-shadow: -6px 5px 20px rgba(0, 0, 0, 0.15);
+}
+
 .index-tab[data-unit="exp"].active {
-    background: #ffb86c;
+    background: linear-gradient(135deg, #ffb86c 0%, #ff9a9e 100%);
 }
 
 .index-tab[data-unit="trig"].active {
-    background: #73a5ff;
+    background: linear-gradient(135deg, #73a5ff 0%, #54a0ff 100%);
 }
 
 .index-tab[data-unit="seq"].active {
-    background: #b19cd9;
+    background: linear-gradient(135deg, #b19cd9 0%, #90d5ff 100%);
 }
 
 .index-tab[data-unit="limit"].active {
-    background: #f6ad55;
+    background: linear-gradient(135deg, #f6ad55 0%, #f78181 100%);
 }
 
 .index-tab[data-unit="deriv"].active {
-    background: #68d391;
+    background: linear-gradient(135deg, #68d391 0%, #2ecc71 100%);
 }
 
 .index-tab[data-unit="integ"].active {
-    background: #fc8181;
+    background: linear-gradient(135deg, #fc8181 0%, #ff6b6b 100%);
+}
+
+.index-tab[data-unit="matrix"].active {
+    background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
 }
 
 .unit-content {
@@ -1019,10 +1028,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .apply-matrix-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(115, 165, 255, 0.6);
-}
-
-.index-tab[data-unit="matrix"].active {
-    background: #68d391;
 }
 
 /* --- Integration (구분구적법) UI 추가 스타일 --- */
