@@ -13,7 +13,28 @@
 </head>
 
 <body>
+    <!-- ★ 홈 화면 -->
+    <div id="home-screen" class="active">
+        <div class="home-header">
+            <div class="home-title">수학교사의 수업 도우미</div>
+            <div class="home-subtitle">단원을 선택하여 시작하세요</div>
+        </div>
+        <div id="card-grid" class="card-grid"></div>
+    </div>
 
+    <!-- ★ 단원 화면 래퍼 -->
+    <div id="unit-screen">
+        <div class="unit-topbar">
+            <button id="back-btn" class="back-btn">← 홈으로</button>
+            <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
+        </div>
+
+        <!-- 기존 .app-container 전체를 여기 안으로 이동 -->
+        <div class="app-container">
+            <!-- 사이드 인덱스, unit-content들 모두 그대로 유지 -->
+            ...
+        </div>
+    </div>
     <div class="app-container">
 
         <div class="side-index-wrapper side-index-right">

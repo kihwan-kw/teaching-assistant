@@ -1,5 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
 :root {
-    /* 파스텔 톤 그라데이션 배경 */
     --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     --surface: rgba(255, 255, 255, 0.65);
     --surface-border: rgba(255, 255, 255, 0.8);
@@ -9,25 +10,24 @@
     --tab-bg: rgba(255, 255, 255, 0.5);
     --tab-hover: rgba(255, 255, 255, 0.9);
 
-    /* 파스텔 테마 색상 */
     --sin-color: #ff8bad;
-    /* Pastel Rose */
     --cos-color: #73a5ff;
-    /* Pastel Blue */
     --tan-color: #ffb86c;
-    /* Pastel Orange */
     --def-color: #b19cd9;
-    /* Pastel Purple */
     --rad-color: #4fd1c5;
-    /* 호도법 탭 색상 (Teal) */
 }
+
+/* ========================================================= */
+/* --- Base --- */
+/* ========================================================= */
 
 body {
     font-family: 'Outfit', -apple-system, sans-serif;
     background: var(--bg-gradient);
     color: var(--text-main);
     margin: 0;
-    padding: 30px 80px;
+    /* 오류 8 수정: 고정 80px → 반응형 clamp */
+    padding: 30px clamp(20px, 5vw, 80px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -48,6 +48,19 @@ body {
     text-align: center;
 }
 
+.footer {
+    text-align: center;
+    font-size: 14px;
+    color: #a0aec0;
+    padding: 20px 0 10px 0;
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+/* ========================================================= */
+/* --- App Container & Animations --- */
+/* ========================================================= */
+
 .app-container {
     position: relative;
     background: var(--surface);
@@ -62,7 +75,35 @@ body {
     transition: transform 0.3s ease;
 }
 
-/* --- Index Tabs --- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 오류 6 수정: cardIn을 사용 전(unit-card 위)에 정의 */
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========================================================= */
+/* --- Index Tabs (사이드 탭) --- */
+/* ========================================================= */
+
 .side-index-wrapper {
     position: absolute;
     top: 40px;
@@ -126,7 +167,6 @@ body {
     z-index: 5;
 }
 
-/* 🌟 추가할 코드: 왼쪽 탭들은 그림자가 왼쪽으로 나가도록 수정 */
 .side-index-left .index-tab.active {
     box-shadow: -6px 5px 20px rgba(0, 0, 0, 0.15);
 }
@@ -163,6 +203,10 @@ body {
     background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
 }
 
+/* ========================================================= */
+/* --- Unit Content --- */
+/* ========================================================= */
+
 .unit-content {
     display: none;
     flex-direction: column;
@@ -185,17 +229,9 @@ body {
     letter-spacing: -0.5px;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* ========================================================= */
+/* --- Tabs (내부 탭 버튼) --- */
+/* ========================================================= */
 
 .tabs {
     display: flex;
@@ -263,6 +299,10 @@ body {
     background: linear-gradient(135deg, #ffb86c 0%, #ff9a9e 100%);
     box-shadow: 0 6px 15px rgba(255, 184, 108, 0.4);
 }
+
+/* ========================================================= */
+/* --- Canvas & Controls --- */
+/* ========================================================= */
 
 .canvas-wrapper {
     display: flex;
@@ -367,7 +407,7 @@ input[type="range"]::-webkit-slider-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #FFFFFF;
+    background: #ffffff;
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     transition: transform 0.2s, box-shadow 0.2s;
@@ -401,7 +441,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: var(--text-main);
 }
 
-/* --- Exponential & Logarithmic Functions UI --- */
+/* ========================================================= */
+/* --- Graph (함수 그래프 그리기) UI --- */
+/* ========================================================= */
+
 .exp-main-content {
     display: flex;
     gap: 30px;
@@ -473,6 +516,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     padding: 12px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
     transition: all 0.2s;
+    cursor: pointer;
 }
 
 .history-item-header {
@@ -565,6 +609,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .history-btn:hover {
     color: var(--text-main);
+}
+
+.history-item.selected {
+    border: 2px solid #73a5ff;
+    box-shadow: 0 4px 12px rgba(115, 165, 255, 0.2);
+    transform: scale(1.02);
 }
 
 .exp-right-panel {
@@ -663,7 +713,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     text-align: center;
 }
 
-/* --- Keypad & Global Transform UI --- */
+/* ========================================================= */
+/* --- Keypad & Global Transform --- */
+/* ========================================================= */
+
 .keypad-container {
     margin-top: auto;
     padding-top: 15px;
@@ -823,26 +876,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     box-shadow: 0 0 0 3px rgba(115, 165, 255, 0.2);
 }
 
-.history-item {
-    cursor: pointer;
-}
+/* ========================================================= */
+/* --- Matrix (행렬과 변환) UI --- */
+/* ========================================================= */
 
-.history-item.selected {
-    border: 2px solid #73a5ff;
-    box-shadow: 0 4px 12px rgba(115, 165, 255, 0.2);
-    transform: scale(1.02);
-}
-
-.footer {
-    text-align: center;
-    font-size: 14px;
-    color: #a0aec0;
-    padding: 20px 0 10px 0;
-    margin-top: 10px;
-    font-weight: 500;
-}
-
-/* --- Matrix UI --- */
 .matrix-main-content {
     display: flex;
     gap: 30px;
@@ -1039,7 +1076,64 @@ input[type="range"]::-webkit-slider-thumb:hover {
     box-shadow: 0 6px 20px rgba(115, 165, 255, 0.6);
 }
 
-/* --- Integration (구분구적법) UI 추가 스타일 --- */
+/* 오류 2 수정: .matrix-btn-group 스타일 누락 → 추가 */
+.matrix-btn-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+/* 오류 3 수정: .animate-matrix-btn 스타일 누락 → 추가 */
+.animate-matrix-btn {
+    padding: 14px 50px;
+    font-size: 18px;
+    font-weight: 800;
+    font-family: inherit;
+    background: linear-gradient(135deg, #68d391 0%, #48bb78 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(104, 211, 145, 0.4);
+    transition: all 0.3s;
+}
+
+.animate-matrix-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(104, 211, 145, 0.6);
+}
+
+/* 오류 4 수정: 역행렬 표시 관련 클래스 누락 → 추가 */
+.inv-matrix-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.matrix-bracket {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 6px 10px;
+    border: 2px solid #cbd5e0;
+    border-radius: 4px;
+}
+
+.matrix-cell {
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-main);
+}
+
+/* ========================================================= */
+/* --- Integration (적분: 구분구적법) UI --- */
+/* ========================================================= */
+
 .integ-method-btn {
     flex: 1;
     padding: 8px 0;
@@ -1053,14 +1147,22 @@ input[type="range"]::-webkit-slider-thumb:hover {
     box-shadow: 0 4px 10px rgba(252, 129, 129, 0.3);
 }
 
+/* ========================================================= */
 /* --- Factorization (인수분해) UI --- */
+/* ========================================================= */
+
+/* 오류 7 수정: .factor-container display 제어 CSS 누락 → 추가 */
 .factor-container {
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     width: 100%;
     max-width: 800px;
     animation: fadeIn 0.3s ease;
+}
+
+.factor-container.active {
+    display: flex;
 }
 
 .factor-header {
@@ -1086,7 +1188,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: var(--text-main);
 }
 
-/* X-Cross Board */
 .fx-board {
     background: white;
     border-radius: 20px;
@@ -1180,7 +1281,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
     stroke: #48bb78;
 }
 
-/* Quiz Board */
 .fq-stats {
     display: flex;
     justify-content: space-between;
@@ -1275,4 +1375,222 @@ input[type="range"]::-webkit-slider-thumb:hover {
     }
 }
 
-<link rel="stylesheet" href="tablet.css">
+/* ========================================================= */
+/* --- Home Screen & Card Grid --- */
+/* ========================================================= */
+
+#home-screen,
+#unit-screen {
+    width: 100%;
+    max-width: 1400px;
+    display: none;
+    /* 오류 5 수정: 주석을 선언과 같은 줄로 이동 */
+}
+
+#home-screen.active,
+#unit-screen.active {
+    display: block;
+    animation: fadeIn 0.4s ease both;
+}
+
+.home-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.home-title {
+    font-size: 40px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #89a9f4, #c398eb, #ff8bad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+.home-subtitle {
+    font-size: 16px;
+    color: #a0aec0;
+    font-weight: 400;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.unit-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    padding: 28px 22px;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    box-shadow: 0 8px 24px rgba(50, 50, 93, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    animation: cardIn 0.5s ease both;
+}
+
+.unit-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    opacity: 0.12;
+    transition: transform 0.4s ease, opacity 0.3s;
+}
+
+.unit-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(50, 50, 93, 0.12), 0 6px 16px rgba(0, 0, 0, 0.07);
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.unit-card:hover::before {
+    transform: scale(1.5);
+    opacity: 0.2;
+}
+
+.unit-card.coming-soon {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.unit-card.coming-soon:hover {
+    transform: none;
+    box-shadow: 0 8px 24px rgba(50, 50, 93, 0.06);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.card-exp::before {
+    background: #ff9a9e;
+}
+
+.card-factor::before {
+    background: #ffb86c;
+}
+
+.card-matrix::before {
+    background: #4fd1c5;
+}
+
+.card-trig::before {
+    background: #73a5ff;
+}
+
+.card-integ::before {
+    background: #fc8181;
+}
+
+.card-seq::before {
+    background: #b19cd9;
+}
+
+.card-limit::before {
+    background: #f6ad55;
+}
+
+.card-deriv::before {
+    background: #68d391;
+}
+
+.card-icon {
+    font-size: 34px;
+    line-height: 1;
+}
+
+.card-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+}
+
+.badge-ready {
+    background: rgba(72, 187, 120, 0.15);
+    color: #38a169;
+}
+
+.badge-soon {
+    background: rgba(160, 174, 192, 0.15);
+    color: #a0aec0;
+}
+
+.card-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #2d3748;
+}
+
+.card-subtitle {
+    font-size: 13px;
+    color: #a0aec0;
+    line-height: 1.5;
+}
+
+.card-arrow {
+    margin-top: auto;
+    font-size: 18px;
+    color: #cbd5e0;
+    transition: transform 0.2s ease, color 0.2s;
+}
+
+.unit-card:hover .card-arrow {
+    transform: translateX(5px);
+    color: #a0aec0;
+}
+
+/* ========================================================= */
+/* --- Unit Screen Topbar --- */
+/* ========================================================= */
+
+.unit-topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.back-btn {
+    padding: 10px 22px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: #718096;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.back-btn:hover {
+    background: white;
+    color: #2d3748;
+    transform: translateX(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.unit-breadcrumb {
+    font-size: 14px;
+    color: #a0aec0;
+    font-weight: 500;
+}
+
+.unit-breadcrumb span {
+    color: #4a5568;
+    font-weight: 700;
+}
