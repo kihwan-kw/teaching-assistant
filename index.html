@@ -7,14 +7,16 @@
     <title>수학교사의 수업 도우미</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tablet.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 </head>
 
 <body>
-    <!-- ★ 홈 화면 -->
-    <div id="home-screen" class="active">
+
+    <!-- ★ 홈 화면: 처음에만 보임 -->
+    <div id="home-screen">
         <div class="home-header">
             <div class="home-title">수학교사의 수업 도우미</div>
             <div class="home-subtitle">단원을 선택하여 시작하세요</div>
@@ -22,19 +24,13 @@
         <div id="card-grid" class="card-grid"></div>
     </div>
 
-    <!-- ★ 단원 화면 래퍼 -->
-    <div id="unit-screen">
-        <div class="unit-topbar">
-            <button id="back-btn" class="back-btn">← 홈으로</button>
-            <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
-        </div>
-
-        <!-- 기존 .app-container 전체를 여기 안으로 이동 -->
-        <div class="app-container">
-            <!-- 사이드 인덱스, unit-content들 모두 그대로 유지 -->
-            ...
-        </div>
+    <!-- ★ 뒤로가기 바: 단원 진입 시에만 보임 -->
+    <div id="unit-topbar" class="unit-topbar">
+        <button id="back-btn" class="back-btn">← 홈으로</button>
+        <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
     </div>
+
+    <!-- ★ 기존 app-container: 단원 진입 시에만 보임 -->
     <div class="app-container">
 
         <div class="side-index-wrapper side-index-right">
@@ -51,19 +47,17 @@
             <div class="index-tab" data-unit="integ">적분</div>
         </div>
 
+        <!-- 그래프 그리기 -->
         <div id="unit-exp" class="unit-content active">
             <h2 class="unit-title">함수 그래프 그리기</h2>
 
             <div class="exp-main-content">
                 <div class="history-panel">
                     <h3 class="history-title">추가된 함수</h3>
-                    <div id="historyList" class="history-list">
-                        <!-- 히스토리 아이템들이 동적으로 추가됩니다 -->
-                    </div>
+                    <div id="historyList" class="history-list"></div>
 
                     <div class="keypad-container">
                         <div class="keypad-grid" id="funcKeypad">
-                            <!-- 숫자 -->
                             <button class="k-btn" data-val="7">7</button>
                             <button class="k-btn" data-val="8">8</button>
                             <button class="k-btn" data-val="9">9</button>
@@ -80,52 +74,44 @@
                             <button class="k-btn" data-val=".">.</button>
                             <button class="k-btn k-var" data-val="x">x</button>
                             <button class="k-btn k-oper" data-val="+">+</button>
-                            <!-- 연산 -->
                             <button class="k-btn k-func" data-val="^">^</button>
                             <button class="k-btn k-func" data-val="(">(</button>
                             <button class="k-btn k-func" data-val=")">)</button>
                             <button class="k-btn k-func" data-val="pi">π</button>
-                            <!-- 지수/로그 -->
                             <button class="k-btn k-func" data-val="exp(x)">eˣ</button>
                             <button class="k-btn k-func" data-val="log(x)">ln</button>
                             <button class="k-btn k-func" data-val="log(x, 10)">log</button>
                             <button class="k-btn k-func" data-val="log(x, 2)">log₂</button>
-                            <!-- 삼각함수 -->
                             <button class="k-btn k-func" data-val="sin(x)">sin</button>
                             <button class="k-btn k-func" data-val="cos(x)">cos</button>
                             <button class="k-btn k-func" data-val="tan(x)">tan</button>
                             <button class="k-btn k-func" data-val="pi/">π/</button>
-                            <!-- 역삼각함수 -->
                             <button class="k-btn k-func" data-val="asin(x)">sin⁻¹</button>
                             <button class="k-btn k-func" data-val="acos(x)">cos⁻¹</button>
                             <button class="k-btn k-func" data-val="atan(x)">tan⁻¹</button>
                             <button class="k-btn k-func" data-val="e">e</button>
-                            <!-- 기타 -->
                             <button class="k-btn k-func" data-val="sqrt(x)">√</button>
                             <button class="k-btn k-func" data-val="abs(x)">|x|</button>
                             <button class="k-btn k-func" data-val="floor(x)">⌊x⌋</button>
                             <button class="k-btn k-func" data-val="ceil(x)">⌈x⌉</button>
-                            <!-- 액션 -->
                             <button class="k-btn k-action" id="k-back" style="grid-column: span 2;">← 지우기</button>
                             <button class="k-btn k-action" id="k-clear" style="grid-column: span 2;">C 전체삭제</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 우측 컨트롤 및 캔버스 영역 -->
                 <div class="exp-right-panel">
                     <div class="color-picker" id="colorPicker">
-                        <button class="color-btn active" data-color="#ff8bad"
-                            style="background-color: #ff8bad;"></button>
-                        <button class="color-btn" data-color="#73a5ff" style="background-color: #73a5ff;"></button>
-                        <button class="color-btn" data-color="#ffb86c" style="background-color: #ffb86c;"></button>
-                        <button class="color-btn" data-color="#b19cd9" style="background-color: #b19cd9;"></button>
-                        <button class="color-btn" data-color="#68d391" style="background-color: #68d391;"></button>
-                        <button class="color-btn" data-color="#f6ad55" style="background-color: #f6ad55;"></button>
-                        <button class="color-btn" data-color="#fc8181" style="background-color: #fc8181;"></button>
-                        <button class="color-btn" data-color="#4fd1c5" style="background-color: #4fd1c5;"></button>
-                        <button class="color-btn" data-color="#f6e05e" style="background-color: #f6e05e;"></button>
-                        <button class="color-btn" data-color="#b794f4" style="background-color: #b794f4;"></button>
+                        <button class="color-btn active" data-color="#ff8bad" style="background-color:#ff8bad;"></button>
+                        <button class="color-btn" data-color="#73a5ff" style="background-color:#73a5ff;"></button>
+                        <button class="color-btn" data-color="#ffb86c" style="background-color:#ffb86c;"></button>
+                        <button class="color-btn" data-color="#b19cd9" style="background-color:#b19cd9;"></button>
+                        <button class="color-btn" data-color="#68d391" style="background-color:#68d391;"></button>
+                        <button class="color-btn" data-color="#f6ad55" style="background-color:#f6ad55;"></button>
+                        <button class="color-btn" data-color="#fc8181" style="background-color:#fc8181;"></button>
+                        <button class="color-btn" data-color="#4fd1c5" style="background-color:#4fd1c5;"></button>
+                        <button class="color-btn" data-color="#f6e05e" style="background-color:#f6e05e;"></button>
+                        <button class="color-btn" data-color="#b794f4" style="background-color:#b794f4;"></button>
                     </div>
 
                     <div class="exp-controls">
@@ -140,8 +126,7 @@
                         <button class="t-btn g-ref-y">y축</button>
                         <button class="t-btn g-ref-o">원점</button>
                         <button class="t-btn g-ref-yx">y=x</button>
-
-                        <span class="transform-label" style="margin-left: 15px;">평행이동:</span>
+                        <span class="transform-label" style="margin-left:15px;">평행이동:</span>
                         <span>x축</span><input type="number" id="gShiftX" class="transform-input" value="0">
                         <span>y축</span><input type="number" id="gShiftY" class="transform-input" value="0">
                         <button class="t-btn g-apply-shift">적용</button>
@@ -150,18 +135,17 @@
                     <div class="error-message" id="funcError"></div>
 
                     <div class="canvas-wrapper">
-                        <!-- 캔버스 사이즈 조절 1000x700 -->
                         <canvas id="expCanvas" width="1000" height="700"></canvas>
                         <div id="graphLabels"
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                            style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- 삼각함수 -->
         <div id="unit-trig" class="unit-content">
-
             <div class="tabs">
                 <button class="tab-btn active" data-func="radian">호도법(radian)</button>
                 <button class="tab-btn" data-func="definition">Definition (정의)</button>
@@ -169,27 +153,21 @@
                 <button class="tab-btn" data-func="cos">Cosine (코사인)</button>
                 <button class="tab-btn" data-func="tan">Tangent (탄젠트)</button>
             </div>
-
             <div class="canvas-wrapper">
                 <canvas id="mathCanvas" width="1710" height="500"></canvas>
             </div>
-
             <div class="controls">
                 <div class="info-panel" id="infoText">sin(0°) = <span>0.00</span></div>
-
-                <!-- 2. 호도법 전용 퀵 버튼 추가 -->
-                <div id="radianControls" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <button class="t-btn" id="btnRad1" style="font-weight: 800; color: #4fd1c5;">1 라디안 (호=r)</button>
-                    <button class="t-btn" id="btnRad2" style="font-weight: 800; color: #38b2ac;">2 라디안</button>
-                    <button class="t-btn" id="btnRad3" style="font-weight: 800; color: #319795;">3 라디안</button>
-                    <button class="t-btn" id="btnRadPi" style="font-weight: 800; color: #e53e3e;">π 라디안 (180°)</button>
+                <div id="radianControls" style="display:flex;gap:10px;margin-bottom:10px;">
+                    <button class="t-btn" id="btnRad1" style="font-weight:800;color:#4fd1c5;">1 라디안 (호=r)</button>
+                    <button class="t-btn" id="btnRad2" style="font-weight:800;color:#38b2ac;">2 라디안</button>
+                    <button class="t-btn" id="btnRad3" style="font-weight:800;color:#319795;">3 라디안</button>
+                    <button class="t-btn" id="btnRadPi" style="font-weight:800;color:#e53e3e;">π 라디안 (180°)</button>
                 </div>
-
                 <div class="r-slider-wrapper" id="rSliderWrapper">
                     <div>반지름 r: <span id="rVal">1.0</span></div>
                     <input type="range" id="rSlider" min="0.1" max="2.0" step="0.1" value="1.0" style="width:180px;">
                 </div>
-
                 <div class="slider-container">
                     <span>-360°</span>
                     <input type="range" id="angleSlider" min="-360" max="360" value="0">
@@ -197,23 +175,18 @@
                     <button class="reset-btn" id="resetBtn">Reset</button>
                 </div>
             </div>
-        </div> <!-- End of unit-trig -->
+        </div>
 
+        <!-- 행렬과 변환 -->
         <div id="unit-matrix" class="unit-content">
             <h2 class="unit-title">행렬과 변환</h2>
             <div class="matrix-main-content">
-
-                <!-- 왼쪽: 컨트롤 패널 -->
                 <div class="matrix-control-panel">
-
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">📷 이미지 업로드</h3>
-                        <label class="upload-label" for="matrixImageInput">
-                            클릭하여 이미지 선택
-                        </label>
+                        <label class="upload-label" for="matrixImageInput">클릭하여 이미지 선택</label>
                         <input type="file" id="matrixImageInput" accept="image/*" style="display:none;">
                     </div>
-
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">🔢 변환 행렬</h3>
                         <div class="matrix-input-grid">
@@ -226,11 +199,8 @@
                             <span>a</span><span>b</span>
                             <span>c</span><span>d</span>
                         </div>
-                        <div class="matrix-formula">
-                            (x', y') = (ax + by, cx + dy)
-                        </div>
+                        <div class="matrix-formula">(x', y') = (ax + by, cx + dy)</div>
                     </div>
-
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">⚡ 프리셋</h3>
                         <div class="preset-grid">
@@ -246,21 +216,15 @@
                             <button class="preset-btn" data-matrix="-1,0,0,-1">원점 반사</button>
                         </div>
                     </div>
-
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">📐 행렬식 & 역행렬</h3>
                         <div class="matrix-info-box">
-                            <div>det(A) = ad - bc = <span id="detValue" style="font-weight:800; color:#73a5ff;">1</span>
-                            </div>
-                            <div style="margin-top:8px; font-size:13px; color:#718096;" id="detDesc">넓이가 1배로 변환됩니다
-                            </div>
+                            <div>det(A) = ad - bc = <span id="detValue" style="font-weight:800;color:#73a5ff;">1</span></div>
+                            <div style="margin-top:8px;font-size:13px;color:#718096;" id="detDesc">넓이가 1배로 변환됩니다</div>
                             <div id="inverseMatrix" style="margin-top:10px;"></div>
                         </div>
                     </div>
-
                 </div>
-
-                <!-- 오른쪽: 캔버스 -->
                 <div class="matrix-canvas-area">
                     <div class="matrix-canvas-row">
                         <div class="matrix-canvas-box">
@@ -273,67 +237,57 @@
                             <canvas id="matrixTransCanvas" width="400" height="400"></canvas>
                         </div>
                     </div>
-                    <button class="apply-matrix-btn" id="applyMatrixBtn">행렬 변환 적용</button>
-                </div>
-                <div class="matrix-btn-group">
-                    <button class="apply-matrix-btn" id="applyMatrixBtn">행렬 변환 적용</button>
-                    <button class="animate-matrix-btn" id="animateMatrixBtn">▶ 변환 애니메이션</button>
+                    <!-- 버튼 그룹: apply + animate -->
+                    <div class="matrix-btn-group">
+                        <button class="apply-matrix-btn" id="applyMatrixBtn">행렬 변환 적용</button>
+                        <button class="animate-matrix-btn" id="animateMatrixBtn">▶ 변환 애니메이션</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 수열 (Sequences) 파트 빈 공간 -->
+        <!-- 수열 -->
         <div id="unit-seq" class="unit-content">
             <h2 class="unit-title">수열 (준비 중)</h2>
-            <div
-                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+            <div style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
                 수열 시각화 기능을 갖출 새로운 공간이 마련되었습니다!
             </div>
-        </div> <!-- End of unit-seq -->
+        </div>
 
-        <!-- 함수의 극한과 연속 파트 빈 공간 -->
+        <!-- 극한과 연속 -->
         <div id="unit-limit" class="unit-content">
             <h2 class="unit-title">함수의 극한과 연속 (준비 중)</h2>
-            <div
-                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+            <div style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
                 함수의 극한과 연속 시각화 기능을 갖출 단위 공간입니다.
             </div>
         </div>
 
-        <!-- 미분 파트 빈 공간 -->
+        <!-- 미분 -->
         <div id="unit-deriv" class="unit-content">
             <h2 class="unit-title">미분 (준비 중)</h2>
-            <div
-                style="text-align: center; padding: 100px 20px; color: #718096; font-size: 1.2rem; background: rgba(255, 255, 255, 0.5); border-radius: 12px;">
+            <div style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
                 미분 시각화 기능을 갖출 단위 공간입니다.
             </div>
         </div>
 
-        <!-- 인수분해 파트 -->
+        <!-- 인수분해 -->
         <div id="unit-factor" class="unit-content">
             <h2 class="unit-title">인수분해 (Factorization) 훈련소</h2>
-
-            <div class="tabs" style="margin-bottom: 20px;">
+            <div class="tabs" style="margin-bottom:20px;">
                 <button class="tab-btn active" data-factortab="cross">X자 크로스 훈련장</button>
                 <button class="tab-btn" data-factortab="quiz">무한 스피드 퀴즈</button>
             </div>
-
-            <!-- 모드 1: X자 크로스 훈련장 -->
             <div id="factor-cross-container" class="factor-container active">
                 <div class="factor-header">
                     <h3>다음 식을 인수분해 하시오</h3>
                     <div id="fx-problem" class="factor-problem"></div>
                 </div>
-
                 <div class="fx-board">
                     <div class="fx-grid">
-                        <!-- 배경 X 선 -->
                         <svg class="fx-lines" width="100%" height="100%">
-                            <line x1="20%" y1="20%" x2="80%" y2="80%" stroke="#cbd5e0" stroke-width="4" />
-                            <line x1="20%" y1="80%" x2="80%" y2="20%" stroke="#cbd5e0" stroke-width="4" />
+                            <line x1="20%" y1="20%" x2="80%" y2="80%" stroke="#cbd5e0" stroke-width="4"/>
+                            <line x1="20%" y1="80%" x2="80%" y2="20%" stroke="#cbd5e0" stroke-width="4"/>
                         </svg>
-
-                        <!-- 입력 칸 -->
                         <div class="fx-col fx-left">
                             <input type="number" id="fx-x1" class="fx-input" placeholder="?">
                             <input type="number" id="fx-x2" class="fx-input" placeholder="?">
@@ -345,30 +299,26 @@
                             <div class="fx-desc">곱해서 상수항</div>
                         </div>
                     </div>
-
                     <div class="fx-result-panel">
                         <div class="fx-calc-row">
-                            <span id="fx-calc1">?</span> <span>+</span> <span id="fx-calc2">?</span> <span>=</span>
-                            <strong id="fx-calc-sum" style="font-size: 24px;">?</strong>
+                            <span id="fx-calc1">?</span> <span>+</span>
+                            <span id="fx-calc2">?</span> <span>=</span>
+                            <strong id="fx-calc-sum" style="font-size:24px;">?</strong>
                         </div>
                         <div id="fx-feedback" class="fx-feedback">빈칸에 숫자를 넣어보세요!</div>
                     </div>
                 </div>
-                <button class="draw-btn" id="fx-next-btn" style="margin-top:20px; display:none;">다음 문제 도전!</button>
+                <button class="draw-btn" id="fx-next-btn" style="margin-top:20px;display:none;">다음 문제 도전!</button>
             </div>
-
-            <!-- 모드 2: 무한 스피드 퀴즈 -->
-            <div id="factor-quiz-container" class="factor-container" style="display: none;">
+            <div id="factor-quiz-container" class="factor-container">
                 <div class="fq-stats">
                     <div class="fq-score">Score: <span id="fq-score-val">0</span></div>
                     <div class="fq-combo" id="fq-combo-box">Combo: <span id="fq-combo-val">0</span>🔥</div>
                 </div>
-
                 <div class="factor-header" id="fq-header">
                     <h3>인수분해 한 결과로 알맞은 것은?</h3>
                     <div id="fq-problem" class="factor-problem"></div>
                 </div>
-
                 <div class="fq-options" id="fq-options">
                     <button class="fq-btn"></button>
                     <button class="fq-btn"></button>
@@ -378,76 +328,60 @@
             </div>
         </div>
 
-        <!-- 적분 파트 (구분구적법) -->
+        <!-- 적분 -->
         <div id="unit-integ" class="unit-content">
             <h2 class="unit-title">적분 : 상합과 하합</h2>
-
-            <div class="exp-main-content" style="max-width: 1200px;">
-                <!-- 좌측 컨트롤 패널 -->
-                <div class="matrix-control-panel" style="flex: 0 0 350px;">
+            <div class="exp-main-content" style="max-width:1200px;">
+                <div class="matrix-control-panel" style="flex:0 0 350px;">
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">𝑓(x) 함수 입력</h3>
-                        <input type="text" id="integFuncInput" class="func-input" value="-x^2 + 5x"
-                            placeholder="예: x^2, sin(x)">
-                        <div class="error-message" id="integError" style="margin-top:5px; height:15px;"></div>
+                        <input type="text" id="integFuncInput" class="func-input" value="-x^2 + 5x" placeholder="예: x^2, sin(x)">
+                        <div class="error-message" id="integError" style="margin-top:5px;height:15px;"></div>
                     </div>
-
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">적분 구간 [a, b]</h3>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span>a = </span><input type="number" id="integA" class="transform-input" value="0"
-                                step="0.5" style="width:60px;">
-                            <span>b = </span><input type="number" id="integB" class="transform-input" value="5"
-                                step="0.5" style="width:60px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span>a = </span><input type="number" id="integA" class="transform-input" value="0" step="0.5" style="width:60px;">
+                            <span>b = </span><input type="number" id="integB" class="transform-input" value="5" step="0.5" style="width:60px;">
                         </div>
                     </div>
-
                     <div class="matrix-section">
                         <h3 class="matrix-section-title">보기 모드 선택</h3>
-                        <div style="display: flex; gap: 10px; justify-content: center;">
+                        <div style="display:flex;gap:10px;justify-content:center;">
                             <button class="t-btn integ-method-btn" data-method="upper">상합 (Upper)</button>
                             <button class="t-btn integ-method-btn" data-method="lower">하합 (Lower)</button>
                             <button class="t-btn integ-method-btn active" data-method="both">동시 비교</button>
                         </div>
                     </div>
-
-                    <div class="matrix-section" style="background: #f8fafc; border-color: #e2e8f0;">
-                        <h3 class="matrix-section-title" style="color: #2b6cb0;">조임정리 결과</h3>
-                        <div style="font-size: 15px; color: var(--text-main); line-height: 1.8;">
-                            <div>상합 (M<sub>n</sub>): <strong id="integUpperVal"
-                                    style="color:#fc8181; font-size:18px;">0.0000</strong></div>
-                            <div>하합 (m<sub>n</sub>): <strong id="integLowerVal"
-                                    style="color:#73a5ff; font-size:18px;">0.0000</strong></div>
-                            <div style="margin-top:8px; padding-top:8px; border-top: 1px dashed #cbd5e0;">
-                                차이 (M<sub>n</sub> - m<sub>n</sub>): <strong id="integDiff"
-                                    style="color:#e53e3e;">0.0000</strong>
+                    <div class="matrix-section" style="background:#f8fafc;border-color:#e2e8f0;">
+                        <h3 class="matrix-section-title" style="color:#2b6cb0;">조임정리 결과</h3>
+                        <div style="font-size:15px;color:var(--text-main);line-height:1.8;">
+                            <div>상합 (M<sub>n</sub>): <strong id="integUpperVal" style="color:#fc8181;font-size:18px;">0.0000</strong></div>
+                            <div>하합 (m<sub>n</sub>): <strong id="integLowerVal" style="color:#73a5ff;font-size:18px;">0.0000</strong></div>
+                            <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #cbd5e0;">
+                                차이 (M<sub>n</sub> - m<sub>n</sub>): <strong id="integDiff" style="color:#e53e3e;">0.0000</strong>
                             </div>
-                            <div style="font-size:13px; color:#a0aec0; margin-top:5px;">실제 정적분(∫): <span
-                                    id="integExactVal">0.0000</span></div>
+                            <div style="font-size:13px;color:#a0aec0;margin-top:5px;">실제 정적분(∫): <span id="integExactVal">0.0000</span></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- 우측 캔버스 영역 -->
-                <div class="exp-right-panel" style="align-items: center;">
-                    <div class="canvas-wrapper" style="width: 100%; max-width: 800px; padding: 20px; background: #fff;">
+                <div class="exp-right-panel" style="align-items:center;">
+                    <div class="canvas-wrapper" style="width:100%;max-width:800px;padding:20px;background:#fff;">
                         <canvas id="integCanvas" width="760" height="400"></canvas>
                     </div>
-
-                    <!-- 슬라이더 (분할 개수 n) -->
-                    <div class="slider-container" style="max-width: 600px; margin-top: 10px;">
+                    <div class="slider-container" style="max-width:600px;margin-top:10px;">
                         <span style="min-width:70px;">n = 1</span>
                         <input type="range" id="integNSlider" min="1" max="150" value="4">
                         <span style="min-width:70px;">n = 150</span>
                     </div>
-                    <div style="margin-top:10px; font-weight:800; font-size:20px; color:#2d3748;">
+                    <div style="margin-top:10px;font-weight:800;font-size:20px;color:#2d3748;">
                         분할 횟수 n = <span id="integNVal" style="color:#fc8181;">4</span>
                     </div>
                 </div>
             </div>
         </div>
 
-    </div>
+    </div><!-- /.app-container -->
 
     <div class="footer">
         Designed &amp; Developed by 권기환
