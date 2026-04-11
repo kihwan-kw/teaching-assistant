@@ -561,8 +561,6 @@ function drawCurrentStateExtended() {
 
     ctx.beginPath();
     ctx.arc(CX, CY, 30, 0, -rad, currentAngle > 0);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-    ctx.fill();
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
@@ -584,12 +582,24 @@ function drawCurrentStateExtended() {
         ctx.setLineDash([]);
 
     } else if (currentFunc === 'cos') {
+        // 1. 점 P에서 x축으로 수선의 발 내리기 (얇은 점선) -> 직각삼각형 뼈대 완성
         ctx.beginPath();
-        ctx.moveTo(CX, py); ctx.lineTo(px, py);
-        ctx.strokeStyle = activeColor;
-        ctx.setLineDash([]);
+        ctx.moveTo(px, py); ctx.lineTo(px, CY);
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5;
         ctx.stroke();
+        ctx.setLineDash([]);
 
+        // 2. 원점에서 x축 위의 수선의 발까지 선 긋기 (이것이 cos 값! 굵은 파란색)
+        ctx.beginPath();
+        ctx.moveTo(CX, CY); ctx.lineTo(px, CY);
+        ctx.strokeStyle = activeColor;
+        ctx.lineWidth = 3; // 강조를 위해 살짝 더 굵게 (기본 2)
+        ctx.stroke();
+        ctx.lineWidth = 2; // 선 굵기 원상 복구
+
+        // 3. 점 P에서 우측 그래프 상의 점으로 이어지는 보조선 (기존 유지)
         ctx.beginPath();
         ctx.moveTo(px, py); ctx.lineTo(gx, gy);
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
