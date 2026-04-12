@@ -350,11 +350,6 @@ function initMatrix() {
         });
     });
 
-    // 탭 전환 시
-    document.querySelector('.index-tab[data-unit="matrix"]').addEventListener('click', () => {
-        setTimeout(() => { drawOriginal(); applyMatrixTransform(); }, 50);
-    });
-
     // 초기 실행
     drawOriginal();
     applyMatrixTransform();

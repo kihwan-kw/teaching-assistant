@@ -144,6 +144,4 @@ function initInteg() {
             drawInteg();
         });
     });
-    document.querySelector('.index-tab[data-unit="integ"]').addEventListener('click', () => setTimeout(drawInteg, 50));
-    drawInteg();
 }

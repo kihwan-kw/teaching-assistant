@@ -1379,12 +1379,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* --- Home Screen & Card Grid --- */
 /* ========================================================= */
 
-#home-screen,
+#home-screen {
+    width: 100%;
+    max-width: 1400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 #unit-screen {
     width: 100%;
     max-width: 1400px;
     display: none;
-    /* 오류 5 수정: 주석을 선언과 같은 줄로 이동 */
 }
 
 #home-screen.active,
@@ -1593,4 +1599,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .unit-breadcrumb span {
     color: #4a5568;
     font-weight: 700;
+}
+
+/* ========================================================= */
+/* --- 각 단원별 서브 사이드 탭 활성화 색상 --- */
+/* ========================================================= */
+#idx-factor .index-tab.active {
+    background: linear-gradient(135deg, #ffb86c 0%, #ff9a9e 100%);
+}
+
+#idx-trig .index-tab.active {
+    background: linear-gradient(135deg, #73a5ff 0%, #54a0ff 100%);
+}
+
+#idx-integ .index-tab.active {
+    background: linear-gradient(135deg, #fc8181 0%, #ff6b6b 100%);
 }

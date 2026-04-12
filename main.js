@@ -1,47 +1,49 @@
 /* ========================================================= */
-/* --- Main (메인 진입점 & 홈 화면 + 탭 네비게이션) --- */
+/* --- Main (메인 진입점 & 홈 화면 + 단원별 인덱스 제어) --- */
 /* ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    /* ---- 단원 메타데이터 ---- */
     const UNITS = [
-        { id: 'exp',    icon: '📈', title: '그래프 그리기', subtitle: '함수를 입력하고 다양한 변환을 시각화', ready: true,  colorClass: 'card-exp',    init: () => initGraph()  },
-        { id: 'factor', icon: '✖️', title: '인수분해',      subtitle: 'X자 크로스 훈련장과 스피드 퀴즈',       ready: true,  colorClass: 'card-factor', init: () => initFactor() },
-        { id: 'matrix', icon: '🔲', title: '행렬과 변환',   subtitle: '선형 변환을 이미지로 직관적으로 확인',  ready: true,  colorClass: 'card-matrix', init: () => initMatrix() },
-        { id: 'trig',   icon: '〽️', title: '삼각함수',      subtitle: '단위원과 그래프로 sin·cos·tan 이해',   ready: true,  colorClass: 'card-trig',   init: () => initTrig()   },
-        { id: 'integ',  icon: '∫',  title: '적분',          subtitle: '상합·하합으로 구분구적법 시각화',       ready: true,  colorClass: 'card-integ',  init: () => initInteg()  },
-        { id: 'seq',    icon: '🔢', title: '수열',          subtitle: '등차·등비수열 시각화',                  ready: false, colorClass: 'card-seq',    init: null               },
-        { id: 'limit',  icon: '→',  title: '극한과 연속',   subtitle: '함수의 극한과 연속',                    ready: false, colorClass: 'card-limit',  init: null               },
-        { id: 'deriv',  icon: '📐', title: '미분',          subtitle: '접선과 도함수 시각화',                  ready: false, colorClass: 'card-deriv',  init: null               },
+        { id: 'exp', icon: '📈', title: '그래프 그리기', subtitle: '함수를 입력하고 다양한 변환을 시각화', ready: true, colorClass: 'card-exp', init: () => initGraph() },
+        { id: 'factor', icon: '✖️', title: '인수분해', subtitle: 'X자 크로스 훈련장과 스피드 퀴즈', ready: true, colorClass: 'card-factor', init: () => initFactor() },
+        { id: 'matrix', icon: '🔲', title: '행렬과 변환', subtitle: '선형 변환을 이미지로 직관적으로 확인', ready: true, colorClass: 'card-matrix', init: () => initMatrix() },
+        { id: 'trig', icon: '〽️', title: '삼각함수', subtitle: '단위원과 그래프로 sin·cos·tan 이해', ready: true, colorClass: 'card-trig', init: () => initTrig() },
+        { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => initInteg() },
+        { id: 'seq', icon: '🔢', title: '수열', subtitle: '등차·등비수열 시각화', ready: false, colorClass: 'card-seq', init: null },
+        { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '함수의 극한과 연속', ready: false, colorClass: 'card-limit', init: null },
+        { id: 'deriv', icon: '📐', title: '미분', subtitle: '접선과 도함수 시각화', ready: false, colorClass: 'card-deriv', init: null },
     ];
 
-    /* ---- 초기화 여부 추적 (중복 init 방지) ---- */
+    // 단원별 인덱스 패널 ID (없는 단원은 항목 없음 → 인덱스 전부 숨김)
+    const UNIT_INDEX_MAP = {
+        factor: 'idx-factor',
+        trig: 'idx-trig',
+        integ: 'idx-integ',
+    };
+
     const initialized = new Set();
 
-    /* ---- 요소 참조 ---- */
-    const homeScreen   = document.getElementById('home-screen');
-    const unitTopbar   = document.getElementById('unit-topbar');
+    const homeScreen = document.getElementById('home-screen');
+    const unitTopbar = document.getElementById('unit-topbar');
     const appContainer = document.querySelector('.app-container');
-    const cardGrid     = document.getElementById('card-grid');
-    const backBtn      = document.getElementById('back-btn');
-    const breadcrumb   = document.getElementById('breadcrumb-title');
+    const cardGrid = document.getElementById('card-grid');
+    const backBtn = document.getElementById('back-btn');
+    const breadcrumb = document.getElementById('breadcrumb-title');
     const unitContents = document.querySelectorAll('.unit-content');
-    const footer       = document.querySelector('.footer');
+    const unitFooter = document.getElementById('unit-footer');
+    const allIndexPanels = document.querySelectorAll('.side-index-wrapper[id^="idx-"]');
 
-    /* ---- 초기 상태 설정: 홈만 보이고 나머지는 숨김 ---- */
-    homeScreen.style.display   = 'block';
-    unitTopbar.style.display   = 'none';
+    unitTopbar.style.display = 'none';
     appContainer.style.display = 'none';
-    if (footer) footer.style.display = 'none';
+    if (unitFooter) unitFooter.style.display = 'none';
 
-    /* ---- 카드 렌더링 ---- */
+    /* 카드 렌더링 */
     function renderCards() {
         UNITS.forEach((unit, i) => {
             const card = document.createElement('div');
             card.className = `unit-card ${unit.colorClass}${unit.ready ? '' : ' coming-soon'}`;
             card.style.animationDelay = `${i * 55}ms`;
-
             card.innerHTML = `
                 <div class="card-badge ${unit.ready ? 'badge-ready' : 'badge-soon'}">
                     ${unit.ready ? '✓ 사용 가능' : '준비 중'}
@@ -53,75 +55,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 ${unit.ready ? '<div class="card-arrow">→</div>' : ''}
             `;
-
-            if (unit.ready) {
-                card.addEventListener('click', () => navigateTo(unit));
-            }
-
+            if (unit.ready) card.addEventListener('click', () => navigateTo(unit));
             cardGrid.appendChild(card);
         });
     }
 
-    /* ---- 단원으로 이동 ---- */
-    function navigateTo(unit) {
-        // 홈 숨기기
-        homeScreen.style.display   = 'none';
-        // 뒤로가기 바 + 앱 컨테이너 + 푸터 보이기
-        unitTopbar.style.display   = 'flex';
-        appContainer.style.display = 'block';
-        if (footer) footer.style.display = 'block';
+    /* 인덱스 패널 전환 */
+    function switchIndexPanel(unitId) {
+        allIndexPanels.forEach(p => p.style.display = 'none');
+        const targetId = UNIT_INDEX_MAP[unitId];
+        if (targetId) {
+            const panel = document.getElementById(targetId);
+            if (panel) panel.style.display = 'flex';
+        }
+    }
 
-        // 브레드크럼 업데이트
+    /* 단원으로 이동 */
+    function navigateTo(unit) {
+        homeScreen.style.display = 'none';
+        unitTopbar.style.display = 'flex';
+        appContainer.style.display = 'block';
+        if (unitFooter) unitFooter.style.display = 'block';
+
         if (breadcrumb) breadcrumb.textContent = unit.title;
 
-        // 해당 unit-content만 활성화
         unitContents.forEach(el => {
             el.classList.toggle('active', el.id === 'unit-' + unit.id);
         });
 
-        // 사이드 인덱스 탭 active 상태 동기화
-        document.querySelectorAll('.index-tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.unit === unit.id);
-        });
+        switchIndexPanel(unit.id);
 
-        // 각 모듈 init은 최초 1회만
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
             setTimeout(unit.init, 50);
         } else {
-            // 재진입 시 캔버스 재렌더링
-            if (unit.id === 'exp')    setTimeout(() => renderAllExpGraphs(), 50);
-            if (unit.id === 'integ')  setTimeout(() => drawInteg(), 50);
+            if (unit.id === 'exp') setTimeout(() => renderAllExpGraphs(), 50);
+            if (unit.id === 'integ') setTimeout(() => drawInteg(), 50);
             if (unit.id === 'matrix') setTimeout(() => { drawOriginal(); applyMatrixTransform(); }, 50);
-            if (unit.id === 'trig')   setTimeout(() => drawTrig(), 50);
+            if (unit.id === 'trig') setTimeout(() => drawTrig(), 50);
         }
     }
 
-    /* ---- 홈으로 돌아가기 ---- */
+    /* 홈으로 */
     function navigateHome() {
-        // 앱 컨테이너·뒤로가기 바·푸터 숨기기
         appContainer.style.display = 'none';
-        unitTopbar.style.display   = 'none';
-        if (footer) footer.style.display = 'none';
-
-        // 홈 보이기
-        homeScreen.style.display = 'block';
-
-        // 모든 unit-content 비활성화
+        unitTopbar.style.display = 'none';
+        if (unitFooter) unitFooter.style.display = 'none';
+        homeScreen.style.display = 'flex';
+        homeScreen.style.flexDirection = 'column';
+        homeScreen.style.alignItems = 'center';
         unitContents.forEach(el => el.classList.remove('active'));
+        allIndexPanels.forEach(p => p.style.display = 'none');
     }
 
-    /* ---- 이벤트 연결 ---- */
     if (backBtn) backBtn.addEventListener('click', navigateHome);
 
-    // 사이드 인덱스 탭도 카드와 동일하게 동작
-    document.querySelectorAll('.index-tab').forEach(tab => {
+    /* 삼각함수 인덱스 탭 → trig.js 탭 연동 */
+    document.querySelectorAll('#idx-trig .index-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            const unit = UNITS.find(u => u.id === tab.dataset.unit);
-            if (unit && unit.ready) navigateTo(unit);
+            document.querySelectorAll('#idx-trig .index-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            // trig.js가 내부적으로 듣는 .tab-btn을 프로그래매틱하게 클릭
+            const trigTabBtn = document.querySelector(`.tab-btn[data-func="${tab.dataset.func}"]`);
+            if (trigTabBtn) trigTabBtn.click();
         });
     });
 
-    /* ---- 시작 ---- */
+    /* 인수분해 인덱스 탭 → factor.js 탭 연동 */
+    document.querySelectorAll('#idx-factor .index-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#idx-factor .index-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const factorTabBtn = document.querySelector(`.tab-btn[data-factortab="${tab.dataset.factortab}"]`);
+            if (factorTabBtn) factorTabBtn.click();
+        });
+    });
+
     renderCards();
 });
