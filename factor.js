@@ -605,7 +605,7 @@ function checkSyntheticStep() {
                     // \textcolor{#276749}를 사용하여 결과식을 초록색으로 강조합니다.
                     const fullEquationLatex = `${syntheticProblem.polyStr} = \\textcolor{#276749}{${finalLatex}}`;
                     katex.render(fullEquationLatex, document.getElementById('synthetic-problem'), { throwOnError: false });
-                    document.getElementById('synthetic-problem').style.fontSize = "0.90em"; // 폰트 크기를 85%로 축소
+
                     const renderedMath = katex.renderToString(finalLatex, { throwOnError: false });
 
                     if (feedback) {
