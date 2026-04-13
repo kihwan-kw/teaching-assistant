@@ -1920,3 +1920,95 @@ input[type="range"]::-webkit-slider-thumb:hover {
         grid-column: span 1;
     }
 }
+
+/* --- 인수분해 추가 UI --- */
+.fac-keypad {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.fk-btn {
+    padding: 8px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    background: #f8fafc;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.1s;
+}
+
+.fk-btn:hover {
+    background: #e2e8f0;
+}
+
+.formula-sidebar {
+    flex: 0 0 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 15px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.fm-btn {
+    padding: 12px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: left;
+}
+
+.fm-btn.active {
+    background: #73a5ff;
+    color: white;
+    border-color: #73a5ff;
+}
+
+/* X크로스 보드 중앙선 완벽 정렬 */
+.fx-center-cross {
+    flex: 1;
+    position: relative;
+    margin: 0 20px;
+    z-index: 1;
+}
+
+.fx-center-cross svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+}
+
+.fq-stats-dashboard {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+    font-weight: 800;
+}
+
+.stat-box {
+    font-size: 14px;
+    color: #4a5568;
+}
+
+.stat-box span {
+    font-size: 22px;
+    display: block;
+    margin-top: 5px;
+}

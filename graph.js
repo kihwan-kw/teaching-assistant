@@ -41,114 +41,71 @@ colorBtns.forEach(btn => {
     });
 });
 
+let zoom = 40;
+let offsetX = 500;
+let offsetY = 350;
+let isDragging = false;
+let lastMouse = { x: 0, y: 0 };
+
 function drawExpGrid() {
     eCtx.clearRect(0, 0, EXP_CW, EXP_CH);
-    eCtx.lineWidth = 1;
-    eCtx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
-    for (let x = 0; x <= EXP_CW; x += UNIT_PX) {
-        eCtx.beginPath(); eCtx.moveTo(x, 0); eCtx.lineTo(x, EXP_CH); eCtx.stroke();
+    eCtx.lineWidth = 1; eCtx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+
+    let startCol = Math.floor(-offsetX / zoom);
+    let endCol = Math.ceil((EXP_CW - offsetX) / zoom);
+    for (let i = startCol; i <= endCol; i++) {
+        let px = offsetX + i * zoom;
+        eCtx.beginPath(); eCtx.moveTo(px, 0); eCtx.lineTo(px, EXP_CH); eCtx.stroke();
     }
-    for (let y = 0; y <= EXP_CH; y += UNIT_PX) {
-        eCtx.beginPath(); eCtx.moveTo(0, y); eCtx.lineTo(EXP_CW, y); eCtx.stroke();
+    let startRow = Math.floor((offsetY - EXP_CH) / zoom);
+    let endRow = Math.ceil(offsetY / zoom);
+    for (let i = startRow; i <= endRow; i++) {
+        let py = offsetY - i * zoom;
+        eCtx.beginPath(); eCtx.moveTo(0, py); eCtx.lineTo(EXP_CW, py); eCtx.stroke();
     }
-    eCtx.lineWidth = 2;
-    eCtx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-    eCtx.beginPath();
-    eCtx.moveTo(0, EXP_CY); eCtx.lineTo(EXP_CW, EXP_CY);
-    eCtx.moveTo(EXP_CX, 0); eCtx.lineTo(EXP_CX, EXP_CH);
-    eCtx.stroke();
-    eCtx.fillStyle = '#718096';
-    eCtx.font = '12px Outfit, sans-serif';
-    for (let i = -15; i <= 15; i++) {
-        if (i !== 0) {
-            let px = EXP_CX + i * UNIT_PX;
-            if (px >= 0 && px <= EXP_CW) eCtx.fillText(i, px - 4, EXP_CY + 15);
-            let py = EXP_CY - i * UNIT_PX;
-            if (py >= 0 && py <= EXP_CH) eCtx.fillText(i, EXP_CX + 8, py + 4);
-        }
+    eCtx.lineWidth = 2; eCtx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    eCtx.beginPath(); eCtx.moveTo(0, offsetY); eCtx.lineTo(EXP_CW, offsetY); eCtx.stroke();
+    eCtx.beginPath(); eCtx.moveTo(offsetX, 0); eCtx.lineTo(offsetX, EXP_CH); eCtx.stroke();
+
+    eCtx.fillStyle = '#718096'; eCtx.font = '12px Outfit, sans-serif';
+    let stepSize = zoom < 20 ? 5 : (zoom < 40 ? 2 : 1);
+    for (let i = startCol; i <= endCol; i++) {
+        if (i !== 0 && i % stepSize === 0) eCtx.fillText(i, offsetX + i * zoom - 5, offsetY + 15);
     }
-    eCtx.fillText('O', EXP_CX - 12, EXP_CY + 15);
-    eCtx.fillText('x', EXP_CW - 15, EXP_CY - 10);
-    eCtx.fillText('y', EXP_CX + 10, 15);
+    for (let i = startRow; i <= endRow; i++) {
+        if (i !== 0 && i % stepSize === 0) eCtx.fillText(i, offsetX + 8, offsetY - i * zoom + 4);
+    }
+    eCtx.fillText('O', offsetX - 12, offsetY + 15);
 }
 
 function renderAllExpGraphs() {
     drawExpGrid();
     document.getElementById('graphLabels').innerHTML = '';
-    const startX = -15, endX = 15, step = 0.05;
+
+    const startX = (-offsetX / zoom) - 1;
+    const endX = ((EXP_CW - offsetX) / zoom) + 1;
+    const step = 1 / zoom;
 
     functionHistory.forEach(item => {
         if (!item.visible) return;
-        eCtx.beginPath();
-        eCtx.lineWidth = 3;
-        eCtx.strokeStyle = item.color;
-        let labelCandidates = [];
+        eCtx.beginPath(); eCtx.lineWidth = 3; eCtx.strokeStyle = item.color;
+        let firstPoint = true, prevY = null;
 
-        function getPt(t) {
-            let val;
-            try { val = item.expr.evaluate({ x: t }); } catch (e) { return null; }
-            if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) return null;
-            let px, py;
-            if (item.isInverse) {
-                px = EXP_CX + val * UNIT_PX;
-                py = EXP_CY - t * UNIT_PX;
-            } else {
-                px = EXP_CX + t * UNIT_PX;
-                py = EXP_CY - val * UNIT_PX;
-            }
-            return { x: px, y: py, t, val };
-        }
+        for (let t = startX; t <= endX; t += step) {
+            try {
+                let val = item.expr.evaluate({ x: t });
+                if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) { firstPoint = true; continue; }
+                let px = offsetX + t * zoom, py = offsetY - val * zoom;
+                if (item.isInverse) { px = offsetX + val * zoom; py = offsetY - t * zoom; }
 
-        let rawPoints = [];
-        for (let t = startX; t <= endX; t += step) rawPoints.push(getPt(t));
+                if (prevY !== null && Math.abs(py - prevY) > EXP_CH * 0.8) { firstPoint = true; continue; }
 
-        let refinedPoints = [];
-        for (let i = 0; i < rawPoints.length - 1; i++) {
-            let p1 = rawPoints[i], p2 = rawPoints[i + 1];
-            refinedPoints.push(p1);
-            if ((p1 === null && p2 !== null) || (p1 !== null && p2 === null)) {
-                let validT = p1 ? startX + i * step : startX + (i + 1) * step;
-                let invalidT = p1 ? startX + (i + 1) * step : startX + i * step;
-                let extra = [];
-                for (let d = 0; d < 14; d++) {
-                    let midT = (validT + invalidT) / 2;
-                    let midPt = getPt(midT);
-                    if (midPt) { extra.push(midPt); validT = midT; }
-                    else invalidT = midT;
-                }
-                refinedPoints.push(...(p1 !== null ? extra : extra.reverse()));
-            }
-        }
-        refinedPoints.push(rawPoints[rawPoints.length - 1]);
-
-        let firstPoint = true, prevPx = null, prevPy = null;
-        for (let i = 0; i < refinedPoints.length; i++) {
-            let pt = refinedPoints[i];
-            if (!pt) { firstPoint = true; continue; }
-            if (item.isInverse) {
-                if (prevPx !== null && Math.abs(pt.x - prevPx) > EXP_CW / 2) firstPoint = true;
-            } else {
-                if (prevPy !== null && Math.abs(pt.y - prevPy) > EXP_CH / 2) firstPoint = true;
-            }
-            if (firstPoint) { eCtx.moveTo(pt.x, pt.y); firstPoint = false; }
-            else eCtx.lineTo(pt.x, pt.y);
-            prevPx = pt.x; prevPy = pt.y;
-            if (pt.x >= 0 && pt.x <= EXP_CW && pt.y >= 0 && pt.y <= EXP_CH) labelCandidates.push({ x: pt.x, y: pt.y });
+                if (firstPoint) { eCtx.moveTo(px, py); firstPoint = false; }
+                else eCtx.lineTo(px, py);
+                prevY = py;
+            } catch (e) { firstPoint = true; }
         }
         eCtx.stroke();
-
-        if (labelCandidates.length > 0) {
-            let targetPt = labelCandidates[Math.floor(labelCandidates.length * 0.85)];
-            if (targetPt.x > EXP_CW - 80) targetPt.x = EXP_CW - 80;
-            if (targetPt.y < 20) targetPt.y = 20;
-            let eqString = item.isInverse
-                ? 'x = ' + item.expr.clone().transform(n => n.isSymbolNode && n.name === 'x' ? math.parse('y') : n).toTex()
-                : 'y = ' + item.expr.toTex();
-            let labelDiv = document.createElement('div');
-            labelDiv.style.cssText = `position:absolute;left:${targetPt.x + 15}px;top:${targetPt.y - 25}px;color:${item.color};font-size:18px;text-shadow:0 0 4px rgba(255,255,255,0.9)`;
-            katex.render('\\textcolor{' + item.color + '}{' + eqString + '}', labelDiv, { throwOnError: false });
-            document.getElementById('graphLabels').appendChild(labelDiv);
-        }
     });
 }
 
@@ -354,4 +311,43 @@ function initGraph() {
     document.querySelector('.index-tab[data-unit="exp"]').addEventListener('click', () => {
         setTimeout(renderAllExpGraphs, 50);
     });
+
+    const canvas = document.getElementById('expCanvas');
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const scaleRatio = canvas.width / rect.width;
+        const mx = (e.clientX - rect.left) * scaleRatio;
+        const my = (e.clientY - rect.top) * scaleRatio;
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        offsetX = mx - (mx - offsetX) * delta;
+        offsetY = my - (my - offsetY) * delta;
+        zoom *= delta;
+        renderAllExpGraphs();
+    }, { passive: false });
+
+    canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        const rect = canvas.getBoundingClientRect();
+        const scaleRatio = canvas.width / rect.width;
+        lastMouse.x = e.clientX * scaleRatio;
+        lastMouse.y = e.clientY * scaleRatio;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleRatio = canvas.width / rect.width;
+        const mx = e.clientX * scaleRatio;
+        const my = e.clientY * scaleRatio;
+        offsetX += mx - lastMouse.x;
+        offsetY += my - lastMouse.y;
+        lastMouse.x = mx;
+        lastMouse.y = my;
+        renderAllExpGraphs();
+    });
+
+    canvas.addEventListener('mouseup', () => isDragging = false);
+    canvas.addEventListener('mouseleave', () => isDragging = false);
 }

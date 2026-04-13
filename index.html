@@ -390,12 +390,8 @@
 
 
         <!-- ===== 인수분해 ===== -->
-        <!-- index.html의 기존 unit-factor 전체를 아래 코드로 교체하세요 -->
-
         <div id="unit-factor" class="unit-content">
             <h2 class="unit-title">인수분해 (Factorization) 훈련소</h2>
-
-            <!-- 숨겨진 탭 버튼 (main.js 연동용) -->
             <div style="display:none;">
                 <button class="tab-btn active" data-factortab="gcf">공통인수</button>
                 <button class="tab-btn" data-factortab="cross">X자크로스</button>
@@ -405,7 +401,7 @@
             </div>
 
             <!-- ① 공통인수 -->
-            <div id="factor-gcf-container" class="factor-container" style="display:flex;">
+            <div id="factor-gcf-container" class="factor-container active">
                 <div class="factor-header">
                     <h3>공통인수로 묶기</h3>
                     <div class="factor-explain">모든 항에 공통으로 있는 인수를 찾아 괄호 밖으로 꺼내세요.</div>
@@ -414,45 +410,102 @@
                 <div class="gcf-input-area">
                     <div class="gcf-row">
                         <label>공통인수</label>
-                        <input type="text" id="gcf-input" class="gcf-num-input" placeholder="예: 3, x^2, 2x">
+                        <input type="text" id="gcf-input" class="gcf-num-input fac-target-input" placeholder="예: 3x">
                         <span class="gcf-paren">(</span>
-                        <input type="text" id="gcf-inner-input" class="gcf-inner-input" placeholder="괄호 안의 식">
+                        <input type="text" id="gcf-inner-input" class="gcf-inner-input fac-target-input"
+                            placeholder="나머지 식 입력">
                         <span class="gcf-paren">)</span>
                     </div>
-                    <div id="gcf-feedback" class="fx-feedback" style="margin-top:15px;">공통인수(숫자)와 괄호 안의 식을 입력하세요.</div>
-                    <div id="gcf-hint"
-                        style="display:none; margin-top:10px; padding:10px 16px; background:#ebf4ff; border-radius:8px; color:#3182ce; font-size:14px; font-weight:600;">
+                    <div id="gcf-type-label"
+                        style="text-align:center; font-size:13px; font-weight:700; color:#73a5ff; margin-bottom:10px;">
+                        📌 숫자 공통인수</div>
+                    <!-- 맞춤형 미니 키패드 -->
+                    <div class="fac-keypad" id="gcf-keypad">
+                        <button class="fk-btn">x</button><button class="fk-btn">y</button><button
+                            class="fk-btn">a</button><button class="fk-btn">b</button>
+                        <button class="fk-btn">+</button><button class="fk-btn">-</button><button
+                            class="fk-btn">^</button><button class="fk-btn">2</button>
+                        <button class="fk-btn">3</button><button class="fk-btn">(</button><button
+                            class="fk-btn">)</button><button class="fk-btn" id="fk-del-gcf">←</button>
                     </div>
+                    <div id="gcf-feedback" class="fx-feedback" style="margin-top:15px;">빈칸을 클릭하고 입력하세요.</div>
                 </div>
-                <!-- gcf-input-area 안 gcf-row 위에 추가 -->
-                <div id="gcf-type-label"
-                    style="text-align:center; font-size:13px; font-weight:700; color:#73a5ff; margin-bottom:10px;">📌 숫자
-                    공통인수</div>
+                <div id="gcf-hint"
+                    style="display:none; margin-top:10px; padding:10px 16px; background:#ebf4ff; border-radius:8px; color:#3182ce; font-size:14px; font-weight:600;">
+                </div>
                 <div class="factor-btn-row">
-                    <button class="t-btn" id="gcf-hint-btn">💡 힌트</button>
                     <button class="draw-btn" id="gcf-check-btn">확인</button>
                     <button class="draw-btn" id="gcf-next-btn"
                         style="display:none; background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제 →</button>
                 </div>
             </div>
 
-            <!-- ② X자 크로스 -->
+            <!-- ② 인수분해 공식 -->
+            <div id="factor-formula-container" class="factor-container" style="display:none; max-width: 900px;">
+                <div style="display: flex; width: 100%; gap: 20px;">
+                    <!-- 공식 선택 사이드바 -->
+                    <div class="formula-sidebar">
+                        <h4 style="margin:0 0 10px 0; color:#4a5568;">공식 선택</h4>
+                        <button class="fm-btn active" data-type="0">완전제곱 (합)</button>
+                        <button class="fm-btn" data-type="1">완전제곱 (차)</button>
+                        <button class="fm-btn" data-type="2">합차 공식</button>
+                        <button class="fm-btn" data-type="3">세제곱 (합)</button>
+                        <button class="fm-btn" data-type="4">세제곱 (차)</button>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="factor-header" style="margin-bottom: 15px;">
+                            <h3 id="formula-type-name">인수분해 공식</h3>
+                            <div class="factor-explain">아래 식을 인수분해하세요.</div>
+                            <div id="formula-problem" class="factor-problem"></div>
+                        </div>
+                        <div
+                            style="background:white; padding:20px; border-radius:16px; border:1px solid #e2e8f0; text-align:center;">
+                            <input type="text" id="formula-input" class="func-input fac-target-input"
+                                style="max-width:100%; text-align:center;" placeholder="결과 입력 (예: (x+3)^2)">
+                            <div class="fac-keypad" id="formula-keypad" style="margin-top:15px;">
+                                <button class="fk-btn">x</button><button class="fk-btn">y</button><button
+                                    class="fk-btn">a</button><button class="fk-btn">b</button>
+                                <button class="fk-btn">+</button><button class="fk-btn">-</button><button
+                                    class="fk-btn">^</button><button class="fk-btn">2</button>
+                                <button class="fk-btn">3</button><button class="fk-btn">(</button><button
+                                    class="fk-btn">)</button><button class="fk-btn" id="fk-del-form">←</button>
+                            </div>
+                            <div id="formula-feedback" class="fx-feedback" style="margin-top:15px;">결과를 입력하고 확인을 누르세요.
+                            </div>
+                            <div id="formula-hint-box"
+                                style="display:none; margin-top:10px; padding:12px 20px; background:#fffaf0; border-radius:10px; border:1px solid #f6ad55; color:#744210; font-size:14px; font-weight:600; white-space:pre-line;">
+                            </div>
+                        </div>
+                        <div class="factor-btn-row" style="margin-top:15px;">
+                            <button class="draw-btn" id="formula-check-btn">정답 확인</button>
+                            <button class="draw-btn" id="formula-next-btn"
+                                style="display:none;background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제
+                                →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ③ X자 크로스 -->
             <div id="factor-cross-container" class="factor-container" style="display:none;">
                 <div class="factor-header">
-                    <h3>X자 크로스 인수분해</h3>
-                    <div class="factor-explain">이차식 ax²+bx+c 를 (px+q)(rx+s) 로 분해합니다.</div>
+                    <h3>X자 크로스 훈련장</h3>
+                    <div class="factor-explain">이차식 ax²+bx+c 를 분해합니다.</div>
                     <div id="fx-problem" class="factor-problem"></div>
                 </div>
                 <div class="fx-board">
                     <div class="fx-grid">
-                        <svg class="fx-lines" width="100%" height="100%">
-                            <line x1="20%" y1="20%" x2="80%" y2="80%" stroke="#cbd5e0" stroke-width="4" />
-                            <line x1="20%" y1="80%" x2="80%" y2="20%" stroke="#cbd5e0" stroke-width="4" />
-                        </svg>
                         <div class="fx-col fx-left">
                             <input type="number" id="fx-x1" class="fx-input" placeholder="?">
                             <input type="number" id="fx-x2" class="fx-input" placeholder="?">
                             <div class="fx-desc">곱해서 이차항</div>
+                        </div>
+                        <!-- 예쁜 X자 중앙 선 -->
+                        <div class="fx-center-cross">
+                            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <line x1="0" y1="10" x2="100" y2="90" stroke="#cbd5e0" stroke-width="4" />
+                                <line x1="0" y1="90" x2="100" y2="10" stroke="#cbd5e0" stroke-width="4" />
+                            </svg>
                         </div>
                         <div class="fx-col fx-right">
                             <input type="number" id="fx-y1" class="fx-input" placeholder="?">
@@ -474,44 +527,11 @@
                     →</button>
             </div>
 
-            <!-- ③ 인수분해 공식 -->
-            <div id="factor-formula-container" class="factor-container" style="display:none;">
-                <div class="factor-header">
-                    <h3 id="formula-type-name">인수분해 공식</h3>
-                    <div id="formula-type-latex" style="font-size:18px; margin:8px 0; color:#73a5ff;"></div>
-                    <div class="factor-explain">위 공식을 이용해 아래 식을 인수분해하세요.</div>
-                    <div id="formula-problem" class="factor-problem"></div>
-                </div>
-                <div class="formula-stats"
-                    style="display:flex;gap:20px;justify-content:center;margin-bottom:15px;font-weight:800;font-size:16px;">
-                    <span style="color:#4a5568;">점수: <span id="formula-score-val" style="color:#73a5ff;">0</span></span>
-                    <span style="color:#4a5568;">연속정답: <span id="formula-streak-val"
-                            style="color:#ff8bad;">0</span>🔥</span>
-                </div>
-                <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;">
-                    <input type="text" id="formula-input" class="func-input" style="max-width:350px;"
-                        placeholder="인수분해 결과 입력 (예: (x+3)^2)">
-                    <button class="draw-btn" id="formula-check-btn">확인</button>
-                </div>
-                <div id="formula-feedback" class="fx-feedback" style="margin-top:15px;">인수분해 결과를 입력하세요.</div>
-                <div id="formula-hint-box"
-                    style="display:none; margin-top:10px; padding:12px 20px; background:#fffaf0; border-radius:10px; border:1px solid #f6ad55; color:#744210; font-size:14px; font-weight:600; white-space:pre-line;">
-                </div>
-                <div class="factor-btn-row" style="margin-top:15px;">
-                    <button class="t-btn" id="formula-hint-btn">💡 힌트</button>
-                    <button class="draw-btn" id="formula-next-btn"
-                        style="display:none;background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제 →</button>
-                </div>
-            </div>
-
-            <!-- ④ 조립제법 -->
-            <div id="factor-synthetic-container" class="factor-container" style="display:none;">
-                <div class="factor-header">
+            <!-- ④ 조립제법 (기존과 동일하므로 생략하지 않고 덮어씀) -->
+            <div id="factor-synthetic-container" class="factor-container" style="display:none; max-width:900px;">
+                <div class="factor-header" style="overflow-x:auto;">
                     <h3>조립제법 (Synthetic Division)</h3>
-                    <div class="factor-explain">3차 이상의 다항식을 주어진 해로 인수분해합니다.<br>표를 단계별로 채워보세요!</div>
-                    <div id="synthetic-problem" class="factor-problem"></div>
-                    <div id="synthetic-root-display"
-                        style="font-size:18px; color:#73a5ff; font-weight:800; margin-top:8px;"></div>
+                    <div id="synthetic-problem" class="factor-problem" style="white-space:nowrap;"></div>
                 </div>
                 <div class="synthetic-table-wrapper">
                     <table class="synthetic-table">
@@ -529,20 +549,24 @@
                 </div>
                 <div id="synthetic-feedback" class="fx-feedback" style="margin-top:15px;"></div>
                 <div class="factor-btn-row" style="margin-top:15px;">
-                    <button class="draw-btn" id="synthetic-check-btn">입력 확인</button>
+                    <button class="draw-btn" id="synthetic-check-btn" style="display:none;">확인</button>
                     <button class="draw-btn" id="synthetic-next-btn"
                         style="display:none;background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제 →</button>
                 </div>
             </div>
 
-            <!-- ⑤ 스피드 퀴즈 -->
+            <!-- ⑤ 무한 퀴즈 -->
             <div id="factor-quiz-container" class="factor-container" style="display:none;">
-                <div class="fq-stats">
-                    <div class="fq-score">Score: <span id="fq-score-val">0</span></div>
-                    <div class="fq-combo" id="fq-combo-box">Combo: <span id="fq-combo-val">0</span>🔥</div>
+                <div class="fq-stats-dashboard">
+                    <div class="stat-box">도전<br><span id="fq-total">0</span></div>
+                    <div class="stat-box" style="color:#38a169;">정답<br><span id="fq-correct">0</span></div>
+                    <div class="stat-box" style="color:#e53e3e;">오답<br><span id="fq-wrong">0</span></div>
+                    <div class="stat-box" style="color:#ed8936;">최대 콤보<br><span id="fq-max-combo">0</span> 🔥</div>
+                    <div class="stat-box" style="color:#73a5ff;">점수<br><span id="fq-score-val"
+                            style="font-size:26px;">0</span></div>
                 </div>
                 <div class="factor-header" id="fq-header">
-                    <h3>인수분해 한 결과로 알맞은 것은?</h3>
+                    <h3>다음 식을 바르게 인수분해한 것은?</h3>
                     <div id="fq-problem" class="factor-problem"></div>
                 </div>
                 <div class="fq-options" id="fq-options">
