@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => initInteg() },
         { id: 'seq', icon: '🔢', title: '수열', subtitle: '등차·등비수열 시각화', ready: false, colorClass: 'card-seq', init: null },
         { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '함수의 극한과 연속', ready: false, colorClass: 'card-limit', init: null },
-        { id: 'deriv', icon: '📐', title: '미분', subtitle: '접선과 도함수 시각화', ready: false, colorClass: 'card-deriv', init: null },
+        { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => initDeriv() }
     ];
 
     // 단원별 인덱스 패널 ID (없는 단원은 항목 없음 → 인덱스 전부 숨김)

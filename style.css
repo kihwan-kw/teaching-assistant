@@ -1608,10 +1608,315 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: linear-gradient(135deg, #ffb86c 0%, #ff9a9e 100%);
 }
 
-#idx-trig .index-tab.active {
+#idx-trig .index-tab[data-func="radian"].active {
+    background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
+}
+
+#idx-trig .index-tab[data-func="definition"].active {
+    background: linear-gradient(135deg, #b19cd9 0%, #9f7aea 100%);
+}
+
+#idx-trig .index-tab[data-func="sin"].active {
+    background: linear-gradient(135deg, #ff8bad 0%, #f687b3 100%);
+}
+
+#idx-trig .index-tab[data-func="cos"].active {
     background: linear-gradient(135deg, #73a5ff 0%, #54a0ff 100%);
+}
+
+#idx-trig .index-tab[data-func="tan"].active {
+    background: linear-gradient(135deg, #ffb86c 0%, #f6ad55 100%);
 }
 
 #idx-integ .index-tab.active {
     background: linear-gradient(135deg, #fc8181 0%, #ff6b6b 100%);
+}
+
+/* ========================================================= */
+/* --- 인수분해 추가 CSS --- */
+/* ========================================================= */
+
+/* 인수분해 단계 설명 */
+.factor-explain {
+    font-size: 14px;
+    color: #718096;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+/* 공통인수 입력 영역 */
+.gcf-input-area {
+    background: white;
+    border-radius: 16px;
+    padding: 25px 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 15px;
+}
+
+.gcf-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.gcf-row label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #718096;
+}
+
+.gcf-num-input {
+    width: 70px;
+    padding: 10px;
+    font-size: 20px;
+    font-weight: 800;
+    text-align: center;
+    border: 2px solid #cbd5e0;
+    border-radius: 10px;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.gcf-num-input:focus {
+    border-color: #73a5ff;
+    box-shadow: 0 0 0 3px rgba(115, 165, 255, 0.2);
+}
+
+.gcf-inner-input {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid #cbd5e0;
+    border-radius: 10px;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.gcf-inner-input:focus {
+    border-color: #73a5ff;
+    box-shadow: 0 0 0 3px rgba(115, 165, 255, 0.2);
+}
+
+.gcf-paren {
+    font-size: 32px;
+    font-weight: 300;
+    color: #4a5568;
+    line-height: 1;
+}
+
+/* 버튼 행 */
+.factor-btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+/* 조립제법 테이블 */
+.synthetic-table-wrapper {
+    overflow-x: auto;
+    margin: 15px 0;
+    padding: 10px;
+}
+
+.synthetic-table {
+    border-collapse: collapse;
+    min-width: 400px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.synthetic-table thead th {
+    background: #f0f4ff;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #4a5568;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.syn-cell {
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+    min-width: 70px;
+}
+
+.coeff-cell {
+    background: #f8fafc;
+    font-weight: 800;
+}
+
+.mult-cell {
+    background: #fff;
+    color: #73a5ff;
+}
+
+.sum-cell {
+    background: #f0fff4;
+    font-weight: 800;
+    color: #2d3748;
+}
+
+.syn-input {
+    width: 60px;
+    padding: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid #73a5ff;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+    background: #ebf4ff;
+    color: #2b6cb0;
+    transition: all 0.2s;
+}
+
+.syn-input:focus {
+    box-shadow: 0 0 0 3px rgba(115, 165, 255, 0.3);
+    background: white;
+}
+
+/* 인수분해 단계 인덱스 활성화 색상 */
+#idx-factor .index-tab[data-factortab="gcf"].active {
+    background: linear-gradient(135deg, #68d391 0%, #48bb78 100%);
+}
+
+#idx-factor .index-tab[data-factortab="cross"].active {
+    background: linear-gradient(135deg, #ffb86c 0%, #ff9a9e 100%);
+}
+
+#idx-factor .index-tab[data-factortab="formula"].active {
+    background: linear-gradient(135deg, #73a5ff 0%, #54a0ff 100%);
+}
+
+#idx-factor .index-tab[data-factortab="synthetic"].active {
+    background: linear-gradient(135deg, #b19cd9 0%, #9f7aea 100%);
+}
+
+#idx-factor .index-tab[data-factortab="quiz"].active {
+    background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+}
+
+/* 태블릿 대응 */
+@media screen and (max-width: 900px) {
+    .gcf-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gcf-num-input,
+    .gcf-inner-input {
+        width: 100%;
+    }
+
+    .synthetic-table {
+        min-width: 300px;
+    }
+
+    .syn-cell {
+        padding: 10px 12px;
+        font-size: 15px;
+        min-width: 55px;
+    }
+}
+
+/* ========================================================= */
+/* --- 미분 단원 CSS --- */
+/* ========================================================= */
+
+.deriv-layout {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.deriv-control-panel {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.deriv-canvas-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.deriv-canvas-card {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    border: 1px solid var(--surface-border);
+    padding: 14px 16px 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.deriv-canvas-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #718096;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.deriv-canvas-card .canvas-wrapper {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+
+/* 애니메이션 버튼 hover */
+#deriv-anim-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(104, 211, 145, 0.6);
+}
+
+/* 태블릿 대응 */
+@media screen and (max-width: 1024px) {
+    .deriv-layout {
+        flex-direction: column;
+    }
+
+    .deriv-control-panel {
+        flex: none;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    #deriv-anim-btn {
+        grid-column: span 2;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .deriv-control-panel {
+        grid-template-columns: 1fr;
+    }
+
+    #deriv-anim-btn {
+        grid-column: span 1;
+    }
 }

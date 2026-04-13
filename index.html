@@ -35,10 +35,12 @@
     <!-- ★ 앱 컨테이너 -->
     <div class="app-container">
 
-        <!-- 2. 인수분해 전용 왼쪽 인덱스 (훈련장 / 퀴즈) -->
         <div class="side-index-wrapper side-index-left" id="idx-factor" style="display:none;">
-            <div class="index-tab active" data-factortab="cross">X자 크로스</div>
-            <div class="index-tab" data-factortab="quiz">스피드 퀴즈</div>
+            <div class="index-tab active" data-factortab="gcf">공통인수</div>
+            <div class="index-tab" data-factortab="cross">X자크로스</div>
+            <div class="index-tab" data-factortab="formula">인수분해공식</div>
+            <div class="index-tab" data-factortab="synthetic">조립제법</div>
+            <div class="index-tab" data-factortab="quiz">스피드퀴즈</div>
         </div>
 
         <!-- 2. 삼각함수 전용 왼쪽 인덱스 -->
@@ -265,25 +267,180 @@
             </div>
         </div>
 
-        <!-- ===== 미분 (준비 중) ===== -->
+        <!-- ===== 미분 단원 ===== -->
+        <!-- index.html의 기존 unit-deriv 전체를 아래 코드로 교체하세요 -->
+
         <div id="unit-deriv" class="unit-content">
-            <h2 class="unit-title">미분 (준비 중)</h2>
-            <div
-                style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
-                미분 시각화 기능을 갖출 단위 공간입니다.
+            <h2 class="unit-title">미분 — 할선과 접선, 도함수</h2>
+
+            <div class="deriv-layout">
+
+                <!-- 좌측: 컨트롤 패널 -->
+                <div class="deriv-control-panel">
+
+                    <!-- 함수 입력 -->
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">📐 함수 입력</h3>
+                        <div style="display:flex; gap:8px; margin-bottom:10px;">
+                            <input type="text" id="deriv-func-input" class="func-input" style="flex:1; font-size:15px;"
+                                placeholder="예: x^2, sin(x), exp(x)">
+                            <button class="draw-btn" id="deriv-apply-btn"
+                                style="padding:10px 18px; font-size:14px;">적용</button>
+                        </div>
+                        <div id="deriv-error" class="error-message" style="height:16px;"></div>
+                        <!-- 프리셋 -->
+                        <div id="deriv-presets" class="preset-grid" style="margin-top:8px;"></div>
+                    </div>
+
+                    <!-- x₀ 슬라이더 -->
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">📍 접점 x₀</h3>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <input type="range" id="deriv-x0-slider" min="-4" max="4" step="0.1" value="1"
+                                style="flex:1;">
+                            <span id="deriv-x0-val"
+                                style="font-weight:800; color:#73a5ff; min-width:36px; text-align:right;">1.0</span>
+                        </div>
+                    </div>
+
+                    <!-- h 슬라이더 -->
+                    <div class="matrix-section">
+                        <h3 class="matrix-section-title">↔ 할선 간격 h</h3>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <!-- 로그 스케일: 0(h=1) ~ 3(h=0.001) -->
+                            <input type="range" id="deriv-h-slider" min="0" max="3" step="0.01" value="0.3"
+                                style="flex:1;">
+                            <span id="deriv-h-val"
+                                style="font-weight:800; color:#ed8936; min-width:60px; text-align:right;">0.5012</span>
+                        </div>
+                        <div style="font-size:12px; color:#a0aec0; margin-top:6px; text-align:center;">
+                            ← h 크게 (할선) &nbsp;&nbsp;&nbsp; h 작게 (접선) →
+                        </div>
+                    </div>
+
+                    <!-- 미분값 정보 -->
+                    <div class="matrix-section" style="background:#f8fafc;">
+                        <h3 class="matrix-section-title" style="color:#2b6cb0;">📊 현재 값</h3>
+                        <div style="font-size:15px; line-height:2; font-weight:600; color:#4a5568;">
+                            <div>x₀ = <span id="deriv-x0-display" style="color:#73a5ff; font-weight:800;">1</span></div>
+                            <div>f(x₀) = <span id="deriv-fval-val" style="color:#73a5ff; font-weight:800;">1.0000</span>
+                            </div>
+                            <div style="color:#ff8bad;">f'(x₀) = <span id="deriv-slope-val"
+                                    style="font-weight:800;">2.0000</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 애니메이션 버튼 -->
+                    <button id="deriv-anim-btn" style="width:100%; padding:14px; font-size:16px; font-weight:800;
+                       font-family:inherit; border:none; border-radius:50px; cursor:pointer;
+                       background:linear-gradient(135deg,#68d391,#48bb78);
+                       color:white; box-shadow:0 4px 15px rgba(104,211,145,0.4);
+                       transition:all 0.3s;">
+                        ▶ 할선→접선 애니메이션
+                    </button>
+
+                    <!-- 개념 설명 -->
+                    <div class="matrix-section"
+                        style="background:rgba(255,139,173,0.06); border-color:rgba(255,139,173,0.3);">
+                        <h3 class="matrix-section-title" style="color:#e53e3e;">💡 미분의 정의</h3>
+                        <div style="font-size:13px; color:#4a5568; line-height:1.9;">
+                            <div
+                                style="text-align:center; font-size:15px; font-weight:700; margin-bottom:8px; color:#2d3748;">
+                                f'(x) = lim<sub>h→0</sub> [f(x+h)−f(x)] / h
+                            </div>
+                            <div>• <span style="color:#ed8936; font-weight:700;">주황 점선</span>: 할선 (두 점을 잇는 직선)</div>
+                            <div>• <span style="color:#ff8bad; font-weight:700;">분홍 실선</span>: 접선 (h → 0 의 극한)</div>
+                            <div>• h를 0에 가깝게 줄이면 할선이 접선에 수렴합니다.</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 우측: 캔버스 영역 -->
+                <div class="deriv-canvas-area">
+
+                    <!-- 원함수 캔버스 -->
+                    <div class="deriv-canvas-card">
+                        <div class="deriv-canvas-label">
+                            <span style="color:#73a5ff;">y = f(x)</span>
+                            &nbsp;·&nbsp;
+                            <span style="color:#ed8936;">— 할선</span>
+                            &nbsp;·&nbsp;
+                            <span style="color:#ff8bad;">— 접선</span>
+                        </div>
+                        <div class="canvas-wrapper" style="margin-bottom:0;">
+                            <canvas id="derivCanvas" width="700" height="380"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 도함수 캔버스 -->
+                    <div class="deriv-canvas-card" style="margin-top:20px;">
+                        <div class="deriv-canvas-label">
+                            <span style="color:#ff8bad;">y = f'(x)</span>
+                            &nbsp;— 도함수 그래프
+                        </div>
+                        <div class="canvas-wrapper" style="margin-bottom:0;">
+                            <canvas id="derivFCanvas" width="700" height="280"></canvas>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
 
+
         <!-- ===== 인수분해 ===== -->
+        <!-- index.html의 기존 unit-factor 전체를 아래 코드로 교체하세요 -->
+
         <div id="unit-factor" class="unit-content">
             <h2 class="unit-title">인수분해 (Factorization) 훈련소</h2>
+
+            <!-- 숨겨진 탭 버튼 (main.js 연동용) -->
             <div style="display:none;">
-                <button class="tab-btn active" data-factortab="cross">크로스</button>
-                <button class="tab-btn" data-factortab="quiz">퀴즈</button>
+                <button class="tab-btn active" data-factortab="gcf">공통인수</button>
+                <button class="tab-btn" data-factortab="cross">X자크로스</button>
+                <button class="tab-btn" data-factortab="formula">인수분해공식</button>
+                <button class="tab-btn" data-factortab="synthetic">조립제법</button>
+                <button class="tab-btn" data-factortab="quiz">스피드퀴즈</button>
             </div>
-            <div id="factor-cross-container" class="factor-container active" style="display: flex;">
+
+            <!-- ① 공통인수 -->
+            <div id="factor-gcf-container" class="factor-container" style="display:flex;">
                 <div class="factor-header">
-                    <h3>다음 식을 인수분해 하시오</h3>
+                    <h3>공통인수로 묶기</h3>
+                    <div class="factor-explain">모든 항에 공통으로 있는 인수를 찾아 괄호 밖으로 꺼내세요.</div>
+                    <div id="gcf-problem" class="factor-problem"></div>
+                </div>
+                <div class="gcf-input-area">
+                    <div class="gcf-row">
+                        <label>공통인수</label>
+                        <input type="text" id="gcf-input" class="gcf-num-input" placeholder="예: 3, x^2, 2x">
+                        <span class="gcf-paren">(</span>
+                        <input type="text" id="gcf-inner-input" class="gcf-inner-input" placeholder="괄호 안의 식">
+                        <span class="gcf-paren">)</span>
+                    </div>
+                    <div id="gcf-feedback" class="fx-feedback" style="margin-top:15px;">공통인수(숫자)와 괄호 안의 식을 입력하세요.</div>
+                    <div id="gcf-hint"
+                        style="display:none; margin-top:10px; padding:10px 16px; background:#ebf4ff; border-radius:8px; color:#3182ce; font-size:14px; font-weight:600;">
+                    </div>
+                </div>
+                <!-- gcf-input-area 안 gcf-row 위에 추가 -->
+                <div id="gcf-type-label"
+                    style="text-align:center; font-size:13px; font-weight:700; color:#73a5ff; margin-bottom:10px;">📌 숫자
+                    공통인수</div>
+                <div class="factor-btn-row">
+                    <button class="t-btn" id="gcf-hint-btn">💡 힌트</button>
+                    <button class="draw-btn" id="gcf-check-btn">확인</button>
+                    <button class="draw-btn" id="gcf-next-btn"
+                        style="display:none; background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제 →</button>
+                </div>
+            </div>
+
+            <!-- ② X자 크로스 -->
+            <div id="factor-cross-container" class="factor-container" style="display:none;">
+                <div class="factor-header">
+                    <h3>X자 크로스 인수분해</h3>
+                    <div class="factor-explain">이차식 ax²+bx+c 를 (px+q)(rx+s) 로 분해합니다.</div>
                     <div id="fx-problem" class="factor-problem"></div>
                 </div>
                 <div class="fx-board">
@@ -312,9 +469,74 @@
                         <div id="fx-feedback" class="fx-feedback">빈칸에 숫자를 넣어보세요!</div>
                     </div>
                 </div>
-                <button class="draw-btn" id="fx-next-btn" style="margin-top:20px;display:none;">다음 문제 도전!</button>
+                <button class="draw-btn" id="fx-next-btn2"
+                    style="margin-top:20px;display:none;background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제
+                    →</button>
             </div>
-            <div id="factor-quiz-container" class="factor-container" style="display: none;">
+
+            <!-- ③ 인수분해 공식 -->
+            <div id="factor-formula-container" class="factor-container" style="display:none;">
+                <div class="factor-header">
+                    <h3 id="formula-type-name">인수분해 공식</h3>
+                    <div id="formula-type-latex" style="font-size:18px; margin:8px 0; color:#73a5ff;"></div>
+                    <div class="factor-explain">위 공식을 이용해 아래 식을 인수분해하세요.</div>
+                    <div id="formula-problem" class="factor-problem"></div>
+                </div>
+                <div class="formula-stats"
+                    style="display:flex;gap:20px;justify-content:center;margin-bottom:15px;font-weight:800;font-size:16px;">
+                    <span style="color:#4a5568;">점수: <span id="formula-score-val" style="color:#73a5ff;">0</span></span>
+                    <span style="color:#4a5568;">연속정답: <span id="formula-streak-val"
+                            style="color:#ff8bad;">0</span>🔥</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;">
+                    <input type="text" id="formula-input" class="func-input" style="max-width:350px;"
+                        placeholder="인수분해 결과 입력 (예: (x+3)^2)">
+                    <button class="draw-btn" id="formula-check-btn">확인</button>
+                </div>
+                <div id="formula-feedback" class="fx-feedback" style="margin-top:15px;">인수분해 결과를 입력하세요.</div>
+                <div id="formula-hint-box"
+                    style="display:none; margin-top:10px; padding:12px 20px; background:#fffaf0; border-radius:10px; border:1px solid #f6ad55; color:#744210; font-size:14px; font-weight:600; white-space:pre-line;">
+                </div>
+                <div class="factor-btn-row" style="margin-top:15px;">
+                    <button class="t-btn" id="formula-hint-btn">💡 힌트</button>
+                    <button class="draw-btn" id="formula-next-btn"
+                        style="display:none;background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제 →</button>
+                </div>
+            </div>
+
+            <!-- ④ 조립제법 -->
+            <div id="factor-synthetic-container" class="factor-container" style="display:none;">
+                <div class="factor-header">
+                    <h3>조립제법 (Synthetic Division)</h3>
+                    <div class="factor-explain">3차 이상의 다항식을 주어진 해로 인수분해합니다.<br>표를 단계별로 채워보세요!</div>
+                    <div id="synthetic-problem" class="factor-problem"></div>
+                    <div id="synthetic-root-display"
+                        style="font-size:18px; color:#73a5ff; font-weight:800; margin-top:8px;"></div>
+                </div>
+                <div class="synthetic-table-wrapper">
+                    <table class="synthetic-table">
+                        <thead>
+                            <tr>
+                                <th class="syn-cell" style="background:#f0f4ff; color:#73a5ff;">해(r)</th>
+                                <th class="syn-cell">x³</th>
+                                <th class="syn-cell">x²</th>
+                                <th class="syn-cell">x</th>
+                                <th class="syn-cell">상수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="synthetic-tbody"></tbody>
+                    </table>
+                </div>
+                <div id="synthetic-feedback" class="fx-feedback" style="margin-top:15px;"></div>
+                <div class="factor-btn-row" style="margin-top:15px;">
+                    <button class="draw-btn" id="synthetic-check-btn">입력 확인</button>
+                    <button class="draw-btn" id="synthetic-next-btn"
+                        style="display:none;background:linear-gradient(135deg,#68d391,#48bb78);">다음 문제 →</button>
+                </div>
+            </div>
+
+            <!-- ⑤ 스피드 퀴즈 -->
+            <div id="factor-quiz-container" class="factor-container" style="display:none;">
                 <div class="fq-stats">
                     <div class="fq-score">Score: <span id="fq-score-val">0</span></div>
                     <div class="fq-combo" id="fq-combo-box">Combo: <span id="fq-combo-val">0</span>🔥</div>
@@ -331,6 +553,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- ===== 적분 ===== -->
         <div id="unit-integ" class="unit-content">
@@ -405,6 +628,7 @@
     <script src="integ.js"></script>
     <script src="factor.js"></script>
     <script src="main.js"></script>
+    <script src="deriv.js"></script>
 </body>
 
 </html>
