@@ -224,6 +224,23 @@ function generateGcfProblem() {
     document.getElementById('gcf-check-btn').disabled = false;
 }
 
+function normaliseExpr(s) {
+    return s.trim()
+        .replace(/\s+/g, '')          // 공백 제거
+        .replace(/\*\*/g, '^')        // ** → ^
+        .replace(/\+-/g, '-')         // +-x → -x
+        .replace(/\^1(?!\d)/g, '')    // x^1 → x
+        .replace(/1x/g, 'x')          // 1x → x
+        .toLowerCase();
+}
+
+function isEquivalentOrSameStr(userStr, expectedStr) {
+    const uNorm = normaliseExpr(userStr);
+    const eNorm = normaliseExpr(expectedStr);
+    if (uNorm === eNorm) return true;          // 문자열 직접 비교
+    return isEquivalent(userStr, expectedStr); // 수치 동치 비교
+}
+
 function checkGcf() {
     if (!gcfProblem) return;
     const uK = document.getElementById('gcf-input').value.trim();
@@ -231,39 +248,58 @@ function checkGcf() {
     const fb = document.getElementById('gcf-feedback');
     if (!uK || !uI) { fb.innerText = '두 칸을 모두 채워주세요.'; fb.style.color = '#e53e3e'; return; }
 
-    const isKCorrect = isEquivalent(uK, gcfProblem.answerK);
-    
+    const isKCorrect = isEquivalentOrSameStr(uK, gcfProblem.answerK);
+
+    // ---- 괄호 안 기대값 생성 ----
     let expectedInner = '';
     if (gcfProblem.type === 0) {
+        // 숫자 공통인수: 계수를 k로 나눔
         const formatT = (c, p) => {
             if (p === 0) return String(c);
-            const xPart = p === 1 ? 'x' : `x^${p}`;
-            return (c === 1 ? '' : (c === -1 ? '-' : c)) + xPart;
+            const xPart = (p === 1) ? 'x' : `x^${p}`;
+            if (c === 1) return xPart;
+            if (c === -1) return '-' + xPart;
+            return c + xPart;
         };
-        const innerCoeffs = gcfProblem.coeffs.map(c => c / gcfProblem.k);
+        const innerCoeffs = gcfProblem.coeffs.map(c => Math.round(c / gcfProblem.k));
         for (let i = 0; i < gcfProblem.numTerms; i++) {
             const term = formatT(innerCoeffs[i], gcfProblem.powers[i]);
-            expectedInner += i === 0 ? term : '+' + term;
+            if (i === 0) {
+                expectedInner += term;
+            } else {
+                expectedInner += (innerCoeffs[i] < 0 ? '' : '+') + term;
+            }
         }
     } else if (gcfProblem.type === 1) {
+        // 문자 공통인수
         const r1 = gcfProblem.p1 - gcfProblem.minP;
         const r2 = gcfProblem.p2 - gcfProblem.minP;
-        const makeT = (c, r) => (r === 0 ? String(c) : (c === 1 ? '' : c) + (r === 1 ? 'x' : 'x^' + r));
-        expectedInner = `${makeT(gcfProblem.c1, r1)}+${makeT(gcfProblem.c2, r2)}`;
-    } else {
-        const r1 = gcfProblem.p1 - gcfProblem.minP;
-        const r2 = gcfProblem.p2 - gcfProblem.minP;
-        const innerK = gcfProblem.k;
         const makeT = (c, r) => {
-            const coeff = c / innerK;
-            const xPart = r === 0 ? '' : (r === 1 ? 'x' : 'x^' + r);
-            if (xPart === '') return String(coeff);
-            return (coeff === 1 ? '' : coeff) + xPart;
+            if (r === 0) return String(c);
+            const xPart = (r === 1) ? 'x' : `x^${r}`;
+            return (c === 1 ? '' : c) + xPart;
         };
         expectedInner = `${makeT(gcfProblem.c1, r1)}+${makeT(gcfProblem.c2, r2)}`;
+    } else {
+        // 숫자+문자 공통인수
+        const r1 = gcfProblem.p1 - gcfProblem.minP;
+        const r2 = gcfProblem.p2 - gcfProblem.minP;
+        const kv = gcfProblem.k;
+        const makeT = (c, r) => {
+            const coeff = Math.round(c / kv);
+            const xPart = (r === 0) ? '' : (r === 1 ? 'x' : `x^${r}`);
+            if (xPart === '') return String(coeff);
+            if (coeff === 1) return xPart;
+            if (coeff === -1) return '-' + xPart;
+            return coeff + xPart;
+        };
+        const t1 = makeT(gcfProblem.c1, r1);
+        const t2 = makeT(gcfProblem.c2, r2);
+        const sign = gcfProblem.c2 / kv < 0 ? '' : '+';
+        expectedInner = `${t1}${sign}${t2}`;
     }
 
-    const isICorrect = isEquivalent(uI, expectedInner);
+    const isICorrect = isEquivalentOrSameStr(uI, expectedInner);
 
     if (isKCorrect && isICorrect) {
         fb.innerHTML = `정답! 🎉 <strong>${uK}(${uI})</strong>`;
@@ -291,6 +327,7 @@ function checkGcf() {
         }
     }
 }
+
 
 /* ========================================================= */
 /* ---- 단계 2: 인수분해 공식 ---- */
