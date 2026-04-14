@@ -1,3 +1,4 @@
+(function () {
 /* ========================================================= */
 /* --- Integration (적분: 구분구적법 상합과 하합) Logic --- */
 /* ========================================================= */
@@ -145,3 +146,7 @@ function initInteg() {
         });
     });
 }
+
+    window.initInteg = initInteg;
+    window.drawInteg = drawInteg;
+})();

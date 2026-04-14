@@ -1,3 +1,4 @@
+(function () {
 /* ========================================================= */
 /* --- Factorization (인수분해) Logic --- */
 /* 단계: 1.공통인수 → 2.인수분해공식 → 3.X자크로스 → 4.조립제법 → 5.스피드퀴즈 */
@@ -947,9 +948,5 @@ function initFactor() {
     switchFactorTab('gcf');
 }
 
-// KaTeX 로드 보장
-if (typeof katex !== 'undefined') {
-    // 이미 로드됨
-} else {
-    document.querySelector('script[src*="katex.min.js"]').addEventListener('load', () => { });
-}
+    window.initFactor = initFactor;
+})();

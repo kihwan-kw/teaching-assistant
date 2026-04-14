@@ -1,3 +1,4 @@
+(function () {
 /* ========================================================= */
 /* --- Trigonometry (삼각함수) Logic --- */
 /* ========================================================= */
@@ -586,3 +587,7 @@ function updateTextExtended() {
     infoText.style.color = '#2d3748';
     infoText.innerHTML = `${currentFunc}(${currentAngle}°) = <span style="color: ${valColor};">${displayVal}</span>`;
 }
+
+    window.initTrig = initTrig;
+    window.drawTrig  = drawTrig;
+})();

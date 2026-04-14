@@ -1,3 +1,4 @@
+(function () {
 /* ========================================================= */
 /* --- Function Graph (함수 그래프 그리기) Logic --- */
 /* 전면 재작성: 줌/패닝, 불연속 처리, 정확한 좌표 변환     */
@@ -556,3 +557,7 @@ function initGraph() {
 
     expCanvas.style.cursor = 'crosshair';
 }
+
+    window.initGraph          = initGraph;
+    window.renderAllExpGraphs = renderAllExpGraphs;
+})();

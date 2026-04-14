@@ -5,15 +5,16 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     const UNITS = [
-        { id: 'exp', icon: '📈', title: '그래프 그리기', subtitle: '함수를 입력하고 다양한 변환을 시각화', ready: true, colorClass: 'card-exp', init: () => initGraph() },
-        { id: 'factor', icon: '✖️', title: '인수분해', subtitle: 'X자 크로스 훈련장과 스피드 퀴즈', ready: true, colorClass: 'card-factor', init: () => initFactor() },
-        { id: 'matrix', icon: '🔲', title: '행렬과 변환', subtitle: '선형 변환을 이미지로 직관적으로 확인', ready: true, colorClass: 'card-matrix', init: () => initMatrix() },
-        { id: 'trig', icon: '〽️', title: '삼각함수', subtitle: '단위원과 그래프로 sin·cos·tan 이해', ready: true, colorClass: 'card-trig', init: () => initTrig() },
-        { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => initInteg() },
-        { id: 'seq', icon: '🔢', title: '수열', subtitle: '등차·등비수열 시각화', ready: false, colorClass: 'card-seq', init: null },
-        { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '함수의 극한과 연속', ready: false, colorClass: 'card-limit', init: null },
-        { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => initDeriv() }
+        { id: 'exp',    icon: '📈',  title: '그래프 그리기',  subtitle: '함수를 입력하고 다양한 변환을 시각화',         ready: true,  colorClass: 'card-exp',    init: () => window.initGraph()  },
+        { id: 'factor', icon: '✖️',  title: '인수분해',       subtitle: 'X자 크로스 훈련장과 스피드 퀴즈',             ready: true,  colorClass: 'card-factor', init: () => window.initFactor() },
+        { id: 'matrix', icon: '🔲',  title: '행렬과 변환',    subtitle: '선형 변환을 이미지로 직관적으로 확인',         ready: true,  colorClass: 'card-matrix', init: () => window.initMatrix() },
+        { id: 'trig',   icon: '〽️',  title: '삼각함수',       subtitle: '단위원과 그래프로 sin·cos·tan 이해',          ready: true,  colorClass: 'card-trig',   init: () => window.initTrig()   },
+        { id: 'integ',  icon: '∫',   title: '적분',           subtitle: '상합·하합으로 구분구적법 시각화',              ready: true,  colorClass: 'card-integ',  init: () => window.initInteg()  },
+        { id: 'seq',    icon: '🔢',  title: '수열',           subtitle: '등차·등비수열 시각화',                        ready: false, colorClass: 'card-seq',    init: null },
+        { id: 'limit',  icon: '→',   title: '극한과 연속',    subtitle: '함수의 극한과 연속',                          ready: false, colorClass: 'card-limit',  init: null },
+        { id: 'deriv',  icon: '📐',  title: '미분',           subtitle: '할선→접선 수렴 + 도함수 실시간 그래프',       ready: true,  colorClass: 'card-deriv',  init: () => window.initDeriv()  }
     ];
+
 
     // 단원별 인덱스 패널 ID (없는 단원은 항목 없음 → 인덱스 전부 숨김)
     const UNIT_INDEX_MAP = {
@@ -89,10 +90,11 @@ document.addEventListener('DOMContentLoaded', () => {
             initialized.add(unit.id);
             setTimeout(unit.init, 50);
         } else {
-            if (unit.id === 'exp') setTimeout(() => renderAllExpGraphs(), 50);
-            if (unit.id === 'integ') setTimeout(() => drawInteg(), 50);
-            if (unit.id === 'matrix') setTimeout(() => { drawOriginal(); applyMatrixTransform(); }, 50);
-            if (unit.id === 'trig') setTimeout(() => drawTrig(), 50);
+            if (unit.id === 'exp')    setTimeout(() => window.renderAllExpGraphs(), 50);
+            if (unit.id === 'integ')  setTimeout(() => window.drawInteg(), 50);
+            if (unit.id === 'matrix') setTimeout(() => { window.drawOriginal(); window.applyMatrixTransform(); }, 50);
+            if (unit.id === 'trig')   setTimeout(() => window.drawTrig(), 50);
+            if (unit.id === 'deriv')  setTimeout(() => { window.renderDerivMain(); window.renderDerivF(); }, 50);
         }
     }
 

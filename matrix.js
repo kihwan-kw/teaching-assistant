@@ -1,3 +1,4 @@
+(function () {
 /* ========================================================= */
 /* --- Matrix Transform (행렬과 변환) Logic --- */
 /* ========================================================= */
@@ -354,3 +355,8 @@ function initMatrix() {
     drawOriginal();
     applyMatrixTransform();
 }
+
+    window.initMatrix           = initMatrix;
+    window.drawOriginal         = drawOriginal;
+    window.applyMatrixTransform = applyMatrixTransform;
+})();
