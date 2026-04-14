@@ -121,15 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    /* 인수분해 인덱스 탭 → factor.js 탭 연동 */
-    document.querySelectorAll('#idx-factor .index-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('#idx-factor .index-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const factorTabBtn = document.querySelector(`.tab-btn[data-factortab="${tab.dataset.factortab}"]`);
-            if (factorTabBtn) factorTabBtn.click();
-        });
-    });
-
     renderCards();
 });
+

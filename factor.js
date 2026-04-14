@@ -3,6 +3,70 @@
 /* 단계: 1.공통인수 → 2.인수분해공식 → 3.X자크로스 → 4.조립제법 → 5.스피드퀴즈 */
 /* ========================================================= */
 
+// 전역 통계 관리객체
+const factorStats = {
+    gcf: { total: 0, correct: 0, wrong: 0, combo: 0, maxCombo: 0, score: 0, prefix: 'gcf' },
+    fm: { total: 0, correct: 0, wrong: 0, combo: 0, maxCombo: 0, score: 0, prefix: 'fm' },
+    cross: { total: 0, correct: 0, wrong: 0, combo: 0, maxCombo: 0, score: 0, prefix: 'cross' },
+    syn: { total: 0, correct: 0, wrong: 0, combo: 0, maxCombo: 0, score: 0, prefix: 'syn' },
+    fq: { total: 0, correct: 0, wrong: 0, combo: 0, maxCombo: 0, score: 0, prefix: 'fq' }
+};
+
+function updateUnitDashboard(unitKey) {
+    const stats = factorStats[unitKey];
+    if (!stats) return;
+
+    // 콤보 체크 및 알림 호출 (콤보가 상승했을 때만)
+    if (stats.combo > 1 && stats._prevCombo < stats.combo) {
+        showComboCelebration(stats.combo);
+    }
+    stats._prevCombo = stats.combo;
+
+    const p = stats.prefix;
+    const elMap = {
+        total: document.getElementById(`${p}-total`),
+        correct: document.getElementById(`${p}-correct`),
+        wrong: document.getElementById(`${p}-wrong`),
+        maxCombo: document.getElementById(`${p}-max-combo`),
+        score: document.getElementById(`${p}-score-val`)
+    };
+    if (elMap.total) elMap.total.innerText = stats.total;
+    if (elMap.correct) elMap.correct.innerText = stats.correct;
+    if (elMap.wrong) elMap.wrong.innerText = stats.wrong;
+    if (elMap.maxCombo) elMap.maxCombo.innerText = stats.maxCombo;
+    if (elMap.score) elMap.score.innerText = stats.score;
+}
+
+function showComboCelebration(count) {
+    const container = document.getElementById('combo-toast-container');
+    if (!container) return;
+
+    const phrases = {
+        low: ["좋아요!", "오~ 맞았습니다!", "굿!", "계속 가보죠!", "오호!"],
+        mid: ["대단해요!", "완벽한 흐름!", "막힘이 없네요!", "훌륭합니다!", "와우!"],
+        high: ["천재인가요?", "대체 못 푸는 게 뭐죠?", "수학 귀신!", "진짜 실력자!", "엄청나요!"],
+        god: ["수학의 신 탄생! 🔥", "전설적인 실력!", "압도적입니다!", "Master!", "경이로운 기록!"]
+    };
+
+    let selectedPhrase = "";
+    if (count <= 3) selectedPhrase = phrases.low[Math.floor(Math.random() * phrases.low.length)];
+    else if (count <= 6) selectedPhrase = phrases.mid[Math.floor(Math.random() * phrases.mid.length)];
+    else if (count <= 9) selectedPhrase = phrases.high[Math.floor(Math.random() * phrases.high.length)];
+    else selectedPhrase = phrases.god[Math.floor(Math.random() * phrases.god.length)];
+
+    const toast = document.createElement('div');
+    toast.className = 'combo-toast' + (count >= 7 ? ' high-combo' : '');
+    toast.innerHTML = `
+        <div class="combo-count-text">${count} COMBO!</div>
+        <div class="combo-phrase">${selectedPhrase}</div>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+        if (toast.parentNode) container.removeChild(toast);
+    }, 2600);
+}
+
 function gcd(a, b) {
     a = Math.abs(a); b = Math.abs(b);
     while (b) { [a, b] = [b, a % b]; }
@@ -61,18 +125,23 @@ function bindKeypad(keypadId, inputIds) {
         const el = document.getElementById(id);
         if (el) el.addEventListener('focus', e => activeInput = e.target);
     });
-    const keypad = document.getElementById(keypadId);
-    if (!keypad) return;
-    keypad.querySelectorAll('.fk-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!activeInput) return;
-            if (btn.id && btn.id.startsWith('fk-del')) {
-                activeInput.value = activeInput.value.slice(0, -1);
-            } else {
-                activeInput.value += btn.innerText;
-            }
-            activeInput.focus();
-        });
+
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.fk-btn');
+        if (!btn) return;
+        if (!btn.closest('#' + keypadId)) return;
+
+        if (btn.id && btn.id.startsWith('fk-del')) {
+            if (activeInput) activeInput.value = activeInput.value.slice(0, -1);
+        } else if (btn.classList.contains('fk-check') || btn.classList.contains('fk-next')) {
+            return;
+        } else {
+            const map = { '÷': '/', '×': '*', '← 지우기': null };
+            const val = map[btn.innerText.trim()];
+            if (val === null) return;
+            if (activeInput) activeInput.value += (val !== undefined ? val : btn.innerText.trim());
+        }
+        if (activeInput) activeInput.focus();
     });
 }
 
@@ -90,13 +159,22 @@ function generateGcfProblem() {
 
     if (type === 0) {
         const numTerms = Math.random() < 0.5 ? 2 : 3;
-        const powers = numTerms === 2 ? [Math.floor(Math.random() * 2) + 1, 0] : [2, 1, 0];
-        const coeffs = Array.from({ length: numTerms }, () => (Math.floor(Math.random() * 4) + 1) * k);
-        gcfProblem = { type: 0, k, coeffs, powers, numTerms };
-        answerK = String(k);
+        const powers = numTerms === 2
+            ? [Math.floor(Math.random() * 2) + 2, 0]
+            : [2, 1, 0];
+        const rawCoeffs = Array.from({ length: numTerms }, () => (Math.floor(Math.random() * 4) + 1));
+        const actualK = rawCoeffs.reduce((acc, cur) => gcd(acc, cur * k), rawCoeffs[0] * k);
+        const coeffs = rawCoeffs.map(c => c * k);
+        
+        gcfProblem = { type: 0, k: actualK, coeffs, powers, numTerms };
+        answerK = String(actualK);
+        const formatT = (c, p) => {
+            if (p === 0) return String(c);
+            const xPart = p === 1 ? 'x' : `x^${p}`;
+            return (c === 1 ? '' : (c === -1 ? '-' : c)) + xPart;
+        };
         for (let i = 0; i < numTerms; i++) {
-            const c = coeffs[i], p = powers[i];
-            const term = p === 2 ? (c === 1 ? '' : c) + 'x^2' : p === 1 ? (c === 1 ? '' : c) + 'x' : String(c);
+            const term = formatT(coeffs[i], powers[i]);
             exprStr += i === 0 ? term : ' + ' + term;
         }
     } else if (type === 1) {
@@ -106,17 +184,23 @@ function generateGcfProblem() {
         const c1 = Math.floor(Math.random() * 4) + 1;
         const c2 = Math.floor(Math.random() * 4) + 1;
         gcfProblem = { type: 1, minP, c1, c2, p1, p2 };
-        answerK = `x^${minP}`;
+        answerK = minP === 1 ? 'x' : `x^${minP}`;
         const makeTerm = (c, p) => (c === 1 ? '' : c) + (p === 1 ? 'x' : `x^${p}`);
         exprStr = `${makeTerm(c1, p1)} + ${makeTerm(c2, p2)}`;
     } else {
         const minP = Math.floor(Math.random() * 2) + 1;
         const p1 = minP + 1;
         const p2 = minP;
-        const c1 = (Math.floor(Math.random() * 3) + 1) * k;
-        const c2 = (Math.floor(Math.random() * 3) + 1) * k;
-        gcfProblem = { type: 2, k, minP, c1, c2, p1, p2 };
-        answerK = `${k}x${minP > 1 ? '^' + minP : ''}`;
+        const rawC1 = (Math.floor(Math.random() * 3) + 1);
+        const rawC2 = (Math.floor(Math.random() * 3) + 1);
+        const actualK = gcd(rawC1 * k, rawC2 * k);
+        const c1 = rawC1 * k;
+        const c2 = rawC2 * k;
+
+        gcfProblem = { type: 2, k: actualK, minP, c1, c2, p1, p2 };
+        answerK = `${actualK === 1 ? '' : actualK}x${minP > 1 ? '^' + minP : ''}`;
+        if (actualK === 1 && minP === 1) answerK = 'x';
+
         const makeTerm = (c, p) => (c === 1 ? '' : c) + (p === 1 ? 'x' : `x^${p}`);
         exprStr = `${makeTerm(c1, p1)} + ${makeTerm(c2, p2)}`;
     }
@@ -134,9 +218,8 @@ function generateGcfProblem() {
     fb.innerText = '빈칸을 클릭하고 입력하세요.';
     fb.style.color = '#a0aec0';
 
-    document.getElementById('gcf-next-btn').style.display = 'none';
-    const hint = document.getElementById('gcf-hint');
-    if (hint) hint.style.display = 'none';
+    const nextBtn = document.getElementById('gcf-next-btn-keypad');
+    if (nextBtn) nextBtn.style.display = 'none';
     document.getElementById('gcf-check-btn').disabled = false;
 }
 
@@ -147,40 +230,64 @@ function checkGcf() {
     const fb = document.getElementById('gcf-feedback');
     if (!uK || !uI) { fb.innerText = '두 칸을 모두 채워주세요.'; fb.style.color = '#e53e3e'; return; }
 
-    const normalize = s => s.replace(/\s/g, '').toLowerCase();
-
+    const isKCorrect = isEquivalent(uK, gcfProblem.answerK);
+    
     let expectedInner = '';
     if (gcfProblem.type === 0) {
+        const formatT = (c, p) => {
+            if (p === 0) return String(c);
+            const xPart = p === 1 ? 'x' : `x^${p}`;
+            return (c === 1 ? '' : (c === -1 ? '-' : c)) + xPart;
+        };
         const innerCoeffs = gcfProblem.coeffs.map(c => c / gcfProblem.k);
         for (let i = 0; i < gcfProblem.numTerms; i++) {
-            const c = innerCoeffs[i], p = gcfProblem.powers[i];
-            const term = p === 2 ? (c === 1 ? '' : c) + 'x^2' : p === 1 ? (c === 1 ? '' : c) + 'x' : String(c);
+            const term = formatT(innerCoeffs[i], gcfProblem.powers[i]);
             expectedInner += i === 0 ? term : '+' + term;
         }
     } else if (gcfProblem.type === 1) {
-        const r1 = gcfProblem.p1 - gcfProblem.minP, r2 = gcfProblem.p2 - gcfProblem.minP;
-        const t1 = (gcfProblem.c1 === 1 ? '' : gcfProblem.c1) + (r1 === 0 ? '' : r1 === 1 ? 'x' : 'x^' + r1);
-        const t2 = (gcfProblem.c2 === 1 ? '' : gcfProblem.c2) + (r2 === 0 ? '' : r2 === 1 ? 'x' : 'x^' + r2);
-        expectedInner = t1 + '+' + t2;
+        const r1 = gcfProblem.p1 - gcfProblem.minP;
+        const r2 = gcfProblem.p2 - gcfProblem.minP;
+        const makeT = (c, r) => (r === 0 ? String(c) : (c === 1 ? '' : c) + (r === 1 ? 'x' : 'x^' + r));
+        expectedInner = `${makeT(gcfProblem.c1, r1)}+${makeT(gcfProblem.c2, r2)}`;
     } else {
-        const r1 = gcfProblem.p1 - gcfProblem.minP, r2 = gcfProblem.p2 - gcfProblem.minP;
-        const ic1 = gcfProblem.c1 / gcfProblem.k, ic2 = gcfProblem.c2 / gcfProblem.k;
-        const t1 = (ic1 === 1 ? '' : ic1) + (r1 === 0 ? '' : r1 === 1 ? 'x' : 'x^' + r1);
-        const t2 = (ic2 === 1 ? '' : ic2) + (r2 === 0 ? '' : r2 === 1 ? 'x' : 'x^' + r2);
-        expectedInner = t1 + '+' + t2;
+        const r1 = gcfProblem.p1 - gcfProblem.minP;
+        const r2 = gcfProblem.p2 - gcfProblem.minP;
+        const innerK = gcfProblem.k;
+        const makeT = (c, r) => {
+            const coeff = c / innerK;
+            const xPart = r === 0 ? '' : (r === 1 ? 'x' : 'x^' + r);
+            if (xPart === '') return String(coeff);
+            return (coeff === 1 ? '' : coeff) + xPart;
+        };
+        expectedInner = `${makeT(gcfProblem.c1, r1)}+${makeT(gcfProblem.c2, r2)}`;
     }
 
-    if (normalize(uK) === normalize(gcfProblem.answerK) && normalize(uI) === normalize(expectedInner)) {
+    const isICorrect = isEquivalent(uI, expectedInner);
+
+    if (isKCorrect && isICorrect) {
         fb.innerHTML = `정답! 🎉 <strong>${uK}(${uI})</strong>`;
         fb.style.color = '#38a169';
-        document.getElementById('gcf-next-btn').style.display = 'inline-block';
+        const nxtKeypad = document.getElementById('gcf-next-btn-keypad');
+        if (nxtKeypad) nxtKeypad.style.display = 'inline-block';
         document.getElementById('gcf-check-btn').disabled = true;
-    } else if (normalize(uK) !== normalize(gcfProblem.answerK)) {
-        fb.innerText = '공통인수가 맞지 않아요. 다시 찾아보세요!';
-        fb.style.color = '#e53e3e';
+
+        const st = factorStats.gcf;
+        st.total++; st.correct++; st.combo++;
+        st.score += 10 + st.combo * 2;
+        if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+        updateUnitDashboard('gcf');
     } else {
-        fb.innerText = '공통인수는 맞았어요! 괄호 안을 다시 확인해보세요.';
-        fb.style.color = '#ed8936';
+        const st = factorStats.gcf;
+        st.total++; st.wrong++; st.combo = 0;
+        updateUnitDashboard('gcf');
+
+        if (!isKCorrect) {
+            fb.innerText = '공통인수가 맞지 않아요. 다시 찾아보세요!';
+            fb.style.color = '#e53e3e';
+        } else {
+            fb.innerText = '공통인수는 맞았어요! 괄호 안을 다시 확인해보세요.';
+            fb.style.color = '#ed8936';
+        }
     }
 }
 
@@ -248,7 +355,7 @@ const FORMULA_TYPES = [
     }
 ];
 
-let currentFormula = null, formulaScore = 0, formulaStreak = 0;
+let currentFormula = null;
 let currentFormulaTypeIdx = 0;
 
 function generateFormulaProblem(typeIdx) {
@@ -257,7 +364,6 @@ function generateFormulaProblem(typeIdx) {
     const prob = type.generate();
     currentFormula = { ...prob, typeName: type.name, typeLatex: type.latex };
 
-    // 사이드바 active 업데이트
     document.querySelectorAll('.fm-btn').forEach((btn, i) => {
         btn.classList.toggle('active', i === currentFormulaTypeIdx);
     });
@@ -271,11 +377,10 @@ function generateFormulaProblem(typeIdx) {
     fb.innerHTML = '<strong>💡 주의:</strong> 공통인수가 있다면 반드시 먼저 묶어낸 후 공식을 적용하세요!';
     fb.style.color = '#ed8936';
 
-    document.getElementById('formula-next-btn').style.display = 'none';
-    document.getElementById('formula-hint-box').style.display = 'none';
+    const nextBtn = document.getElementById('formula-next-btn-keypad');
+    if (nextBtn) nextBtn.style.display = 'none';
     document.getElementById('formula-check-btn').disabled = false;
-    document.getElementById('formula-score-val').innerText = formulaScore;
-    document.getElementById('formula-streak-val').innerText = formulaStreak;
+    updateUnitDashboard('fm');
 }
 
 function checkFormula() {
@@ -287,8 +392,6 @@ function checkFormula() {
     if (currentFormula.k > 1 && !userAns.startsWith(currentFormula.k.toString())) {
         fb.innerText = `공통인수 '${currentFormula.k}'를 먼저 묶어주세요!`;
         fb.style.color = '#e53e3e';
-        formulaStreak = 0;
-        document.getElementById('formula-streak-val').innerText = formulaStreak;
         return;
     }
 
@@ -298,17 +401,23 @@ function checkFormula() {
     if (isEquivalent(cleanUser, cleanAns, 'x') || currentFormula.answers.some(a => a.toLowerCase() === userAns)) {
         const fullEq = `${currentFormula.exprStr} = \\textcolor{#276749}{${currentFormula.answers[0]}}`;
         fb.innerHTML = `정답! 🎉<br><div style="font-size:24px;color:#2d3748;margin-top:10px;">${katex.renderToString(fullEq, { throwOnError: false })}</div>`;
-        formulaScore += 10 + formulaStreak * 2;
-        formulaStreak++;
-        document.getElementById('formula-next-btn').style.display = 'inline-block';
+        
+        const st = factorStats.fm;
+        st.total++; st.correct++; st.combo++;
+        st.score += 10 + st.combo * 2;
+        if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+        updateUnitDashboard('fm');
+
+        const nxtKeypad = document.getElementById('formula-next-btn-keypad');
+        if (nxtKeypad) nxtKeypad.style.display = 'inline-block';
         document.getElementById('formula-check-btn').disabled = true;
-        document.getElementById('formula-score-val').innerText = formulaScore;
-        document.getElementById('formula-streak-val').innerText = formulaStreak;
     } else {
-        formulaStreak = 0;
+        const st = factorStats.fm;
+        st.total++; st.wrong++; st.combo = 0;
+        updateUnitDashboard('fm');
+
         fb.innerText = '틀렸어요. 부호나 제곱 등을 다시 확인해보세요!';
         fb.style.color = '#e53e3e';
-        document.getElementById('formula-streak-val').innerText = formulaStreak;
     }
 }
 
@@ -365,7 +474,17 @@ function checkCross() {
         const fullEq = `${probStr} = \\textcolor{#38a169}{${ansStr}}`;
         document.getElementById('fx-feedback').innerHTML = `정답입니다! 🎉<br><div style="font-size:24px;color:#2d3748;margin-top:10px;">${katex.renderToString(fullEq, { throwOnError: false })}</div>`;
         const nxt = document.getElementById('fx-next-btn2'); if (nxt) nxt.style.display = 'inline-block';
+
+        const st = factorStats.cross;
+        st.total++; st.correct++; st.combo++;
+        st.score += 15 + st.combo * 3;
+        if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+        updateUnitDashboard('cross');
     } else {
+        const st = factorStats.cross;
+        st.total++; st.wrong++; st.combo = 0;
+        updateUnitDashboard('cross');
+
         document.querySelector('.fx-board').classList.remove('fx-success');
         document.getElementById('fx-feedback').innerText = '가운데 일차항 계수(b)가 맞지 않아요.';
         document.getElementById('fx-feedback').style.color = '#e53e3e';
@@ -438,6 +557,7 @@ function generateSyntheticProblem() {
             hb.style.display = 'none';
         });
     }, 50);
+    updateUnitDashboard('syn');
 }
 
 function startSyntheticWithGuess() {
@@ -463,6 +583,9 @@ function startSyntheticWithGuess() {
             </div>
             <div id="syn-step-msg" style="color:#4a5568;font-weight:bold;margin-top:5px;">첫 번째 계수를 그대로 아래로 내려 적으세요.</div>
         `;
+        const checkBtn = document.getElementById('synthetic-check-btn');
+        if (checkBtn) checkBtn.style.display = 'inline-block';
+
         setTimeout(() => {
             const cb = document.getElementById('syn-cancel-btn');
             if (cb) cb.addEventListener('click', resetSyntheticTry);
@@ -478,7 +601,6 @@ function renderSyntheticTable() {
     const tbody = document.getElementById('synthetic-tbody');
     tbody.innerHTML = '';
 
-    // 행 1: 계수
     const row1 = document.createElement('tr');
     const th0 = document.createElement('td');
     th0.className = 'syn-cell'; th0.style.background = '#f0f4ff';
@@ -489,7 +611,6 @@ function renderSyntheticTable() {
     });
     tbody.appendChild(row1);
 
-    // 행 2: 곱셈 행
     const row2 = document.createElement('tr');
     const td0 = document.createElement('td'); td0.className = 'syn-cell'; row2.appendChild(td0);
     coeffs.forEach((c, i) => {
@@ -506,7 +627,6 @@ function renderSyntheticTable() {
     });
     tbody.appendChild(row2);
 
-    // 행 3: 합계 행
     const row3 = document.createElement('tr');
     const td00 = document.createElement('td'); td00.className = 'syn-cell'; row3.appendChild(td00);
     coeffs.forEach((c, i) => {
@@ -565,7 +685,15 @@ function checkSyntheticStep() {
                 syntheticPhase = 2;
                 const remainder = syntheticRow[syntheticRow.length - 1];
                 const actionFb = document.getElementById('syn-action-feedback');
+                
+                const st = factorStats.syn;
+                st.total++;
+
                 if (remainder === 0) {
+                    st.correct++; st.combo++;
+                    st.score += 20 + st.combo * 5;
+                    if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+
                     const sign = r < 0 ? `+ ${Math.abs(r)}` : `- ${r}`;
                     const qLatex = formatQuotientLatex(syntheticRow.slice(0, -1));
                     const finalLatex = `(x ${sign})(${qLatex})`;
@@ -575,7 +703,10 @@ function checkSyntheticStep() {
                         actionFb.innerHTML = `<div style="padding:15px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:12px;margin-top:15px;text-align:center;">🎉 <strong>나머지가 0!</strong> 인수분해 성공!<br><div style="font-size:24px;color:#276749;margin-top:10px;">${katex.renderToString(finalLatex, { throwOnError: false })}</div></div>`;
                     }
                     document.getElementById('synthetic-next-btn').style.display = 'inline-block';
+                    const checkBtn = document.getElementById('synthetic-check-btn');
+                    if (checkBtn) checkBtn.style.display = 'none';
                 } else {
+                    st.wrong++; st.combo = 0;
                     if (actionFb) {
                         actionFb.innerHTML = `<div style="padding:15px;background:#fff5f5;border:1px solid #fed7d7;border-radius:12px;margin-top:15px;text-align:center;">🤔 나머지 = <strong>${remainder}</strong>. 나누어 떨어지지 않아요.<br><button id="syn-retry-btn" style="margin-top:12px;padding:10px 20px;font-size:14px;font-weight:600;background:#fc8181;color:white;border:none;border-radius:20px;cursor:pointer;">다른 숫자로 다시 도전!</button></div>`;
                         setTimeout(() => {
@@ -584,6 +715,7 @@ function checkSyntheticStep() {
                         }, 50);
                     }
                 }
+                updateUnitDashboard('syn');
             } else {
                 currentCol++; currentRow = 1;
                 if (msgEl) { msgEl.innerText = `✓ 합계 맞아요! 다시 ${r} × ${syntheticRow[currentCol - 1]} 를 오른쪽 위에 적으세요.`; msgEl.style.color = '#38a169'; }
@@ -628,22 +760,23 @@ function formatQuotientLatex(coeffs) {
 /* ---- 단계 5: 스피드 퀴즈 ---- */
 /* ========================================================= */
 
-let fqScore = 0, fqCombo = 0, fqCorrectIdx = 0, fqTotal = 0, fqCorrect = 0, fqWrong = 0, fqMaxCombo = 0;
+let fqCorrectIdx = 0;
 
 function generateQuizProblem() {
     const fqProblem = document.getElementById('fq-problem');
     const fqOptions = document.querySelectorAll('.fq-btn');
 
     let p, r, q, s, k;
-    const useGcd = fqScore > 30 && Math.random() < 0.35;
+    const st = factorStats.fq;
+    const useGcd = st.score > 30 && Math.random() < 0.35;
     if (useGcd) {
         k = Math.floor(Math.random() * 3) + 2; p = 1; r = 1;
         do { q = (Math.floor(Math.random() * 7) - 3); if (q === 0) q = 2; s = (Math.floor(Math.random() * 7) - 3); if (s === 0) s = -2; } while (q === s);
     } else {
         k = 1;
         do {
-            p = fqScore > 50 ? (Math.floor(Math.random() * 3) + 1) : 1;
-            r = fqScore > 50 ? (Math.floor(Math.random() * 2) + 1) : 1;
+            p = st.score > 50 ? (Math.floor(Math.random() * 3) + 1) : 1;
+            r = st.score > 50 ? (Math.floor(Math.random() * 2) + 1) : 1;
             q = (Math.floor(Math.random() * 9) - 4); if (q === 0) q = 2;
             s = (Math.floor(Math.random() * 9) - 4); if (s === 0) s = -2;
         } while (gcd(gcd(p * r, Math.abs(p * s + q * r)), Math.abs(q * s)) > 1);
@@ -677,29 +810,20 @@ function generateQuizProblem() {
 function handleQuizClick(btn, isCorrect) {
     const fqOptions = document.querySelectorAll('.fq-btn');
     fqOptions.forEach(b => b.disabled = true);
-    fqTotal++;
+    
+    const st = factorStats.fq;
+    st.total++;
 
     if (isCorrect) {
-        btn.classList.add('correct'); fqCombo++; fqCorrect++;
-        fqScore += 10 + fqCombo * 2;
-        if (fqCombo > fqMaxCombo) fqMaxCombo = fqCombo;
+        btn.classList.add('correct'); st.combo++; st.correct++;
+        st.score += 10 + st.combo * 2;
+        if (st.combo > st.maxCombo) st.maxCombo = st.combo;
     } else {
         btn.classList.add('wrong'); fqOptions[fqCorrectIdx].classList.add('correct');
-        fqCombo = 0; fqWrong++;
+        st.combo = 0; st.wrong++;
     }
 
-    // 대시보드 업데이트
-    const totalEl = document.getElementById('fq-total');
-    const correctEl = document.getElementById('fq-correct');
-    const wrongEl = document.getElementById('fq-wrong');
-    const maxComboEl = document.getElementById('fq-max-combo');
-    const scoreEl = document.getElementById('fq-score-val');
-    if (totalEl) totalEl.innerText = fqTotal;
-    if (correctEl) correctEl.innerText = fqCorrect;
-    if (wrongEl) wrongEl.innerText = fqWrong;
-    if (maxComboEl) maxComboEl.innerText = fqMaxCombo;
-    if (scoreEl) scoreEl.innerText = fqScore;
-
+    updateUnitDashboard('fq');
     setTimeout(generateQuizProblem, 1200);
 }
 
@@ -708,69 +832,94 @@ function handleQuizClick(btn, isCorrect) {
 /* ========================================================= */
 
 function switchFactorTab(tabName) {
+    console.log('--- switchFactorTab call --- tabName:', tabName);
     const map = {
         gcf: 'factor-gcf-container', formula: 'factor-formula-container',
         cross: 'factor-cross-container', synthetic: 'factor-synthetic-container', quiz: 'factor-quiz-container'
     };
-    Object.values(map).forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-    const target = document.getElementById(map[tabName]);
-    if (target) target.style.display = 'flex';
+    
+    // 모든 컨테이너 숨기기
+    Object.values(map).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+        else console.warn('Container not found:', id);
+    });
 
-    if (tabName === 'gcf') generateGcfProblem();
-    else if (tabName === 'formula') { formulaScore = 0; formulaStreak = 0; generateFormulaProblem(0); }
-    else if (tabName === 'cross') generateCrossProblem();
-    else if (tabName === 'synthetic') generateSyntheticProblem();
-    else if (tabName === 'quiz') {
-        fqScore = 0; fqCombo = 0; fqTotal = 0; fqCorrect = 0; fqWrong = 0; fqMaxCombo = 0;
-        ['fq-total', 'fq-correct', 'fq-wrong', 'fq-max-combo', 'fq-score-val'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.innerText = '0';
-        });
-        generateQuizProblem();
+    const targetId = map[tabName];
+    const target = document.getElementById(targetId);
+    if (target) {
+        console.log('Showing container:', targetId);
+        target.style.display = 'flex';
+    } else {
+        console.error('Target container not found for tab:', tabName);
     }
+
+    // display를 먼저 적용한 뒤 다음 틱에 문제 생성
+    setTimeout(() => {
+        try {
+            console.log('Switching to tab:', tabName);
+            if (tabName === 'gcf') {
+                updateUnitDashboard('gcf');
+                generateGcfProblem();
+            }
+            else if (tabName === 'formula') {
+                updateUnitDashboard('fm');
+                generateFormulaProblem(0);
+            }
+            else if (tabName === 'cross') {
+                updateUnitDashboard('cross');
+                generateCrossProblem();
+            }
+            else if (tabName === 'synthetic') {
+                updateUnitDashboard('syn');
+                generateSyntheticProblem();
+            }
+            else if (tabName === 'quiz') {
+                updateUnitDashboard('fq');
+                generateQuizProblem();
+            }
+        } catch (err) {
+            console.error('Error generating problem for', tabName, ':', err);
+            // 에러를 화면에 표시 (디버깅용)
+            const fb = document.getElementById(tabName === 'synthetic' ? 'synthetic-feedback' : 'fq-problem');
+            if (fb) fb.innerHTML = `<div style="color:red; margin-top:20px;">[JS Error] ${err.message}</div>`;
+        }
+    }, 0);
 }
 
 function initFactor() {
     /* ① 공통인수 */
-    document.getElementById('gcf-check-btn').addEventListener('click', checkGcf);
-    document.getElementById('gcf-next-btn').addEventListener('click', generateGcfProblem);
-    // hint 버튼은 HTML에 없으므로 optional 처리
-    const gcfHintBtn = document.getElementById('gcf-hint-btn');
-    if (gcfHintBtn) {
-        gcfHintBtn.addEventListener('click', () => {
-            if (!gcfProblem) return;
-            const hint = document.getElementById('gcf-hint');
-            if (hint) {
-                hint.style.display = 'block';
-                if (gcfProblem.type === 0) {
-                    const allGcd = gcfProblem.coeffs.reduce((acc, c) => gcd(acc, c), gcfProblem.coeffs[0]);
-                    hint.innerText = `힌트: 계수 (${gcfProblem.coeffs.join(', ')}) 의 최대공약수는 ${allGcd}입니다.`;
-                } else {
-                    hint.innerText = `힌트: 공통인수는 "${gcfProblem.answerK}" 입니다.`;
-                }
-            }
-        });
-    }
+    const gcfCheck = document.getElementById('gcf-check-btn');
+    if (gcfCheck) gcfCheck.addEventListener('click', checkGcf);
+    
+    // 키패드 내 다음 버튼
+    const gcfNextKeypad = document.getElementById('gcf-next-btn-keypad');
+    if (gcfNextKeypad) gcfNextKeypad.addEventListener('click', generateGcfProblem);
+    
+    // 엔터키 지원 (keydown 권장)
+    const gcfIn1 = document.getElementById('gcf-input');
+    const gcfIn2 = document.getElementById('gcf-inner-input');
+    if (gcfIn1) gcfIn1.addEventListener('keydown', e => { if (e.key === 'Enter') checkGcf(); });
+    if (gcfIn2) gcfIn2.addEventListener('keydown', e => { if (e.key === 'Enter') checkGcf(); });
 
-    /* ② 인수분해 공식 — 사이드바 버튼 연결 */
-    document.getElementById('formula-check-btn').addEventListener('click', checkFormula);
-    document.getElementById('formula-next-btn').addEventListener('click', () => generateFormulaProblem());
-    document.getElementById('formula-input').addEventListener('keypress', e => { if (e.key === 'Enter') checkFormula(); });
-    const formulaHintBtn = document.getElementById('formula-hint-btn');
-    if (formulaHintBtn) {
-        formulaHintBtn.addEventListener('click', () => {
-            if (!currentFormula) return;
-            const hintBox = document.getElementById('formula-hint-box');
-            if (hintBox) { hintBox.style.display = 'block'; hintBox.innerText = `💡 ${currentFormula.hint}\n정답 형식: ${currentFormula.answers[0]}`; }
-        });
-    }
-    // 원인3 수정: 공식 사이드바 fm-btn 클릭 연결
+    /* ② 인수분해 공식 */
+    const fmCheck = document.getElementById('formula-check-btn');
+    if (fmCheck) fmCheck.addEventListener('click', checkFormula);
+    
+    const fmNextKeypad = document.getElementById('formula-next-btn-keypad');
+    if (fmNextKeypad) fmNextKeypad.addEventListener('click', () => generateFormulaProblem());
+    
+    const fmInput = document.getElementById('formula-input');
+    if (fmInput) fmInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkFormula(); });
+    
     document.querySelectorAll('.fm-btn').forEach((btn, i) => {
-        btn.addEventListener('click', () => generateFormulaProblem(i));
+        btn.onclick = () => generateFormulaProblem(i);
     });
 
     /* ③ X자 크로스 */
     ['fx-x1', 'fx-x2', 'fx-y1', 'fx-y2'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.addEventListener('input', checkCross);
+        const el = document.getElementById(id); 
+        if (el) el.addEventListener('input', checkCross);
     });
     const fxNextBtn = document.getElementById('fx-next-btn2');
     if (fxNextBtn) fxNextBtn.addEventListener('click', generateCrossProblem);
@@ -778,15 +927,17 @@ function initFactor() {
     /* ④ 조립제법 */
     const synCheckBtn = document.getElementById('synthetic-check-btn');
     if (synCheckBtn) synCheckBtn.addEventListener('click', checkSyntheticStep);
-    document.getElementById('synthetic-next-btn').addEventListener('click', generateSyntheticProblem);
+    const synNextBtn = document.getElementById('synthetic-next-btn');
+    if (synNextBtn) synNextBtn.addEventListener('click', generateSyntheticProblem);
 
-    /* 숨겨진 탭 버튼 (main.js 인덱스 탭이 click() 호출) */
-    document.querySelectorAll('.tab-btn[data-factortab]').forEach(btn => {
-        btn.addEventListener('click', e => {
-            document.querySelectorAll('.tab-btn[data-factortab]').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            switchFactorTab(e.target.dataset.factortab);
-        });
+    /* 인덱스 탭 이벤트 */
+    document.querySelectorAll('.index-tab[data-factortab]').forEach(btn => {
+        btn.onclick = (e) => {
+            const tabName = e.currentTarget.dataset.factortab;
+            document.querySelectorAll('.index-tab[data-factortab]').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            switchFactorTab(tabName);
+        };
     });
 
     /* 미니 키패드 */
@@ -794,4 +945,11 @@ function initFactor() {
     bindKeypad('formula-keypad', ['formula-input']);
 
     switchFactorTab('gcf');
+}
+
+// KaTeX 로드 보장
+if (typeof katex !== 'undefined') {
+    // 이미 로드됨
+} else {
+    document.querySelector('script[src*="katex.min.js"]').addEventListener('load', () => { });
 }
