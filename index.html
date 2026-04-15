@@ -321,9 +321,21 @@
                     <span style="color:#888; font-size:12px;">🖱 드래그하여 회전</span>
                 </div>
 
-                <!-- 3D 캔버스 -->
-                <div class="canvas-wrapper" style="margin-bottom:12px;">
-                    <canvas id="seq-canvas-sum2" width="800" height="460"></canvas>
+                <!-- 가로 배치 (좌: 캔버스, 우: 수식 피드백) -->
+                <div
+                    style="display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 20px; max-width: 1200px; margin: 0 auto 12px auto;">
+
+                    <!-- 3D 캔버스 -->
+                    <div class="canvas-wrapper"
+                        style="margin: 0; flex: 0 0 820px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="seq-canvas-sum2" width="2000" height="700"
+                            style="display: block; width: 100%; height: auto; max-width: 100%;"></canvas>
+                    </div>
+
+                    <!-- 피드백 (수식) -->
+                    <div id="seq-feedback-sum2" class="seq-feedback show"
+                        style="margin: 0; flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 6px 15px rgba(0,0,0,0.03);">
+                    </div>
                 </div>
 
                 <!-- 슬라이더 -->
@@ -332,9 +344,6 @@
                     <input type="range" id="seq-slider-sum2" min="2" max="6" value="4">
                     <span id="seq-n-val-sum2" class="seq-n-val">4</span>
                 </div>
-
-                <!-- 피드백 -->
-                <div id="seq-feedback-sum2" class="seq-feedback show"></div>
             </div>
         </div>
 
@@ -857,8 +866,6 @@
     <script src="integ.js"></script>
     <script src="factor.js"></script>
     <script src="seq.js"></script>
-    <script src="seq_sum2_3d.js"></script>
-    <script src="seq_sum2_patch.js"></script>
     <script src="main.js"></script>
     <script src="deriv.js"></script>
 </body>

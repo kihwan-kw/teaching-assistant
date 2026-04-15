@@ -1,5 +1,6 @@
 /* ========================================================= */
-/* --- seq.js : 시그마(Σ) 거듭제곱의 합 퍼즐 시각화     --- */
+/* --- seq.js : 수열 시각화 (통합본)                       --- */
+/* Σk / Σk²(3D) / Σk³ 세 탭을 하나의 파일로 관리          --- */
 /* ========================================================= */
 
 window.initSeq = (function () {
@@ -13,30 +14,24 @@ window.initSeq = (function () {
            0. 공통 팔레트 & 헬퍼
         ============================================================ */
         const PALETTE = [
-            '#ffb3c6', '#a8d8ea', '#b5ead7', '#ffd6a5',
-            '#c9b1ff', '#caffbf', '#fdffb6', '#9bf6ff',
-            '#ffadad', '#bde0fe', '#d4f1f4', '#fce1e4',
-            '#dfe7fd', '#e8f5e9', '#fff9c4', '#f3e5f5',
-            '#e0f7fa', '#fce4ec', '#f1f8e9', '#fff3e0',
+            '#ffb3c6', '#a8d8ea', '#b5ead7', '#ffd6a5', '#c9b1ff',
+            '#caffbf', '#fdffb6', '#9bf6ff', '#ffadad', '#bde0fe',
+            '#d4f1f4', '#fce1e4', '#dfe7fd', '#e8f5e9', '#fff9c4',
+            '#f3e5f5', '#e0f7fa', '#fce4ec', '#f1f8e9', '#fff3e0',
         ];
-
         const DARK_PALETTE = PALETTE.map(c => {
-            // 파스텔 → 테두리용 약간 어두운 색
             const r = parseInt(c.slice(1, 3), 16);
             const g = parseInt(c.slice(3, 5), 16);
             const b = parseInt(c.slice(5, 7), 16);
             return `rgb(${Math.max(0, r - 55)},${Math.max(0, g - 55)},${Math.max(0, b - 55)})`;
         });
-
         function hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
+            const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
             return `rgba(${r},${g},${b},${alpha})`;
         }
 
         /* ============================================================
-           1. 탭 전환 로직
+           1. 탭 전환
         ============================================================ */
         const panels = {
             sum1: document.getElementById('seq-panel-sum1'),
@@ -47,44 +42,33 @@ window.initSeq = (function () {
         function switchPanel(tab) {
             Object.values(panels).forEach(p => { if (p) p.classList.remove('active'); });
             if (panels[tab]) panels[tab].classList.add('active');
-
-            // 좌측 idx-seq 탭 active 동기화
-            document.querySelectorAll('#idx-seq .index-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.seqtab === tab);
-            });
-
-            // 현재 탭 렌더 트리거
+            document.querySelectorAll('#idx-seq .index-tab').forEach(t =>
+                t.classList.toggle('active', t.dataset.seqtab === tab)
+            );
             if (tab === 'sum1') drawSum1();
-            if (tab === 'sum2') drawSum2();
+            if (tab === 'sum2') sum2Redraw();
             if (tab === 'sum3') drawSum3();
         }
 
-        // idx-seq 탭 연결
-        document.querySelectorAll('#idx-seq .index-tab').forEach(tab => {
-            tab.addEventListener('click', () => switchPanel(tab.dataset.seqtab));
-        });
-
-        // main.js에서 탭 전환 시 호출 가능하도록 전역 노출
+        document.querySelectorAll('#idx-seq .index-tab').forEach(t =>
+            t.addEventListener('click', () => switchPanel(t.dataset.seqtab))
+        );
         window.seqSwitchPanel = switchPanel;
 
         /* ============================================================
-           2. KaTeX 수식 렌더링
+           2. KaTeX
         ============================================================ */
         function renderKatex(selector, latex) {
             const el = document.querySelector(selector);
             if (!el || !window.katex) return;
             katex.render(latex, el, { throwOnError: false, displayMode: true });
         }
-
-        renderKatex('#seq-formula-sum1',
-            '\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}');
-        renderKatex('#seq-formula-sum2',
-            '\\sum_{k=1}^{n} k^2 = \\frac{n(n+1)(2n+1)}{6}');
-        renderKatex('#seq-formula-sum3',
-            '\\sum_{k=1}^{n} k^3 = \\left(\\frac{n(n+1)}{2}\\right)^2');
+        renderKatex('#seq-formula-sum1', '\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}');
+        renderKatex('#seq-formula-sum2', '\\sum_{k=1}^{n} k^2 = \\frac{n(n+1)(2n+1)}{6}');
+        renderKatex('#seq-formula-sum3', '\\sum_{k=1}^{n} k^3 = \\left(\\frac{n(n+1)}{2}\\right)^2');
 
         /* ============================================================
-           3. TAB 1 — 자연수의 합 (Σk) : 계단탑 + 뒤집기 애니메이션
+           3. TAB 1 — Σk 계단탑
         ============================================================ */
         const canvas1 = document.getElementById('seq-canvas-sum1');
         const ctx1 = canvas1 ? canvas1.getContext('2d') : null;
@@ -93,180 +77,82 @@ window.initSeq = (function () {
         const runBtn1 = document.getElementById('seq-run-btn-sum1');
         const fb1 = document.getElementById('seq-feedback-sum1');
 
-        let n1 = 5;            // 현재 n
-        let anim1Id = null;    // 애니메이션 ID
-        let anim1Running = false;
+        let n1 = 5, anim1Id = null, anim1Running = false;
 
         function getBlockSize1(n) {
             if (!canvas1) return 30;
-            // 완성 직사각형: (n+1)열 × n행
             return Math.min(Math.floor((canvas1.width - 80) / (n + 1)), 40);
         }
 
         function drawSum1(animOffset) {
             if (!ctx1) return;
-            const n = n1;
-            const W = canvas1.width, H = canvas1.height;
+            const n = n1, W = canvas1.width, H = canvas1.height;
             const bs = getBlockSize1(n);
-
-            // 완성 직사각형 기준: n행 × (n+1)열
-            const gridW = (n + 1) * bs;
-            const gridH = n * bs;
-            const ox = Math.floor((W - gridW) / 2);
-            const oy = Math.floor((H - gridH) / 2);
+            const gridW = (n + 1) * bs, gridH = n * bs;
+            const ox = Math.floor((W - gridW) / 2), oy = Math.floor((H - gridH) / 2);
 
             ctx1.clearRect(0, 0, W, H);
+            ctx1.strokeStyle = 'rgba(0,0,0,0.05)'; ctx1.lineWidth = 0.5;
+            for (let r = 0; r <= n; r++) { ctx1.beginPath(); ctx1.moveTo(ox, oy + r * bs); ctx1.lineTo(ox + (n + 1) * bs, oy + r * bs); ctx1.stroke(); }
+            for (let c = 0; c <= n + 1; c++) { ctx1.beginPath(); ctx1.moveTo(ox + c * bs, oy); ctx1.lineTo(ox + c * bs, oy + n * bs); ctx1.stroke(); }
 
-            // 배경 격자
-            ctx1.strokeStyle = 'rgba(0,0,0,0.05)';
-            ctx1.lineWidth = 0.5;
-            for (let r = 0; r <= n; r++) {
-                ctx1.beginPath();
-                ctx1.moveTo(ox, oy + r * bs);
-                ctx1.lineTo(ox + (n + 1) * bs, oy + r * bs);
-                ctx1.stroke();
-            }
-            for (let c = 0; c <= n + 1; c++) {
-                ctx1.beginPath();
-                ctx1.moveTo(ox + c * bs, oy);
-                ctx1.lineTo(ox + c * bs, oy + n * bs);
-                ctx1.stroke();
-            }
-
-            /* --- 원래 계단탑: row k-1에 k개 블록 (왼쪽 정렬)
-               k=1 → row 0 (맨 위), k=n → row n-1 (맨 아래) */
             for (let k = 1; k <= n; k++) {
-                const row = k - 1;  // ← 핵심: 1부터 위에서 아래로
-                const color = PALETTE[(k - 1) % PALETTE.length];
-                const dark = DARK_PALETTE[(k - 1) % DARK_PALETTE.length];
+                const row = k - 1, color = PALETTE[(k - 1) % PALETTE.length], dark = DARK_PALETTE[(k - 1) % DARK_PALETTE.length];
                 for (let col = 0; col < k; col++) {
-                    const x = ox + col * bs;
-                    const y = oy + row * bs;
-                    ctx1.fillStyle = color;
-                    ctx1.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-                    ctx1.strokeStyle = dark;
-                    ctx1.lineWidth = 1.5;
-                    ctx1.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
-
-                    if (bs >= 20) {
-                        ctx1.fillStyle = 'rgba(0,0,0,0.45)';
-                        ctx1.font = `bold ${Math.min(bs * 0.38, 13)}px Outfit, sans-serif`;
-                        ctx1.textAlign = 'center';
-                        ctx1.textBaseline = 'middle';
-                        ctx1.fillText(k, x + bs / 2, y + bs / 2);
-                    }
+                    const x = ox + col * bs, y = oy + row * bs;
+                    ctx1.fillStyle = color; ctx1.fillRect(x + 1, y + 1, bs - 2, bs - 2);
+                    ctx1.strokeStyle = dark; ctx1.lineWidth = 1.5; ctx1.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
+                    if (bs >= 20) { ctx1.fillStyle = 'rgba(0,0,0,0.45)'; ctx1.font = `bold ${Math.min(bs * 0.38, 13)}px Outfit,sans-serif`; ctx1.textAlign = 'center'; ctx1.textBaseline = 'middle'; ctx1.fillText(k, x + bs / 2, y + bs / 2); }
                 }
             }
-
-            /* --- 뒤집힌 반투명 계단탑 ---
-               뒤집힌 탑: row k-1에 (n+1-k)개 블록, 원래 탑 오른쪽에 이어붙임
-               합쳐서 각 행 → (n+1)개 블록 → n×(n+1) 직사각형
-               animOffset > 0 : 위에서 내려오는 중 (y 좌표를 -offset만큼 올림)
-               animOffset = 0 : 완성 위치
-               animOffset = undefined : 숨김
-            */
             if (animOffset !== undefined) {
                 const alpha = animOffset === 0 ? 0.75 : 0.55;
                 for (let k = 1; k <= n; k++) {
-                    const row = k - 1;
-                    // 색상 반전: 원래 탑의 row k-1 = PALETTE[k-1]
-                    // 뒤집힌 탑의 row k-1 = PALETTE[n-k] (반대 방향)
-                    const color = PALETTE[(n - k) % PALETTE.length];
-                    const dark = DARK_PALETTE[(n - k) % DARK_PALETTE.length];
-                    // 원래 탑이 col 0..k-1 이므로, 뒤집힌 탑은 col k..n
+                    const row = k - 1, color = PALETTE[(n - k) % PALETTE.length], dark = DARK_PALETTE[(n - k) % DARK_PALETTE.length];
                     for (let col = k; col <= n; col++) {
-                        const x = ox + col * bs;
-                        const y = oy + row * bs - animOffset;
-                        ctx1.fillStyle = hexToRgba(color, alpha);
-                        ctx1.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-                        ctx1.strokeStyle = dark;
-                        ctx1.lineWidth = 1;
-                        ctx1.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
+                        const x = ox + col * bs, y = oy + row * bs - animOffset;
+                        ctx1.fillStyle = hexToRgba(color, alpha); ctx1.fillRect(x + 1, y + 1, bs - 2, bs - 2);
+                        ctx1.strokeStyle = dark; ctx1.lineWidth = 1; ctx1.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
                     }
                 }
             }
-
-            // 완성 시 치수 표시
             if (animOffset === 0) {
-                ctx1.strokeStyle = '#e53e3e';
-                ctx1.lineWidth = 3;
-                ctx1.setLineDash([6, 3]);
-                ctx1.strokeRect(ox, oy, (n + 1) * bs, n * bs);
-                ctx1.setLineDash([]);
-
-                ctx1.fillStyle = '#e53e3e';
-                ctx1.font = `bold ${Math.min(bs * 0.5, 16)}px Outfit, sans-serif`;
-                ctx1.textAlign = 'center';
-                ctx1.textBaseline = 'bottom';
+                ctx1.strokeStyle = '#e53e3e'; ctx1.lineWidth = 3; ctx1.setLineDash([6, 3]);
+                ctx1.strokeRect(ox, oy, (n + 1) * bs, n * bs); ctx1.setLineDash([]);
+                ctx1.fillStyle = '#e53e3e'; ctx1.font = `bold ${Math.min(bs * 0.5, 16)}px Outfit,sans-serif`;
+                ctx1.textAlign = 'center'; ctx1.textBaseline = 'bottom';
                 ctx1.fillText(`n+1 = ${n + 1}`, ox + (n + 1) * bs / 2, oy - 6);
-                ctx1.textAlign = 'right';
-                ctx1.textBaseline = 'middle';
+                ctx1.textAlign = 'right'; ctx1.textBaseline = 'middle';
                 ctx1.fillText(`n = ${n}`, ox - 6, oy + n * bs / 2);
             }
         }
 
         function animateSum1() {
             if (!ctx1 || anim1Running) return;
-            anim1Running = true;
-            if (runBtn1) runBtn1.disabled = true;
+            anim1Running = true; if (runBtn1) runBtn1.disabled = true;
             if (fb1) fb1.style.opacity = '0';
-
-            const n = n1;
-            const bs = getBlockSize1(n);
-            const totalDrop = (n + 1) * bs; // 시작 위치: 맨 위에서 아래로
-            let offset = totalDrop;
-            const speed = Math.max(3, totalDrop / 50);
-
+            const n = n1, bs = getBlockSize1(n), totalDrop = (n + 1) * bs;
+            let offset = totalDrop; const speed = Math.max(3, totalDrop / 50);
             function step() {
                 offset -= speed;
                 if (offset <= 0) {
-                    offset = 0;
-                    drawSum1(0);
-                    // 피드백
-                    if (fb1) {
-                        const sum = n * (n + 1) / 2;
-                        fb1.innerHTML = `
-                          <span class="seq-fb-big">총 넓이 = n × (n+1) = ${n} × ${n + 1} = ${n * (n + 1)}</span><br>
-                          <span class="seq-fb-sub">따라서 원래 구하려던 합은 절반인</span>
-                          <span class="seq-fb-formula"> ${n}(${n + 1}) ÷ 2 = <strong>${sum}</strong></span>`;
-                        fb1.classList.add('show');
-                        fb1.style.opacity = '1';
-                    }
-                    anim1Running = false;
-                    if (runBtn1) runBtn1.disabled = false;
-                    return;
+                    offset = 0; drawSum1(0);
+                    if (fb1) { const sum = n * (n + 1) / 2; fb1.innerHTML = `<span class="seq-fb-big">총 넓이 = n × (n+1) = ${n} × ${n + 1} = ${n * (n + 1)}</span><br><span class="seq-fb-sub">따라서 원래 구하려던 합은 절반인</span><span class="seq-fb-formula"> ${n}(${n + 1}) ÷ 2 = <strong>${sum}</strong></span>`; fb1.classList.add('show'); fb1.style.opacity = '1'; }
+                    anim1Running = false; if (runBtn1) runBtn1.disabled = false; return;
                 }
-                drawSum1(offset);
-                anim1Id = requestAnimationFrame(step);
+                drawSum1(offset); anim1Id = requestAnimationFrame(step);
             }
             anim1Id = requestAnimationFrame(step);
         }
 
-        if (slider1) {
-            slider1.addEventListener('input', () => {
-                n1 = parseInt(slider1.value);
-                if (nVal1) nVal1.textContent = n1;
-                if (anim1Running) { cancelAnimationFrame(anim1Id); anim1Running = false; }
-                if (fb1) { fb1.classList.remove('show'); fb1.style.opacity = '0'; }
-                if (runBtn1) runBtn1.disabled = false;
-                drawSum1();
-            });
-        }
+        if (slider1) slider1.addEventListener('input', () => { n1 = parseInt(slider1.value); if (nVal1) nVal1.textContent = n1; if (anim1Running) { cancelAnimationFrame(anim1Id); anim1Running = false; } if (fb1) { fb1.classList.remove('show'); fb1.style.opacity = '0'; } if (runBtn1) runBtn1.disabled = false; drawSum1(); });
         if (runBtn1) runBtn1.addEventListener('click', animateSum1);
-
         const reset1 = document.getElementById('seq-reset-btn-sum1');
-        if (reset1) {
-            reset1.addEventListener('click', () => {
-                if (anim1Running) { cancelAnimationFrame(anim1Id); anim1Running = false; }
-                if (fb1) { fb1.classList.remove('show'); fb1.style.opacity = '0'; }
-                if (runBtn1) runBtn1.disabled = false;
-                drawSum1();
-            });
-        }
+        if (reset1) reset1.addEventListener('click', () => { if (anim1Running) { cancelAnimationFrame(anim1Id); anim1Running = false; } if (fb1) { fb1.classList.remove('show'); fb1.style.opacity = '0'; } if (runBtn1) runBtn1.disabled = false; drawSum1(); });
 
         /* ============================================================
-           4. TAB 2 — 제곱의 합 (Σk²) : 계단 피라미드 × 6 = 직육면체 증명
-           (유튜브 '자연수의 거듭제곱의 합 직관적 이해-3D' 방식)
+           4. TAB 2 — Σk² 3D 시각화
+           3개 계단 피라미드 → 합치기 → 절반 잘라 이동 → 직육면체
         ============================================================ */
         const canvas2 = document.getElementById('seq-canvas-sum2');
         const ctx2 = canvas2 ? canvas2.getContext('2d') : null;
@@ -274,197 +160,379 @@ window.initSeq = (function () {
         const nVal2 = document.getElementById('seq-n-val-sum2');
         const fb2 = document.getElementById('seq-feedback-sum2');
 
+        /* 3D 색상 세트 */
+        const COL3D = {
+            A: { face: ['#ffb3c6', '#e8809a', '#d45c7a'], edge: '#b03060' },
+            B: { face: ['#a8d8ea', '#7ab8d4', '#5097b8'], edge: '#2e6e8a' },
+            C: { face: ['#b5ead7', '#7fcfb0', '#4db48e'], edge: '#2d8060' },
+            HALF: { face: ['#ffd6a5', '#f0a850', '#d08020'], edge: '#a05010' },
+        };
+
         let n2 = 4;
-        let colProgress2 = new Array(20).fill(0);
-        let anim2Id = null;
-        for (let i = 0; i < n2; i++) colProgress2[i] = 1;
+        let s2State = 'separate';   // separate | merging | merged | cutting | done
+        let s2Prog = 0;
+        let s2RotY = -Math.PI / 4;  // -45도 (대각선 측면)
+        let s2RotX = Math.PI / 4;   // +45도 (위에서 아래로 더 깊게 내려다보기)
+        let s2Drag = false;
+        let s2LastMX = 0, s2LastMY = 0;
+        let s2AnimRaf = null;
+        let s2Zoom = 1.0;  // 줌 변수 추가
 
-        function dropColumn2(k) {
-            const idx = k - 1;
-            colProgress2[idx] = 0;
-            if (anim2Id) cancelAnimationFrame(anim2Id);
-            const start = performance.now();
-            const dur = 450;
-            function step(now) {
-                const t = Math.min(1, (now - start) / dur);
-                const p = 1 - Math.pow(1 - t, 3);
-                colProgress2[idx] = p;
-                drawSum2();
-                if (t < 1) anim2Id = requestAnimationFrame(step);
-            }
-            anim2Id = requestAnimationFrame(step);
+        /* 회전 */
+        function rot3D(x, y, z) {
+            const x1 = x * Math.cos(s2RotY) + z * Math.sin(s2RotY), z1 = -x * Math.sin(s2RotY) + z * Math.cos(s2RotY);
+            const y2 = y * Math.cos(s2RotX) - z1 * Math.sin(s2RotX), z2 = y * Math.sin(s2RotX) + z1 * Math.cos(s2RotX);
+            return [x1, y2, z2];
         }
-
-        function drawSum2() {
-            if (!ctx2 || !canvas2) return;
-            const n = n2;
-            const W = canvas2.width, H = canvas2.height;
-            ctx2.clearRect(0, 0, W, H);
-            const PAD = 20;
-            const splitX = Math.floor(W * 0.48);
-
-            /* ── 왼쪽: 계단형 피라미드 ── */
-            const leftW = splitX - PAD;
-            const leftH = H - PAD * 2 - 22;
-            const totalCells = n * (n + 1) / 2;
-            const gap = Math.max(2, Math.floor(leftW * 0.015));
-            const U = Math.max(4, Math.min(
-                Math.floor((leftW - gap * (n - 1)) / totalCells),
-                Math.floor(leftH / n),
-                40
-            ));
-            const pyramidW = totalCells * U + gap * (n - 1);
-            let px = PAD + Math.floor((leftW - pyramidW) / 2);
-            const baseY = PAD + leftH;
-
-            ctx2.fillStyle = '#2d3748';
-            ctx2.font = 'bold 13px Outfit, sans-serif';
-            ctx2.textAlign = 'center';
-            ctx2.textBaseline = 'bottom';
-            ctx2.fillText('계단형 피라미드 (Σk²)', PAD + leftW / 2, PAD - 2);
-
-            const visSum = [...Array(n)].reduce((a, _, i) => a + (colProgress2[i] > 0.5 ? (i + 1) ** 2 : 0), 0);
-            ctx2.fillStyle = '#e53e3e';
-            ctx2.font = 'bold 12px Outfit, sans-serif';
-            ctx2.textAlign = 'center';
-            ctx2.textBaseline = 'top';
-            ctx2.fillText(`= ${visSum}`, PAD + leftW / 2, PAD + 1);
-
+        /* 투영 */
+        function proj3D(x, y, z, cx, cy, scale) {
+            const fov = 30, zOff = fov + z; // 원근감(FOV)을 확 늘려서 테두리 부분의 심한 왜곡 방지
+            return [cx + x / zOff * scale * fov, cy - y / zOff * scale * fov];
+        }
+        /* 큐브 1개의 면 생성 */
+        function makeCubeFaces(bx, by, bz, cs, h = 1) {
+            return [
+                { pts: [[bx, by + h, bz], [bx + 1, by + h, bz], [bx + 1, by + h, bz + 1], [bx, by + h, bz + 1]], norm: [0, 1, 0], ci: 0, cs },
+                { pts: [[bx, by, bz + 1], [bx + 1, by, bz + 1], [bx + 1, by + h, bz + 1], [bx, by + h, bz + 1]], norm: [0, 0, 1], ci: 1, cs },
+                { pts: [[bx + 1, by, bz], [bx + 1, by + h, bz], [bx + 1, by + h, bz + 1], [bx + 1, by, bz + 1]], norm: [1, 0, 0], ci: 2, cs },
+                { pts: [[bx, by, bz], [bx, by + h, bz], [bx, by + h, bz + 1], [bx, by, bz + 1]], norm: [-1, 0, 0], ci: 2, cs },
+                { pts: [[bx, by, bz], [bx + 1, by, bz], [bx + 1, by + h, bz], [bx, by + h, bz]], norm: [0, 0, -1], ci: 1, cs },
+                { pts: [[bx, by, bz], [bx + 1, by, bz], [bx + 1, by, bz + 1], [bx, by, bz + 1]], norm: [0, -1, 0], ci: 0, cs },
+            ];
+        }
+        /* 계단 피라미드 블록 목록 */
+        function makePyramid2(n, cs) {
+            const blocks = [];
             for (let k = 1; k <= n; k++) {
-                const prog = Math.max(0, colProgress2[k - 1]);
-                const color = PALETTE[(k - 1) % PALETTE.length];
-                const dark = DARK_PALETTE[(k - 1) % DARK_PALETTE.length];
-                const colW = k * U;
-                const cells = Math.floor(k * prog);
-                if (prog > 0.01) {
-                    for (let row = 0; row < cells; row++) {
-                        for (let col = 0; col < k; col++) {
-                            ctx2.fillStyle = color;
-                            ctx2.fillRect(px + col * U + 0.5, baseY - (row + 1) * U + 0.5, U - 1, U - 1);
-                        }
-                    }
-                    ctx2.strokeStyle = hexToRgba(dark, 0.35);
-                    ctx2.lineWidth = 0.6;
-                    for (let row = 0; row <= cells; row++) {
-                        ctx2.beginPath(); ctx2.moveTo(px, baseY - row * U); ctx2.lineTo(px + colW, baseY - row * U); ctx2.stroke();
-                    }
-                    for (let col = 0; col <= k; col++) {
-                        ctx2.beginPath(); ctx2.moveTo(px + col * U, baseY - cells * U); ctx2.lineTo(px + col * U, baseY); ctx2.stroke();
-                    }
-                    ctx2.strokeStyle = dark; ctx2.lineWidth = 1.5;
-                    ctx2.strokeRect(px + 0.5, baseY - cells * U + 0.5, colW - 1, cells * U - 1);
-                    if (prog > 0.85 && U >= 10) {
-                        ctx2.fillStyle = '#2d3748';
-                        ctx2.font = `bold ${Math.min(U * 0.6, 12)}px Outfit, sans-serif`;
-                        ctx2.textAlign = 'center'; ctx2.textBaseline = 'top';
-                        ctx2.fillText(`${k}²`, px + colW / 2, baseY + 3);
-                    }
-                }
-                px += colW + gap;
+                const size = n + 1 - k;
+                for (let bx = 0; bx < size; bx++) for (let bz = 0; bz < size; bz++)
+                    blocks.push({ x: bx, y: k - 1, z: bz, cs });
             }
-
-            /* ── 오른쪽: (2n+1)행 × (n+1)열 3색 직사각형 ── */
-            const rightX = splitX + PAD;
-            const rightW = W - rightX - PAD;
-            const rightH = H - PAD * 2 - 30;
-            const rows = 2 * n + 1, cols = n + 1;
-            const cellU = Math.max(4, Math.min(
-                Math.floor(rightW / cols),
-                Math.floor(rightH / rows),
-                36
-            ));
-            const gridW = cols * cellU, gridH = rows * cellU;
-            const gX = rightX + Math.floor((rightW - gridW) / 2);
-            const gY = PAD + Math.floor((rightH - gridH) / 2) + 14;
-
-            const CA = '#ffb3c6', CB = '#a8d8ea', CC = '#b5ead7';
-            const DA = '#d4607a', DB = '#5b9bb5', DC = '#5fad8a';
-
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    let fill, stroke;
-                    if (r < n) { fill = c < r + 1 ? CA : CB; stroke = c < r + 1 ? DA : DB; }
-                    else if (r === n) { fill = CC; stroke = DC; }
-                    else { const lc = 2 * n - r + 1; fill = c < lc ? CB : CA; stroke = c < lc ? DB : DA; }
-                    ctx2.fillStyle = fill;
-                    ctx2.fillRect(gX + c * cellU + 0.5, gY + r * cellU + 0.5, cellU - 1, cellU - 1);
-                    ctx2.strokeStyle = hexToRgba(stroke, 0.5); ctx2.lineWidth = 0.6;
-                    ctx2.strokeRect(gX + c * cellU + 0.5, gY + r * cellU + 0.5, cellU - 1, cellU - 1);
-                }
-            }
-            ctx2.strokeStyle = '#2d3748'; ctx2.lineWidth = 2;
-            ctx2.strokeRect(gX, gY, gridW, gridH);
-            ctx2.strokeStyle = '#4a5568'; ctx2.lineWidth = 1.5;
-            [n, n + 1].forEach(r => {
-                ctx2.beginPath(); ctx2.moveTo(gX, gY + r * cellU); ctx2.lineTo(gX + gridW, gY + r * cellU); ctx2.stroke();
-            });
-
-            const lsz = Math.min(cellU * 0.65, 11);
-            ctx2.fillStyle = '#2b6cb0'; ctx2.font = `bold ${lsz}px Outfit, sans-serif`;
-            ctx2.textAlign = 'center'; ctx2.textBaseline = 'bottom';
-            ctx2.fillText(`n+1 = ${n + 1}`, gX + gridW / 2, gY - 2);
-            ctx2.save(); ctx2.translate(gX - 4, gY + gridH / 2); ctx2.rotate(-Math.PI / 2);
-            ctx2.textAlign = 'center'; ctx2.textBaseline = 'bottom';
-            ctx2.fillText(`2n+1 = ${2 * n + 1}`, 0, 0); ctx2.restore();
-
-            // 범례
-            const legY = gY + gridH + 5, legH2 = H - legY - 4;
-            if (legH2 > 10) {
-                [{ c: CA, t: '핑크 쌍 (×2)' }, { c: CB, t: '하늘 쌍 (×2)' }, { c: CC, t: '민트 (×2)' }].forEach((item, i) => {
-                    const lx = gX + i * 82;
-                    ctx2.fillStyle = item.c; ctx2.fillRect(lx, legY, 10, 10);
-                    ctx2.strokeStyle = '#718096'; ctx2.lineWidth = 0.8; ctx2.strokeRect(lx, legY, 10, 10);
-                    ctx2.fillStyle = '#4a5568'; ctx2.font = `${Math.min(legH2 * 0.75, 10)}px Outfit, sans-serif`;
-                    ctx2.textAlign = 'left'; ctx2.textBaseline = 'middle';
-                    ctx2.fillText(item.t, lx + 13, legY + 5);
-                });
-            }
-
-            ctx2.fillStyle = '#2d3748'; ctx2.font = 'bold 12px Outfit, sans-serif';
-            ctx2.textAlign = 'center'; ctx2.textBaseline = 'bottom';
-            ctx2.fillText('피라미드 × 6 = 직육면체', rightX + rightW / 2, PAD - 1);
-
-            const sum = n * (n + 1) * (2 * n + 1) / 6;
-            const eqX = gX + gridW + 7;
-            let ey = gY;
-            [{ t: '6 × Σk²', c: '#2d3748', b: true, s: 11 }, { t: `= n(n+1)(2n+1)`, c: '#4a5568', b: false, s: 10 },
-            { t: `= ${n}·${n + 1}·${2 * n + 1}`, c: '#e53e3e', b: true, s: 10 }, { t: `= ${6 * sum}`, c: '#e53e3e', b: true, s: 11 },
-            { t: '', c: '', b: false, s: 6 }, { t: `∴ Σk²`, c: '#2d3748', b: true, s: 11 }, { t: `= ${sum}`, c: '#e53e3e', b: true, s: 14 }
-            ].forEach(el => {
-                if (!el.t) { ey += el.s; return; }
-                ctx2.fillStyle = el.c; ctx2.font = `${el.b ? 'bold' : ''} ${el.s}px Outfit, sans-serif`;
-                ctx2.textAlign = 'left'; ctx2.textBaseline = 'top';
-                ctx2.fillText(el.t, eqX, ey, W - eqX - 4); ey += el.s + 4;
-            });
-
-            if (fb2) {
-                fb2.innerHTML = `<span class="seq-fb-big">1² + 2² + ··· + ${n}² = ${sum}</span><br>` +
-                    `<span class="seq-fb-sub">피라미드 6개 → ${n}×${n + 1}×${2 * n + 1} = ${6 * sum} → ÷6 = <strong>${sum}</strong></span>`;
-                fb2.classList.add('show');
-            }
+            return blocks;
         }
+        function easeIO(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
-        if (slider2) {
-            slider2.addEventListener('input', () => {
-                const newN = parseInt(slider2.value);
-                if (nVal2) nVal2.textContent = newN;
-                const oldN = n2;
-                n2 = newN;
-                if (newN > oldN) {
-                    for (let k = oldN + 1; k <= newN; k++) {
-                        const delay = (k - oldN - 1) * 120;
-                        setTimeout(() => { if (n2 >= k) dropColumn2(k); }, delay);
-                    }
+        function renderSum2() {
+            if (!ctx2 || !canvas2) return;
+            const W = canvas2.width, H = canvas2.height, n = n2;
+            ctx2.clearRect(0, 0, W, H);
+
+            const scale = (Math.min(W, H) / (n * 3.0)) * s2Zoom;
+            const cx = W / 2, cy = H * 0.75;
+            let allFaces = [];
+
+            const p = (s2State === 'separate') ? 0 :
+                (s2State === 'merging') ? easeIO(s2Prog) : 1;
+
+            const gapX = n * 1.8; // 분리 시에 피라미드들이 너무 겹치지 않고 넓게 벌어지도록 조정
+
+            // cutting 상태일 경우 (최상단 절반 지그재그 층) 띄우기
+            const cutLift = (s2State === 'cutting') ? easeIO(s2Prog) * n * 0.8 :
+                (s2State === 'done') ? n * 0.8 : 0;
+
+            const cxOff = n * 0.5;
+            const czOff = n * 0.5;
+
+            // A: 왼쪽
+            makePyramid2(n, COL3D.A).forEach(b => {
+                const startX = b.x - gapX - cxOff;
+                const startY = b.y;
+                const startZ = b.z - czOff;
+
+                const endX = b.y - cxOff;
+                const endY = (b.x + b.y);
+                const endZ = (b.z + b.y) - czOff;
+
+                allFaces.push(...makeCubeFaces(
+                    startX * (1 - p) + endX * p,
+                    startY * (1 - p) + endY * p,
+                    startZ * (1 - p) + endZ * p,
+                    COL3D.A
+                ));
+            });
+
+            // B: 가운데
+            makePyramid2(n, COL3D.B).forEach(b => {
+                const startX = b.x - cxOff;
+                const startY = b.y;
+                const startZ = b.z - czOff;
+
+                const endX = (b.x + b.y + 1) - cxOff;
+                const endY = b.y;
+                const endZ = (b.z + b.y) - czOff;
+
+                allFaces.push(...makeCubeFaces(
+                    startX * (1 - p) + endX * p,
+                    startY * (1 - p) + endY * p,
+                    startZ * (1 - p) + endZ * p,
+                    COL3D.B
+                ));
+            });
+
+            // C: 오른쪽
+            makePyramid2(n, COL3D.C).forEach(b => {
+                const startX = b.x + gapX - cxOff;
+                const startY = b.y;
+                const startZ = b.z - czOff;
+
+                const endX = (b.z + b.y + 1) - cxOff;
+                const endY = (b.x + b.y + 1);
+                const endZ = b.y - czOff;
+
+                const isTop = (endY === n) && (p === 1);
+
+                if (isTop && (s2State === 'cutting' || s2State === 'done')) {
+                    const cutP = (s2State === 'done') ? 1 : easeIO(s2Prog);
+
+                    // 절반 두께(0.5)의 아랫부분 블록 생성
+                    allFaces.push(...makeCubeFaces(
+                        startX * (1 - p) + endX * p,
+                        startY * (1 - p) + endY * p,
+                        startZ * (1 - p) + endZ * p,
+                        COL3D.C,
+                        0.5
+                    ));
+
+                    // 중심점을 기준으로 반 바퀴(180도) 회전
+                    const theta = cutP * Math.PI;
+                    const rx = 0.5, rz = 0; // 기하학적 중심축 (렌더링 좌표계)
+                    const cosT = Math.cos(theta);
+                    const sinT = Math.sin(theta);
+
+                    // 아치 모양으로 공중에 살짝 띄웠다가 빈 곳으로 들어가는 자연스러운 Y축 모션
+                    const arcY = Math.sin(cutP * Math.PI) * (n * 0.4);
+                    const dropY = -0.5 * cutP + arcY;
+
+                    let topFaces = makeCubeFaces(
+                        startX * (1 - p) + endX * p,
+                        startY * (1 - p) + endY * p + 0.5, // 0.5 더 높은 곳(상반부)에서 시작
+                        startZ * (1 - p) + endZ * p,
+                        COL3D.HALF,
+                        0.5
+                    );
+
+                    topFaces.forEach(f => {
+                        f.pts.forEach(pt => {
+                            const dx = pt[0] - rx;
+                            const dz = pt[2] - rz;
+                            // 회전 변환
+                            pt[0] = rx + dx * cosT - dz * sinT;
+                            pt[2] = rz + dx * sinT + dz * cosT;
+                            // Y축 승강
+                            pt[1] += dropY;
+                        });
+                        // 법선 벡터 업데이트
+                        const nx = f.norm[0];
+                        const nz = f.norm[2];
+                        f.norm[0] = nx * cosT - nz * sinT;
+                        f.norm[2] = nx * sinT + nz * cosT;
+                    });
+
+                    allFaces.push(...topFaces);
+
                 } else {
-                    for (let k = newN + 1; k <= oldN; k++) colProgress2[k - 1] = 0;
-                    if (anim2Id) cancelAnimationFrame(anim2Id);
-                    drawSum2();
+                    allFaces.push(...makeCubeFaces(
+                        startX * (1 - p) + endX * p,
+                        startY * (1 - p) + endY * p,
+                        startZ * (1 - p) + endZ * p,
+                        COL3D.C
+                    ));
                 }
             });
+
+            /* 화가 알고리즘 */
+            const projected = allFaces.map(face => {
+                const rp = face.pts.map(([x, y, z]) => rot3D(x, y, z));
+                const avgZ = rp.reduce((s, p) => s + p[2], 0) / 4;
+                const [rnx, rny, rnz] = rot3D(...face.norm);
+                const [r0x, r0y, r0z] = rot3D(0, 0, 0);
+                const dot = -(rnz - r0z);
+                return { face, rp, avgZ, dot };
+            }).filter(f => f.dot > -0.15);
+            projected.sort((a, b) => b.avgZ - a.avgZ);
+
+            projected.forEach(({ face, rp, dot }) => {
+                const { ci, cs } = face;
+                const pts2D = rp.map(([rx, ry, rz]) => proj3D(rx, ry, rz, cx, cy, scale));
+                const lf = [1.0, 0.75, 0.55];
+                const lv = Math.max(0.3, (dot + 1) * 0.5 * lf[ci] + lf[ci] * 0.2);
+                const bc = cs.face[ci];
+                const r = parseInt(bc.slice(1, 3), 16), g = parseInt(bc.slice(3, 5), 16), b = parseInt(bc.slice(5, 7), 16);
+                ctx2.beginPath();
+                ctx2.moveTo(pts2D[0][0], pts2D[0][1]);
+                for (let i = 1; i < pts2D.length; i++) ctx2.lineTo(pts2D[i][0], pts2D[i][1]);
+                ctx2.closePath();
+                ctx2.fillStyle = `rgb(${Math.round(r * lv)},${Math.round(g * lv)},${Math.round(b * lv)})`;
+                ctx2.fill();
+                ctx2.strokeStyle = cs.edge; ctx2.lineWidth = 0.7; ctx2.stroke();
+            });
+
+            /* 모서리 수치 길이 표시 라벨 (직육면체 완성 시) */
+            if (s2State === 'done') {
+                ctx2.save();
+                ctx2.font = 'bold 22px Outfit, sans-serif'; // 크기 키움
+                ctx2.textAlign = 'center';
+                ctx2.textBaseline = 'middle';
+
+                const drawLabel = (trueX, trueY, trueZ, text) => {
+                    const [rx, ry, rz] = rot3D(trueX - cxOff, trueY, trueZ - czOff);
+                    const [px, py] = proj3D(rx, ry, rz, cx, cy, scale);
+
+                    const tw = ctx2.measureText(text).width;
+                    const padx = 12, pady = 8;
+                    ctx2.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx2.beginPath();
+                    ctx2.roundRect(px - tw / 2 - padx, py - 11 - pady, tw + padx * 2, 22 + pady * 2, 10);
+                    ctx2.fill();
+                    ctx2.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                    ctx2.lineWidth = 1;
+                    ctx2.stroke();
+
+                    ctx2.fillStyle = '#e53e3e';
+                    ctx2.fillText(text, px, py);
+                };
+
+                // 가로 길이 (X축: 0 ~ n+1)
+                // 전면 하단 모서리의 중앙 부분: X = (n+1)/2, Y = 0, Z = n + 0.5 (표시가 겹치지 않게 살짝 앞으로 뺌)
+                drawLabel((n + 1) / 2, -0.2, n + 0.5, String(n + 1));
+
+                // 세로 깊이 (Z축: 0 ~ n)
+                // 우측 하단 모서리의 중앙 부분: X = n + 1.5, Y = 0, Z = n / 2
+                drawLabel(n + 1 + 0.5, -0.2, n / 2, String(n));
+
+                // 높이 (Y축: 0 ~ n+0.5)
+                // 우측 전면 수직 모서리의 중앙 부분: X = n + 1.3, Y = (n + 0.5) / 2, Z = n + 0.3
+                drawLabel(n + 1 + 0.3, (n + 0.5) / 2, n + 0.3, String(n + 0.5));
+
+                ctx2.restore();
+            }
+
+            /* HUD */
+            const sum = n * (n + 1) * (2 * n + 1) / 6;
+            const hudMsg = {
+                separate: ``,
+                merging: ``,
+                merged: ``,
+                cutting: ``,
+                done: ``,
+            };
+            ctx2.save();
+            ctx2.textAlign = 'center'; ctx2.font = `bold ${s2State === 'done' ? 14 : 13}px Outfit,sans-serif`;
+            ctx2.fillStyle = s2State === 'done' ? '#e53e3e' : '#2d3748';
+            ctx2.fillText(hudMsg[s2State] || '', W / 2, H - 12);
+            // 범례
+            [{ col: COL3D.A.face[0], t: 'A' }, { col: COL3D.B.face[0], t: 'B' }, { col: COL3D.C.face[0], t: 'C' }, { col: COL3D.HALF.face[0], t: '절반' }].forEach((l, i) => {
+                const lx = 10, ly = 18 + i * 18;
+                ctx2.fillStyle = l.col; ctx2.fillRect(lx, ly - 9, 11, 11);
+                ctx2.strokeStyle = '#888'; ctx2.lineWidth = 0.5; ctx2.strokeRect(lx, ly - 9, 11, 11);
+                ctx2.fillStyle = '#2d3748'; ctx2.font = '600 11px Outfit,sans-serif';
+                ctx2.textAlign = 'left'; ctx2.fillText(l.t, lx + 14, ly);
+            });
+            ctx2.fillStyle = '#a0aec0'; ctx2.font = '11px Outfit,sans-serif';
+            ctx2.textAlign = 'right'; ctx2.fillText('🖱 드래그 회전', W - 8, H - 8);
+            ctx2.restore();
         }
+
+        function updateFb2() {
+            if (!fb2) return;
+            const n = n2, sum = n * (n + 1) * (2 * n + 1) / 6;
+            const msgs = {
+                separate: `<span class="seq-fb-big">1² + 2² + ··· + ${n}² = ?</span><br><span class="seq-fb-sub">3개의 계단 피라미드를 합쳐보세요</span>`,
+                merged: `<span class="seq-fb-big">3 × Σk² = 계단형 덩어리</span><br><span class="seq-fb-sub">위쪽 절반을 잘라 옆에 붙이면 직육면체가 됩니다</span>`,
+                done: `<div class="seq-fb-big" style="display: inline-grid; grid-template-columns: auto auto; gap: 12px 6px; text-align: left; align-items: center;">
+                    <div style="text-align: right;">Σk²</div>
+                    <div>= n(n+1)(n+1/2) ÷ 3</div>
+                    <div></div>
+                    <div>= n(n+1)(2n+1) ÷ 6 = <strong>${sum}</strong></div>
+                </div>`,
+            };
+            const msg = msgs[s2State] || msgs.separate;
+            fb2.innerHTML = msg; fb2.classList.add('show');
+        }
+
+        function s2Animate(dur, onDone) {
+            if (s2AnimRaf) cancelAnimationFrame(s2AnimRaf);
+            const start = performance.now();
+            function step(now) {
+                s2Prog = easeIO(Math.min(1, (now - start) / dur));
+                renderSum2();
+                if (s2Prog < 1) s2AnimRaf = requestAnimationFrame(step);
+                else { s2AnimRaf = null; if (onDone) onDone(); }
+            }
+            s2AnimRaf = requestAnimationFrame(step);
+        }
+
+        function sum2Redraw() {
+            /* 캔버스 크기 재설정 */
+            const unitSeq = document.getElementById('unit-seq');
+            const availW = Math.max(300, (unitSeq ? unitSeq.clientWidth : 900) - 60);
+            canvas2.width = availW; canvas2.height = Math.round(availW * 0.55);
+            renderSum2(); updateFb2();
+        }
+
+        /* 드래그 회전 */
+        if (canvas2) {
+            canvas2.addEventListener('mousedown', e => { s2Drag = true; s2LastMX = e.clientX; s2LastMY = e.clientY; });
+            window.addEventListener('mousemove', e => {
+                if (!s2Drag) return;
+                s2RotY += (e.clientX - s2LastMX) * 0.012; s2RotX += (e.clientY - s2LastMY) * 0.012;
+                s2RotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, s2RotX));
+                s2LastMX = e.clientX; s2LastMY = e.clientY; renderSum2();
+            });
+            window.addEventListener('mouseup', () => s2Drag = false);
+            /* 터치 */
+            let s2LastT = null;
+            canvas2.addEventListener('touchstart', e => { if (e.touches.length === 1) { s2Drag = true; s2LastMX = e.touches[0].clientX; s2LastMY = e.touches[0].clientY; } }, { passive: true });
+            canvas2.addEventListener('touchmove', e => {
+                if (!s2Drag || e.touches.length !== 1) return; e.preventDefault();
+                s2RotY += (e.touches[0].clientX - s2LastMX) * 0.012; s2RotX += (e.touches[0].clientY - s2LastMY) * 0.012;
+                s2RotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, s2RotX));
+                s2LastMX = e.touches[0].clientX; s2LastMY = e.touches[0].clientY; renderSum2();
+            }, { passive: false });
+            canvas2.addEventListener('touchend', () => s2Drag = false);
+
+            // 휠 줌 추가
+            canvas2.addEventListener('wheel', e => {
+                e.preventDefault();
+                s2Zoom *= e.deltaY < 0 ? 1.1 : 0.9;
+                s2Zoom = Math.max(0.3, Math.min(3.0, s2Zoom));
+                renderSum2();
+            }, { passive: false });
+        }
+
+        /* 버튼 */
+        const btnMerge = document.getElementById('seq2-btn-merge');
+        const btnCut = document.getElementById('seq2-btn-cut');
+        const btnReset = document.getElementById('seq2-btn-reset');
+        if (btnMerge) btnMerge.addEventListener('click', () => {
+            if (s2State !== 'separate') return;
+            s2State = 'merging'; s2Prog = 0;
+            s2Animate(1200, () => { s2State = 'merged'; renderSum2(); updateFb2(); });
+        });
+        if (btnCut) btnCut.addEventListener('click', () => {
+            if (s2State !== 'merged') return;
+            s2State = 'cutting'; s2Prog = 0;
+            s2Animate(1000, () => { s2State = 'done'; renderSum2(); updateFb2(); });
+        });
+        if (btnReset) btnReset.addEventListener('click', () => {
+            if (s2AnimRaf) cancelAnimationFrame(s2AnimRaf);
+            s2State = 'separate'; s2Prog = 0;
+            s2Zoom = 1.0;  // 줌 리셋 추가
+            renderSum2(); updateFb2();
+        });
+
+        /* 슬라이더 */
+        if (slider2) slider2.addEventListener('input', () => {
+            n2 = parseInt(slider2.value);
+            if (nVal2) nVal2.textContent = n2;
+            if (s2AnimRaf) { cancelAnimationFrame(s2AnimRaf); s2AnimRaf = null; }
+            s2State = 'separate'; s2Prog = 0;
+            s2Zoom = 1.0;  // 줌 리셋 추가
+            renderSum2(); updateFb2();
+        });
 
         /* ============================================================
-           5. TAB 3 — 세제곱의 합 (Σk³) : ㄱ자 테트리스 퍼즐
+           5. TAB 3 — Σk³ ㄱ자 퍼즐
         ============================================================ */
         const canvas3 = document.getElementById('seq-canvas-sum3');
         const ctx3 = canvas3 ? canvas3.getContext('2d') : null;
@@ -472,279 +540,125 @@ window.initSeq = (function () {
         const nVal3 = document.getElementById('seq-n-val-sum3');
         const runBtn3 = document.getElementById('seq-run-btn-sum3');
         const fb3 = document.getElementById('seq-feedback-sum3');
+        let n3 = 3, anim3Id = null, anim3Running = false;
 
-        let n3 = 3;
-        let anim3Id = null;
-        let anim3Running = false;
-
-        // 삼각수: T(n) = 1+2+...+n = n(n+1)/2
         function T(n) { return n * (n + 1) / 2; }
-
-        /**
-         * k 번째 껍질(ㄱ자 조각)을 위한 블록 좌표를 반환.
-         * 큰 정사각형 T(k) × T(k) 내에서, 이전 T(k-1) × T(k-1) 을 제외한 영역을
-         * 세 부분으로 분할:
-         *   - 오른쪽 세로 띠: k × T(k-1) 블록 (col = T(k-1)..T(k)-1, row = 0..T(k-1)-1)
-         *   - 아래쪽 가로 띠: T(k-1) × k 블록 (row = T(k-1)..T(k)-1, col = 0..T(k-1)-1)
-         *   - 모서리 k×k 블록: (col = T(k-1)..T(k)-1, row = T(k-1)..T(k)-1)
-         *
-         * 총 넓이 = k*T(k-1) + T(k-1)*k + k*k = 2k*T(k-1) + k² = k(2T(k-1)+k) = k·k² = k³  ✓
-         */
         function getCubeShellBlocks(k) {
-            const t0 = T(k - 1); // 이전 정사각형 한 변
-            const t1 = T(k);     // 현재 정사각형 한 변
-            const blocks = [];
-
-            // 오른쪽 세로 띠
-            for (let row = 0; row < t0; row++) {
-                for (let col = t0; col < t1; col++) {
-                    blocks.push({ row, col, part: 'right' });
-                }
-            }
-            // 아래쪽 가로 띠
-            for (let row = t0; row < t1; row++) {
-                for (let col = 0; col < t0; col++) {
-                    blocks.push({ row, col, part: 'bottom' });
-                }
-            }
-            // 모서리 k×k
-            for (let row = t0; row < t1; row++) {
-                for (let col = t0; col < t1; col++) {
-                    blocks.push({ row, col, part: 'corner' });
-                }
-            }
+            const t0 = T(k - 1), t1 = T(k), blocks = [];
+            for (let r = 0; r < t0; r++) for (let c = t0; c < t1; c++) blocks.push({ row: r, col: c, part: 'right' });
+            for (let r = t0; r < t1; r++) for (let c = 0; c < t0; c++) blocks.push({ row: r, col: c, part: 'bottom' });
+            for (let r = t0; r < t1; r++) for (let c = t0; c < t1; c++) blocks.push({ row: r, col: c, part: 'corner' });
             return blocks;
         }
-
         function getBlockSize3(n) {
             if (!canvas3) return 20;
-            const side = T(n); // 정사각형 한 변 (블록 단위)
-            return Math.min(Math.floor((Math.min(canvas3.width, canvas3.height) - 60) / side), 36);
+            return Math.min(Math.floor((Math.min(canvas3.width, canvas3.height) - 60) / T(n)), 36);
         }
-
         function drawCubePuzzle(n, highlightK, animBlocks) {
             if (!ctx3) return;
-            const W = canvas3.width, H = canvas3.height;
+            const W = canvas3.width, H = canvas3.height, side = T(n), bs = getBlockSize3(n);
+            const ox = Math.floor((W - side * bs) / 2), oy = Math.floor((H - side * bs) / 2);
             ctx3.clearRect(0, 0, W, H);
-
-            const side = T(n);
-            const bs = getBlockSize3(n);
-            const ox = Math.floor((W - side * bs) / 2);
-            const oy = Math.floor((H - side * bs) / 2);
-
-            // 이미 채운 k=1..n 의 블록을 그린다
             for (let k = 1; k <= n; k++) {
-                const color = PALETTE[(k - 1) % PALETTE.length];
-                const dark = DARK_PALETTE[(k - 1) % DARK_PALETTE.length];
-                const isHighlight = (highlightK !== undefined && k === highlightK);
-                const isAnimated = (k === highlightK && animBlocks !== undefined);
-
+                const color = PALETTE[(k - 1) % PALETTE.length], dark = DARK_PALETTE[(k - 1) % DARK_PALETTE.length];
+                const isAnim = (k === highlightK && animBlocks !== undefined);
                 const blocks = getCubeShellBlocks(k);
-
-                if (isAnimated) {
-                    // 애니메이션 블록만 그리기 (일부)
+                if (isAnim) {
                     for (let i = 0; i < animBlocks && i < blocks.length; i++) {
-                        const b = blocks[i];
-                        const x = ox + b.col * bs;
-                        const y = oy + b.row * bs;
-                        ctx3.fillStyle = hexToRgba(color, 0.85);
-                        ctx3.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-                        ctx3.strokeStyle = dark;
-                        ctx3.lineWidth = 1.5;
-                        ctx3.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
+                        const b = blocks[i], x = ox + b.col * bs, y = oy + b.row * bs;
+                        ctx3.fillStyle = hexToRgba(color, 0.85); ctx3.fillRect(x + 1, y + 1, bs - 2, bs - 2);
+                        ctx3.strokeStyle = dark; ctx3.lineWidth = 1.5; ctx3.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
                     }
                 } else {
+                    const alpha = (highlightK !== undefined && k === highlightK) ? 1 : 0.82;
                     for (const b of blocks) {
-                        const x = ox + b.col * bs;
-                        const y = oy + b.row * bs;
-                        const alpha = isHighlight ? 1 : 0.82;
-                        ctx3.fillStyle = hexToRgba(color, alpha);
-                        ctx3.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-                        ctx3.strokeStyle = dark;
-                        ctx3.lineWidth = isHighlight ? 2 : 1.2;
-                        ctx3.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
+                        const x = ox + b.col * bs, y = oy + b.row * bs;
+                        ctx3.fillStyle = hexToRgba(color, alpha); ctx3.fillRect(x + 1, y + 1, bs - 2, bs - 2);
+                        ctx3.strokeStyle = dark; ctx3.lineWidth = k === highlightK ? 2 : 1.2; ctx3.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
                     }
                 }
             }
-
-            // 큰 정사각형 테두리
-            ctx3.strokeStyle = '#4a5568';
-            ctx3.lineWidth = 3;
-            ctx3.strokeRect(ox, oy, side * bs, side * bs);
-
-            // 각 k 셸에 라벨
+            ctx3.strokeStyle = '#4a5568'; ctx3.lineWidth = 3; ctx3.strokeRect(ox, oy, side * bs, side * bs);
             if (bs >= 14) {
                 for (let k = 1; k <= n; k++) {
-                    const t0 = T(k - 1);
-                    const t1 = T(k);
-                    const cx = ox + (t0 + t1) / 2 * bs;
-                    const cy = oy + (t0 + t1) / 2 * bs;
-                    ctx3.fillStyle = 'rgba(0,0,0,0.55)';
-                    ctx3.font = `bold ${Math.min(bs * 0.55, 13)}px Outfit, sans-serif`;
-                    ctx3.textAlign = 'center';
-                    ctx3.textBaseline = 'middle';
+                    const t0 = T(k - 1), t1 = T(k);
                     if (k <= (highlightK !== undefined ? highlightK : n)) {
-                        ctx3.fillText(`k=${k}`, cx, cy);
+                        ctx3.fillStyle = 'rgba(0,0,0,0.55)';
+                        ctx3.font = `bold ${Math.min(bs * 0.55, 13)}px Outfit,sans-serif`;
+                        ctx3.textAlign = 'center'; ctx3.textBaseline = 'middle';
+                        ctx3.fillText(`k=${k}`, ox + (t0 + t1) / 2 * bs, oy + (t0 + t1) / 2 * bs);
                     }
                 }
             }
-
-            // 치수 표시
-            ctx3.fillStyle = '#2d3748';
-            ctx3.font = `bold ${Math.min(bs * 0.6, 14)}px Outfit, sans-serif`;
-            ctx3.textAlign = 'center';
-            ctx3.textBaseline = 'bottom';
+            ctx3.fillStyle = '#2d3748'; ctx3.font = `bold ${Math.min(bs * 0.6, 14)}px Outfit,sans-serif`;
+            ctx3.textAlign = 'center'; ctx3.textBaseline = 'bottom';
             ctx3.fillText(`T(${n}) = ${side}`, ox + side * bs / 2, oy - 6);
-            ctx3.textBaseline = 'middle';
-            ctx3.textAlign = 'left';
-            ctx3.save();
-            ctx3.translate(ox + side * bs + 8, oy + side * bs / 2);
-            ctx3.rotate(Math.PI / 2);
-            ctx3.textBaseline = 'bottom';
-            ctx3.fillText(`T(${n}) = ${side}`, 0, 0);
-            ctx3.restore();
         }
-
-        function drawSum3() {
-            drawCubePuzzle(n3);
-            updateFb3();
-        }
-
+        function drawSum3() { drawCubePuzzle(n3); updateFb3(); }
         function updateFb3() {
             if (!fb3) return;
-            const n = n3;
-            const sum = [...Array(n).keys()].reduce((a, i) => a + (i + 1) ** 3, 0);
-            const tn = T(n);
-            fb3.innerHTML =
-                `<span class="seq-fb-big">1³ + 2³ + ··· + ${n}³ = ${sum}</span><br>` +
-                `<span class="seq-fb-sub">= (1 + 2 + ··· + ${n})² = <strong>${tn}² = ${tn * tn}</strong></span><br>` +
-                `<span class="seq-fb-magic">✨ 항상 완벽한 정사각형! ✨</span>`;
+            const n = n3, sum = [...Array(n).keys()].reduce((a, i) => a + (i + 1) ** 3, 0), tn = T(n);
+            fb3.innerHTML = `<span class="seq-fb-big">1³ + 2³ + ··· + ${n}³ = ${sum}</span><br><span class="seq-fb-sub">= (1+2+···+${n})² = <strong>${tn}² = ${tn * tn}</strong></span><br><span class="seq-fb-magic">✨ 항상 완벽한 정사각형! ✨</span>`;
             fb3.classList.add('show');
         }
-
         function animateCubePuzzle() {
             if (!ctx3 || anim3Running) return;
-            anim3Running = true;
-            if (runBtn3) runBtn3.disabled = true;
-
-            // 먼저 빈 캔버스로 시작해 k=1부터 한 껍질씩 채움
-            let k = 1;
-            const n = n3;
-            const delay = 350; // ms per shell
-            const blockDelay = 15; // ms per block
-
+            anim3Running = true; if (runBtn3) runBtn3.disabled = true;
+            let k = 1; const n = n3;
             function animateShell() {
-                if (k > n) {
-                    // 완성
-                    drawCubePuzzle(n);
-                    updateFb3();
-                    anim3Running = false;
-                    if (runBtn3) runBtn3.disabled = false;
-                    return;
-                }
-
-                const blocks = getCubeShellBlocks(k);
-                let bi = 0;
-                const totalBlocks = blocks.length;
-
-                // 이전 껍질들은 완성 상태로 그리기
-                const currentK = k;
+                if (k > n) { drawCubePuzzle(n); updateFb3(); anim3Running = false; if (runBtn3) runBtn3.disabled = false; return; }
+                const blocks = getCubeShellBlocks(k), total = blocks.length;
+                let bi = 0; const ck = k;
+                const color = PALETTE[(ck - 1) % PALETTE.length], dark = DARK_PALETTE[(ck - 1) % DARK_PALETTE.length];
+                const side = T(n), bs = getBlockSize3(n);
+                const ox = Math.floor((canvas3.width - side * bs) / 2), oy = Math.floor((canvas3.height - side * bs) / 2);
                 function step() {
-                    bi += Math.max(1, Math.floor(totalBlocks / 40));
-                    drawCubePuzzle(currentK - 1); // 이전까지 완성
-                    // 현재 껍질 bi개 그리기
-                    const color = PALETTE[(currentK - 1) % PALETTE.length];
-                    const dark = DARK_PALETTE[(currentK - 1) % DARK_PALETTE.length];
-                    const side = T(n);
-                    const bs = getBlockSize3(n);
-                    const ox = Math.floor((canvas3.width - side * bs) / 2);
-                    const oy = Math.floor((canvas3.height - side * bs) / 2);
-
-                    for (let i = 0; i < Math.min(bi, totalBlocks); i++) {
-                        const b = blocks[i];
-                        const x = ox + b.col * bs;
-                        const y = oy + b.row * bs;
-                        ctx3.fillStyle = hexToRgba(color, 0.88);
-                        ctx3.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-                        ctx3.strokeStyle = dark;
-                        ctx3.lineWidth = 1.5;
-                        ctx3.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
+                    bi += Math.max(1, Math.floor(total / 40));
+                    drawCubePuzzle(ck - 1);
+                    for (let i = 0; i < Math.min(bi, total); i++) {
+                        const b = blocks[i], x = ox + b.col * bs, y = oy + b.row * bs;
+                        ctx3.fillStyle = hexToRgba(color, 0.88); ctx3.fillRect(x + 1, y + 1, bs - 2, bs - 2);
+                        ctx3.strokeStyle = dark; ctx3.lineWidth = 1.5; ctx3.strokeRect(x + 1, y + 1, bs - 2, bs - 2);
                     }
-
-                    // 큰 정사각형 테두리
-                    ctx3.strokeStyle = '#4a5568';
-                    ctx3.lineWidth = 3;
-                    ctx3.strokeRect(ox, oy, side * bs, side * bs);
-
-                    if (bi < totalBlocks) {
-                        anim3Id = requestAnimationFrame(step);
-                    } else {
-                        k++;
-                        setTimeout(animateShell, delay);
-                    }
+                    ctx3.strokeStyle = '#4a5568'; ctx3.lineWidth = 3; ctx3.strokeRect(ox, oy, side * bs, side * bs);
+                    if (bi < total) anim3Id = requestAnimationFrame(step);
+                    else { k++; setTimeout(animateShell, 350); }
                 }
                 step();
             }
-
-            // 먼저 캔버스 초기화
-            if (ctx3) ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
-            if (fb3) { fb3.classList.remove('show'); }
+            ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
+            if (fb3) fb3.classList.remove('show');
             setTimeout(animateShell, 200);
         }
-
-        if (slider3) {
-            slider3.addEventListener('input', () => {
-                n3 = parseInt(slider3.value);
-                if (nVal3) nVal3.textContent = n3;
-                if (anim3Running) { cancelAnimationFrame(anim3Id); anim3Running = false; }
-                if (runBtn3) runBtn3.disabled = false;
-                drawSum3();
-            });
-        }
+        if (slider3) slider3.addEventListener('input', () => { n3 = parseInt(slider3.value); if (nVal3) nVal3.textContent = n3; if (anim3Running) { cancelAnimationFrame(anim3Id); anim3Running = false; } if (runBtn3) runBtn3.disabled = false; drawSum3(); });
         if (runBtn3) runBtn3.addEventListener('click', animateCubePuzzle);
-
         const reset3 = document.getElementById('seq-reset-btn-sum3');
-        if (reset3) {
-            reset3.addEventListener('click', () => {
-                if (anim3Running) { cancelAnimationFrame(anim3Id); anim3Running = false; }
-                if (fb3) fb3.classList.remove('show');
-                if (runBtn3) runBtn3.disabled = false;
-                drawSum3();
-            });
-        }
+        if (reset3) reset3.addEventListener('click', () => { if (anim3Running) { cancelAnimationFrame(anim3Id); anim3Running = false; } if (fb3) fb3.classList.remove('show'); if (runBtn3) runBtn3.disabled = false; drawSum3(); });
 
         /* ============================================================
-           6. 최초 렌더 & 패널 초기화
+           6. 초기 렌더
         ============================================================ */
-        // 캔버스 크기 설정 (반응형 고려)
         function resizeCanvases() {
-            // unit-seq 컨테이너 크기를 기준으로 사용
             const unitSeq = document.getElementById('unit-seq');
-            const containerW = unitSeq ? (unitSeq.clientWidth || 900) : 900;
-            // 좌측 컨트롤 패널(~280px) + gap(28px)을 뺀 가용 너비
-            const availW = Math.max(300, containerW - 320);
-
-            [canvas1, canvas2, canvas3].forEach((c) => {
-                if (!c) return;
-                c.width = availW;
-                c.height = Math.round(availW * 0.58);
-            });
+            const availW = Math.max(300, (unitSeq ? unitSeq.clientWidth : 900) - 60);
+            [canvas1, canvas3].forEach(c => { if (!c) return; c.width = availW; c.height = Math.round(availW * 0.55); });
+            /* canvas2는 sum2Redraw에서 처리 */
+            if (canvas2) { canvas2.width = availW; canvas2.height = Math.round(availW * 0.55); }
         }
 
         resizeCanvases();
-        // 초기 탭 (sum1) 렌더 + sum2/sum3도 미리 초기화
         drawSum1();
-        drawSum2(); // popScales2[0..3]=1 이미 세팅됨
+        sum2Redraw();
         drawSum3();
 
-        // 수열 패널이 visible 될 때 다시 맞게 그리도록
+        /* 단원 진입 시 리드로우 */
         window.seqRedraw = function () {
             resizeCanvases();
-            const activePanel = document.querySelector('.seq-panel.active');
-            if (!activePanel) return;
-            const tab = activePanel.id.replace('seq-panel-', '');
+            const active = document.querySelector('.seq-panel.active');
+            if (!active) return;
+            const tab = active.id.replace('seq-panel-', '');
             if (tab === 'sum1') drawSum1();
-            else if (tab === 'sum2') drawSum2();
+            else if (tab === 'sum2') sum2Redraw();
             else if (tab === 'sum3') drawSum3();
         };
     };
