@@ -117,11 +117,12 @@ function drawExpGrid() {
 /* ---- 함수 곡선 그리기 ---- */
 /* ========================================================= */
 function drawFunctionCurve(item) {
-    /* 수학 x 범위 */
-    const xLeft = toMathX(0);
-    const xRight = toMathX(EXP_CW);
-    /* 픽셀 1개에 해당하는 x 간격 — 부드럽고 빠른 렌더링 */
-    const dx = 1 / vp.scale;
+    /* 함수 종류(기본/역함수)에 따라 독립 변수(t)가 순회할 수학적 축 범위 지정 */
+    const mathMin = item.isInverse ? toMathY(EXP_CH) : toMathX(0);
+    const mathMax = item.isInverse ? toMathY(0) : toMathX(EXP_CW);
+    
+    /* 픽셀 1개에 해당하는 간격 (가본 스텝) */
+    const ds = 1 / vp.scale;
 
     eCtx.beginPath();
     eCtx.strokeStyle = item.color;
@@ -129,44 +130,66 @@ function drawFunctionCurve(item) {
     eCtx.setLineDash([]);
 
     let penDown = false;
+    let prevPx = null;
     let prevPy = null;
     let prevVal = null;
 
     /* 불연속 감지 임계값 (캔버스 높이의 60%) */
     const JUMP = EXP_CH * 0.6;
 
-    for (let x = xLeft - dx; x <= xRight + dx; x += dx) {
-        let val;
+    /* 안전한 수식 평가: 실수(Real Number) 범위 내에서만 값을 리턴 */
+    const evaluateSafe = (t) => {
         try {
-            val = item.isInverse
-                ? item.expr.evaluate({ x: /* y값으로 사용 */ x })
-                : item.expr.evaluate({ x });
-        } catch {
-            penDown = false; prevPy = null; prevVal = null; continue;
+            const v = item.expr.evaluate({ x: t });
+            if (typeof v === 'number' && isFinite(v) && !isNaN(v)) return v;
+        } catch {}
+        return null;
+    };
+
+    /* t(독립변수), v(종속변수)를 캔버스 좌표계로 변환 (역함수 여부 처리) */
+    const getCanvasCoords = (t, v) => {
+        if (item.isInverse) return { px: toCanvasX(v), py: toCanvasY(t) };
+        return { px: toCanvasX(t), py: toCanvasY(v) };
+    };
+
+    /* 점근선 및 절벽(가파른 구간) 탐색을 위한 적응형 재귀 분할 함수 (Adaptive Subdivision) */
+    const refinePts = (t0, v0, t1, v1, depth) => {
+        if (depth === 0) return [];
+        const mt = (t0 + t1) / 2;
+        const mv = evaluateSafe(mt);
+
+        if (mv === null) {
+            // 중간 지점이 정의되지 않았을 경우 (예: ln(x)에서 x < 0 구간 경계 탐색)
+            if (v0 !== null) return refinePts(t0, v0, mt, mv, depth - 1);
+            if (v1 !== null) return refinePts(mt, mv, t1, v1, depth - 1);
+            return [];
         }
 
-        if (typeof val !== 'number' || !isFinite(val) || isNaN(val)) {
-            penDown = false; prevPy = null; prevVal = null; continue;
+        let pts = [];
+        // 화면상에서 y값 변화가 5px 이상이면 곡선을 부드럽게 잇기 위해 더 쪼개기
+        if (v0 !== null && Math.abs((mv - v0) * vp.scale) > 5) {
+            pts.push(...refinePts(t0, v0, mt, mv, depth - 1));
         }
-
-        let px, py;
-        if (item.isInverse) {
-            px = toCanvasX(val);
-            py = toCanvasY(x);
-        } else {
-            px = toCanvasX(x);
-            py = toCanvasY(val);
+        pts.push({ t: mt, val: mv });
+        if (v1 !== null && Math.abs((v1 - mv) * vp.scale) > 5) {
+            pts.push(...refinePts(mt, mv, t1, v1, depth - 1));
         }
+        return pts;
+    };
 
-        /* 불연속 감지: 이전 점과 y값 차이가 너무 크거나, 값 부호가 극단적으로 바뀜 */
+    /* 좌표를 넘겨받아 실제로 캔버스 선을 연결하는 보조 함수 */
+    const processPoint = (t, v) => {
+        const { px, py } = getCanvasCoords(t, v);
+
+        // 점근선 점프(불연속) 감지
         let discontinuous = false;
-        if (prevPy !== null) {
-            const dyPx = Math.abs(py - prevPy);
-            /* tan 계열처럼 ±Infinity로 튀는 경우 */
+        if (penDown) {
+            const dyPx = item.isInverse ? Math.abs(px - prevPx) : Math.abs(py - prevPy);
             if (dyPx > JUMP) discontinuous = true;
-            /* 양수 → 음수 / 음수 → 양수 + 큰 도약 → 점근선 */
-            if (prevVal !== null && Math.sign(val) !== Math.sign(prevVal) && dyPx > JUMP * 0.3)
+            // 부호가 바뀌면서 크게 도약했다면 (예: 1/x 그래프)
+            if (prevVal !== null && Math.sign(v) !== Math.sign(prevVal) && dyPx > JUMP * 0.3) {
                 discontinuous = true;
+            }
         }
 
         if (discontinuous) {
@@ -181,9 +204,46 @@ function drawFunctionCurve(item) {
         } else {
             eCtx.lineTo(px, py);
         }
+        
+        prevPx = px; prevPy = py; prevVal = v;
+    };
 
-        prevPy = py;
-        prevVal = val;
+    let prevT = mathMin - ds;
+    let prevV = evaluateSafe(prevT);
+
+    /* 기본 스텝 간격으로 화면을 훑으며 그래프 그리기 */
+    for (let t = mathMin; t <= mathMax + ds; t += ds) {
+        let val = evaluateSafe(t);
+
+        let subPts = [];
+        // 구간 변동(정의역 밖 -> 안, 안 -> 밖) 판단 및 분할 깊이(해상도) 설정
+        if (prevV === null && val !== null) {
+            subPts = refinePts(prevT, prevV, t, val, 7); // 경계면(점근선)에서는 깊이를 최대(7단계, 128배)로 쪼갬
+        } else if (prevV !== null && val === null) {
+            subPts = refinePts(prevT, prevV, t, val, 7);
+        } else if (prevV !== null && val !== null) {
+            // 둘 다 유효하더라도, 화면 픽셀 기준으로 너무 가파르면(2px 이상) 부드럽게 잇기 위해 분할
+            const diffPx = Math.abs((val - prevV) * vp.scale);
+            if (diffPx > 2 && diffPx < JUMP) {
+                subPts = refinePts(prevT, prevV, t, val, 5); 
+            }
+        }
+
+        // 찾아낸 세부 점들을 순서대로 찍기
+        for (let p of subPts) processPoint(p.t, p.val);
+
+        if (val !== null) {
+            processPoint(t, val);
+        } else {
+            if (penDown) {
+                eCtx.stroke();
+                eCtx.beginPath();
+            }
+            penDown = false;
+        }
+        
+        prevT = t;
+        prevV = val;
     }
     eCtx.stroke();
 }
