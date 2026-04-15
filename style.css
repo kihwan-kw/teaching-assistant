@@ -2271,3 +2271,642 @@ input[type="range"]::-webkit-slider-thumb:hover {
     font-weight: 800;
     box-shadow: 0 6px 15px rgba(115, 165, 255, 0.4);
 }
+
+/* ========================================================= */
+/* --- 수열 단원 (시그마 퍼즐)                           --- */
+/* ========================================================= */
+
+/* 패널 전환 */
+.seq-panel {
+    display: none;
+    width: 100%;
+    animation: fadeIn 0.35s ease;
+}
+
+.seq-panel.active {
+    display: block;
+}
+
+/* 2단 레이아웃: 좌측 컨트롤 + 우측 캔버스 */
+.seq-layout {
+    display: flex;
+    gap: 28px;
+    width: 100%;
+    max-width: 1300px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+/* 좌측 컨트롤 패널 */
+.seq-control-panel {
+    flex: 0 0 280px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
+    border: 1px solid var(--surface-border);
+    padding: 24px 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* 수식 강조 박스 */
+.seq-formula-box {
+    background: linear-gradient(135deg, rgba(255, 179, 198, 0.25) 0%, rgba(255, 213, 165, 0.2) 100%);
+    border: 1.5px solid rgba(255, 139, 173, 0.4);
+    border-radius: 14px;
+    padding: 16px 14px 14px;
+    text-align: center;
+}
+
+.seq-formula-box--blue {
+    background: linear-gradient(135deg, rgba(168, 216, 234, 0.25) 0%, rgba(115, 165, 255, 0.15) 100%);
+    border-color: rgba(115, 165, 255, 0.4);
+}
+
+.seq-formula-box--purple {
+    background: linear-gradient(135deg, rgba(201, 177, 255, 0.25) 0%, rgba(177, 156, 217, 0.2) 100%);
+    border-color: rgba(177, 156, 217, 0.5);
+}
+
+.seq-formula-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+.seq-katex {
+    font-size: 13px;
+    overflow-x: auto;
+}
+
+.seq-katex .katex-display {
+    margin: 0;
+}
+
+/* 설명 텍스트 */
+.seq-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.75;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.seq-desc strong {
+    color: var(--text-main);
+    font-weight: 800;
+}
+
+/* 슬라이더 행 */
+.seq-slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.seq-slider-label {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-muted);
+}
+
+.seq-n-val {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--sin-color);
+    min-width: 44px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.2s;
+}
+
+/* 슬라이더 색상 변형 */
+.seq-slider {
+    width: 100%;
+    margin: 0;
+}
+
+.seq-slider--blue::-webkit-slider-thumb {
+    background: var(--cos-color);
+}
+
+.seq-slider--purple::-webkit-slider-thumb {
+    background: var(--def-color);
+}
+
+.seq-slider-ends {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: -8px;
+}
+
+/* 버튼 행 */
+.seq-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 실행 버튼 */
+.seq-run-btn {
+    width: 100%;
+    padding: 13px 20px;
+    font-size: 15px;
+    font-weight: 800;
+    font-family: inherit;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--sin-color) 0%, #ffb86c 100%);
+    color: white;
+    box-shadow: 0 5px 18px rgba(255, 139, 173, 0.45);
+    transition: all 0.3s;
+    letter-spacing: 0.3px;
+}
+
+.seq-run-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 139, 173, 0.6);
+}
+
+.seq-run-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.seq-run-btn--purple {
+    background: linear-gradient(135deg, var(--def-color) 0%, #90d5ff 100%);
+    box-shadow: 0 5px 18px rgba(177, 156, 217, 0.45);
+}
+
+.seq-run-btn--purple:hover:not(:disabled) {
+    box-shadow: 0 8px 24px rgba(177, 156, 217, 0.6);
+}
+
+/* 초기화 버튼 */
+.seq-reset-btn {
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    border: 1.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: 50px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text-muted);
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.seq-reset-btn:hover {
+    background: #fff;
+    color: var(--text-main);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+}
+
+/* 우측 캔버스 영역 */
+.seq-canvas-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.seq-canvas-wrapper {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--surface-border);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03), 0 4px 16px rgba(0, 0, 0, 0.04);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.seq-canvas-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* 피드백 배너 */
+.seq-feedback {
+    background: linear-gradient(135deg, rgba(255, 213, 165, 0.4) 0%, rgba(255, 179, 198, 0.3) 100%);
+    border: 1.5px solid rgba(255, 139, 173, 0.35);
+    border-radius: 14px;
+    padding: 16px 22px;
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-main);
+    line-height: 1.85;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+    display: none;
+}
+
+.seq-feedback.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.seq-feedback--blue {
+    background: linear-gradient(135deg, rgba(168, 216, 234, 0.35) 0%, rgba(115, 165, 255, 0.2) 100%);
+    border-color: rgba(115, 165, 255, 0.35);
+}
+
+.seq-feedback--purple {
+    background: linear-gradient(135deg, rgba(201, 177, 255, 0.3) 0%, rgba(177, 156, 217, 0.2) 100%);
+    border-color: rgba(177, 156, 217, 0.4);
+}
+
+.seq-fb-big {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.seq-fb-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.seq-fb-formula {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e53e3e;
+}
+
+.seq-fb-formula strong {
+    font-size: 20px;
+}
+
+.seq-fb-magic {
+    display: block;
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--def-color), var(--cos-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* idx-seq 탭 active 색상 */
+.index-tab[data-seqtab].active {
+    background: linear-gradient(135deg, #b19cd9 0%, #90d5ff 100%);
+    color: white;
+    box-shadow: -6px 5px 20px rgba(177, 156, 217, 0.4);
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+    .seq-layout {
+        flex-direction: column;
+    }
+
+    .seq-control-panel {
+        flex: none;
+        width: 100%;
+    }
+}
+
+
+/* ========================================================= */
+/* --- seq_sum2_3d.css : Σk² 3D 시각화 전용 스타일       --- */
+/* ========================================================= */
+
+/* 버튼 행 */
+.seq2-btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.seq2-step-btn {
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: linear-gradient(135deg, #73a5ff 0%, #b19cd9 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(115, 165, 255, 0.35);
+}
+
+.seq2-step-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(115, 165, 255, 0.5);
+}
+
+.seq2-step-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+    transform: none;
+}
+
+.seq2-reset {
+    background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+    box-shadow: 0 4px 12px rgba(252, 129, 129, 0.35);
+}
+
+.seq2-reset:hover {
+    box-shadow: 0 6px 16px rgba(252, 129, 129, 0.5);
+}
+
+/* 색상 범례 */
+.seq2-desc {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 8px;
+    line-height: 1.8;
+}
+
+/* 슬라이더 행 */
+.seq-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin: 8px 0;
+}
+
+.seq-slider-label {
+    font-weight: 700;
+    font-size: 16px;
+    color: #4a5568;
+    min-width: 28px;
+}
+
+.seq-slider-row input[type="range"] {
+    width: 200px;
+}
+
+.seq-n-val {
+    font-weight: 800;
+    font-size: 20px;
+    color: #73a5ff;
+    min-width: 24px;
+}
+
+/* 공식 박스 */
+.seq-formula-box {
+    text-align: center;
+    margin-bottom: 12px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+/* 피드백 박스 */
+.seq-feedback {
+    display: none;
+    text-align: center;
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    margin-top: 8px;
+    font-size: 15px;
+    color: #2d3748;
+    line-height: 1.8;
+}
+
+.seq-feedback.show {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+.seq-fb-big {
+    font-size: 18px;
+    font-weight: 800;
+    color: #2d3748;
+}
+
+.seq-fb-sub {
+    font-size: 14px;
+    color: #718096;
+}
+
+.seq-fb-formula {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e53e3e;
+}
+
+/* seq 패널 공통 */
+.seq-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    animation: fadeIn 0.3s ease;
+}
+
+.seq-panel.active {
+    display: flex;
+}
+
+/* 태블릿 대응 */
+@media screen and (max-width: 900px) {
+    .seq2-btn-row {
+        gap: 8px;
+    }
+
+    .seq2-step-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    .seq-slider-row input[type="range"] {
+        width: 140px;
+    }
+}
+
+/* ========================================================= */
+/* --- seq_sum2_3d.css : Σk² 3D 시각화 전용 스타일       --- */
+/* ========================================================= */
+
+/* 버튼 행 */
+.seq2-btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.seq2-step-btn {
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: linear-gradient(135deg, #73a5ff 0%, #b19cd9 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(115, 165, 255, 0.35);
+}
+
+.seq2-step-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(115, 165, 255, 0.5);
+}
+
+.seq2-step-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+    transform: none;
+}
+
+.seq2-reset {
+    background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+    box-shadow: 0 4px 12px rgba(252, 129, 129, 0.35);
+}
+
+.seq2-reset:hover {
+    box-shadow: 0 6px 16px rgba(252, 129, 129, 0.5);
+}
+
+/* 색상 범례 */
+.seq2-desc {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 8px;
+    line-height: 1.8;
+}
+
+/* 슬라이더 행 */
+.seq-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin: 8px 0;
+}
+
+.seq-slider-label {
+    font-weight: 700;
+    font-size: 16px;
+    color: #4a5568;
+    min-width: 28px;
+}
+
+.seq-slider-row input[type="range"] {
+    width: 200px;
+}
+
+.seq-n-val {
+    font-weight: 800;
+    font-size: 20px;
+    color: #73a5ff;
+    min-width: 24px;
+}
+
+/* 공식 박스 */
+.seq-formula-box {
+    text-align: center;
+    margin-bottom: 12px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+/* 피드백 박스 */
+.seq-feedback {
+    display: none;
+    text-align: center;
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    margin-top: 8px;
+    font-size: 15px;
+    color: #2d3748;
+    line-height: 1.8;
+}
+
+.seq-feedback.show {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+.seq-fb-big {
+    font-size: 18px;
+    font-weight: 800;
+    color: #2d3748;
+}
+
+.seq-fb-sub {
+    font-size: 14px;
+    color: #718096;
+}
+
+.seq-fb-formula {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e53e3e;
+}
+
+/* seq 패널 공통 */
+.seq-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    animation: fadeIn 0.3s ease;
+}
+
+.seq-panel.active {
+    display: flex;
+}
+
+/* 태블릿 대응 */
+@media screen and (max-width: 900px) {
+    .seq2-btn-row {
+        gap: 8px;
+    }
+
+    .seq2-step-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    .seq-slider-row input[type="range"] {
+        width: 140px;
+    }
+}

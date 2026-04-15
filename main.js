@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'matrix', icon: '🔲',  title: '행렬과 변환',    subtitle: '선형 변환을 이미지로 직관적으로 확인',         ready: true,  colorClass: 'card-matrix', init: () => window.initMatrix() },
         { id: 'trig',   icon: '〽️',  title: '삼각함수',       subtitle: '단위원과 그래프로 sin·cos·tan 이해',          ready: true,  colorClass: 'card-trig',   init: () => window.initTrig()   },
         { id: 'integ',  icon: '∫',   title: '적분',           subtitle: '상합·하합으로 구분구적법 시각화',              ready: true,  colorClass: 'card-integ',  init: () => window.initInteg()  },
-        { id: 'seq',    icon: '🔢',  title: '수열',           subtitle: '등차·등비수열 시각화',                        ready: false, colorClass: 'card-seq',    init: null },
+        { id: 'seq',    icon: '🔢',  title: '수열',           subtitle: '시그마(Σ) 거듭제곱의 합 테트리스 퍼즐',           ready: true,  colorClass: 'card-seq',    init: () => window.initSeq()  },
         { id: 'limit',  icon: '→',   title: '극한과 연속',    subtitle: '함수의 극한과 연속',                          ready: false, colorClass: 'card-limit',  init: null },
         { id: 'deriv',  icon: '📐',  title: '미분',           subtitle: '할선→접선 수렴 + 도함수 실시간 그래프',       ready: true,  colorClass: 'card-deriv',  init: () => window.initDeriv()  }
     ];
@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         factor: 'idx-factor',
         trig: 'idx-trig',
         integ: 'idx-integ',
+        seq: 'idx-seq',
     };
 
     const initialized = new Set();
@@ -95,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unit.id === 'matrix') setTimeout(() => { window.drawOriginal(); window.applyMatrixTransform(); }, 50);
             if (unit.id === 'trig')   setTimeout(() => window.drawTrig(), 50);
             if (unit.id === 'deriv')  setTimeout(() => { window.renderDerivMain(); window.renderDerivF(); }, 50);
+            if (unit.id === 'seq')    setTimeout(() => window.seqRedraw && window.seqRedraw(), 50);
         }
     }
 
@@ -120,6 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // trig.js가 내부적으로 듣는 .tab-btn을 프로그래매틱하게 클릭
             const trigTabBtn = document.querySelector(`.tab-btn[data-func="${tab.dataset.func}"]`);
             if (trigTabBtn) trigTabBtn.click();
+        });
+    });
+
+    /* 수열 인덱스 탭 → seq.js 탭 연동 */
+    document.querySelectorAll('#idx-seq .index-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#idx-seq .index-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            // seq.js를 통해 패널 전환 (이미 로딩된 경우만)
+            if (window.seqSwitchPanel) window.seqSwitchPanel(tab.dataset.seqtab);
         });
     });
 
