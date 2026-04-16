@@ -27,7 +27,9 @@ body {
     color: var(--text-main);
     margin: 0;
     /* 오류 8 수정: 고정 80px → 반응형 clamp */
+    /* 테블릿 가로 등에서 좌측 인덱스(54px+hover)가 잘리지 않도록 padding-left 최소 90px 보장 */
     padding: 30px clamp(20px, 5vw, 80px);
+    padding-left: clamp(90px, 6vw, 120px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2908,5 +2910,59 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
     .seq-slider-row input[type="range"] {
         width: 140px;
+    }
+}
+
+/* ========================================================= */
+/* --- 태블릿 및 모바일 여백 & 인덱스 탭 최적화 --- */
+/* ========================================================= */
+
+@media screen and (max-width: 1200px) {
+    body {
+        padding-left: 90px; 
+    }
+    .app-container {
+        padding: 30px 25px; /* 가로 공간 확보 */
+    }
+    .side-index-left {
+        left: -48px; /* 탭 밀착 유지 */
+    }
+    .side-index-right {
+        right: -48px;
+    }
+    .index-tab {
+        padding: 22px 12px;
+        font-size: 15px;
+    }
+    .index-tab.active {
+        font-size: 16px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    body {
+        padding-left: 80px;
+        padding-right: 15px;
+    }
+    .app-container {
+        padding: 25px 15px;
+    }
+    .side-index-wrapper {
+        top: 25px;
+        gap: 8px;
+    }
+    .side-index-left {
+        left: -40px;
+    }
+    .side-index-right {
+        right: -40px;
+    }
+    .index-tab {
+        padding: 16px 10px;
+        font-size: 14px;
+        letter-spacing: 2px;
+    }
+    .index-tab.active {
+        font-size: 15px;
     }
 }
