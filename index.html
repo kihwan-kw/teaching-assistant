@@ -154,58 +154,116 @@
             </div>
         </div>
 
-        <!-- ===== 이차함수의 최대/최소 (새로운 기능) ===== -->
+        <!-- 🌟 추가: 이차함수 전용 왼쪽 인덱스 -->
+        <div class="side-index-wrapper side-index-left" id="idx-quad" style="display:none;">
+            <div class="index-tab active" data-quadtab="shift">평행이동</div>
+            <div class="index-tab" data-quadtab="maxmin">최대·최소</div>
+        </div>
+
+        <!-- ===== 이차함수 (Quadratic) ===== -->
         <div id="unit-quad" class="unit-content">
-            <h2 class="unit-title">제한된 범위에서의 이차함수 최대·최소</h2>
+            <h2 class="unit-title">이차함수의 평행이동과 최대·최소</h2>
 
             <div class="exp-main-content" style="max-width: 1200px;">
 
                 <!-- 좌측 컨트롤 패널 -->
                 <div class="matrix-control-panel" style="flex: 0 0 350px;">
 
-                    <!-- 함수 입력 -->
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">𝑓(x) 함수 입력</h3>
-                        <div style="display:flex; gap:8px;">
-                            <input type="text" id="quad-func-input" class="func-input" value="x^2 - 4x + 3"
-                                placeholder="예: x^2 - 4x + 3" style="font-size:15px; padding:10px;">
-                            <button class="draw-btn" id="quad-draw-btn"
-                                style="padding:10px 15px; font-size:14px;">그리기</button>
-                        </div>
-                        <div class="error-message" id="quad-error" style="margin-top:5px; height:15px;"></div>
+                    <!-- 내부 탭 (숨김 처리, 인덱스와 동기화됨) -->
+                    <div style="display:none;">
+                        <button class="tab-btn active" data-quadtab="shift"></button>
+                        <button class="tab-btn" data-quadtab="maxmin"></button>
                     </div>
 
-                    <!-- 구간 [a, b] 설정 슬라이더 -->
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">제한된 범위 [a, b]</h3>
-
-                        <div style="margin-bottom: 20px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                                <span style="font-size:14px; font-weight:700; color:#4a5568;">시작점 a = </span>
-                                <input type="number" id="quad-a-input" class="transform-input" value="-1" step="0.1"
-                                    style="width:70px; font-size:16px; font-weight:800; color:#73a5ff; text-align:right;">
+                    <!-- ① 평행이동 패널 -->
+                    <div id="quad-panel-shift" class="quad-panel active">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">✨ 마우스로 포물선 끌기</h3>
+                            <div style="font-size:14px; color:#718096; line-height:1.6; margin-bottom:15px;">
+                                우측 캔버스의 <strong>꼭짓점(또는 그래프)을 마우스로 잡고 드래그</strong>해 보세요.<br>식이 어떻게 변하는지 관찰합시다!
                             </div>
-                            <input type="range" id="quad-a-slider" min="-10" max="10" step="0.1" value="-1"
-                                style="width:100%;">
+                            <div
+                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
+                                <div style="font-size:14px; font-weight:700; color:#4a5568; margin-bottom:8px;">표준형 수식
+                                </div>
+                                <!-- 수식이 실시간으로 렌더링될 공간 -->
+                                <div id="quad-shift-formula" style="font-size:26px; color:#2b6cb0; font-weight:800;">
+                                    y = (x - <span style="color:#e53e3e;">0</span>)² + <span
+                                        style="color:#38a169;">0</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <div>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                                <span style="font-size:14px; font-weight:700; color:#4a5568;">끝점 b = </span>
-                                <input type="number" id="quad-b-input" class="transform-input" value="4" step="0.1"
-                                    style="width:70px; font-size:16px; font-weight:800; color:#ff8bad; text-align:right;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">세부 조절 (p, q)</h3>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">x축 이동 p = <span
+                                            id="quad-p-val" style="color:#e53e3e; font-size:18px;">0</span></span>
+                                </div>
+                                <input type="range" id="quad-p-slider" min="-10" max="10" step="1" value="0"
+                                    style="width:100%;">
                             </div>
-                            <input type="range" id="quad-b-slider" min="-10" max="10" step="0.1" value="4"
-                                style="width:100%;">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">y축 이동 q = <span
+                                            id="quad-q-val" style="color:#38a169; font-size:18px;">0</span></span>
+                                </div>
+                                <input type="range" id="quad-q-slider" min="-10" max="10" step="1" value="0"
+                                    style="width:100%;">
+                            </div>
+                            <div style="text-align:center; margin-top:15px;">
+                                <button class="t-btn" id="quad-shift-reset" style="padding:8px 20px;">↺ 원점으로
+                                    초기화</button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 결과 분석 패널 -->
-                    <div class="matrix-section" style="background:#f8fafc; border-color:#e2e8f0;">
-                        <h3 class="matrix-section-title" style="color:#2b6cb0;">📊 최댓값과 최솟값</h3>
-                        <div id="quad-analysis" style="font-size:15px; color:var(--text-main); line-height:1.8;">
-                            <!-- JS에서 분석 결과가 여기에 표시됨 -->
-                            함수를 입력하고 범위를 설정하세요.
+                    <!-- ② 최대·최소 패널 -->
+                    <div id="quad-panel-maxmin" class="quad-panel" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">𝑓(x) 함수 입력</h3>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="quad-func-input" class="func-input" value="x^2 - 4x + 3"
+                                    placeholder="예: x^2 - 4x + 3" style="font-size:15px; padding:10px;">
+                                <button class="draw-btn" id="quad-draw-btn"
+                                    style="padding:10px 15px; font-size:14px;">그리기</button>
+                            </div>
+                            <div class="error-message" id="quad-error" style="margin-top:5px; height:15px;"></div>
+                        </div>
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">제한된 범위 [a, b]</h3>
+                            <div style="font-size:13px; color:#a0aec0; margin-bottom:10px; text-align:center;">
+                                💡 캔버스의 <strong>파란/빨간 세로선</strong>을 드래그할 수도 있습니다!
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">시작 a =</span>
+                                    <input type="number" id="quad-a-input" class="transform-input" value="-1" step="0.1"
+                                        style="width:70px; font-size:16px; font-weight:800; color:#73a5ff; text-align:right;">
+                                </div>
+                                <input type="range" id="quad-a-slider" min="-10" max="10" step="0.1" value="-1"
+                                    style="width:100%;">
+                            </div>
+                            <div>
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">끝 b =</span>
+                                    <input type="number" id="quad-b-input" class="transform-input" value="4" step="0.1"
+                                        style="width:70px; font-size:16px; font-weight:800; color:#ff8bad; text-align:right;">
+                                </div>
+                                <input type="range" id="quad-b-slider" min="-10" max="10" step="0.1" value="4"
+                                    style="width:100%;">
+                            </div>
+                        </div>
+
+                        <div class="matrix-section" style="background:#f8fafc; border-color:#e2e8f0;">
+                            <h3 class="matrix-section-title" style="color:#2b6cb0;">📊 최댓값과 최솟값</h3>
+                            <div id="quad-analysis" style="font-size:15px; color:var(--text-main); line-height:1.8;">
+                                함수를 입력하고 범위를 설정하세요.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -214,11 +272,7 @@
                 <div class="exp-right-panel" style="align-items:center;">
                     <div class="canvas-wrapper"
                         style="width:100%; max-width:800px; padding:20px; background:#fff; cursor: grab;">
-                        <!-- 그래프 그리는 캔버스 -->
                         <canvas id="quadCanvas" width="760" height="500"></canvas>
-                        <div style="text-align:center; font-size:12px; color:#a0aec0; margin-top:10px;">
-                            💡 캔버스를 <strong>마우스로 드래그</strong>하거나 <strong>휠을 돌려</strong> 화면을 이동/확대할 수 있습니다.
-                        </div>
                     </div>
                 </div>
 

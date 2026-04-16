@@ -2923,21 +2923,28 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 @media screen and (max-width: 1200px) {
     body {
-        padding-left: 90px; 
+        padding-left: 90px;
     }
+
     .app-container {
-        padding: 30px 25px; /* 가로 공간 확보 */
+        padding: 30px 25px;
+        /* 가로 공간 확보 */
     }
+
     .side-index-left {
-        left: -48px; /* 탭 밀착 유지 */
+        left: -48px;
+        /* 탭 밀착 유지 */
     }
+
     .side-index-right {
         right: -48px;
     }
+
     .index-tab {
         padding: 22px 12px;
         font-size: 15px;
     }
+
     .index-tab.active {
         font-size: 16px;
     }
@@ -2948,25 +2955,50 @@ input[type="range"]::-webkit-slider-thumb:hover {
         padding-left: 80px;
         padding-right: 15px;
     }
+
     .app-container {
         padding: 25px 15px;
     }
+
     .side-index-wrapper {
         top: 25px;
         gap: 8px;
     }
+
     .side-index-left {
         left: -40px;
     }
+
     .side-index-right {
         right: -40px;
     }
+
     .index-tab {
         padding: 16px 10px;
         font-size: 14px;
         letter-spacing: 2px;
     }
+
     .index-tab.active {
         font-size: 15px;
     }
+}
+
+/* --- 이차함수 (Quad) UI --- */
+#idx-quad .index-tab[data-quadtab="shift"].active {
+    background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+}
+
+#idx-quad .index-tab[data-quadtab="maxmin"].active {
+    background: linear-gradient(135deg, #f6ad55 0%, #f78181 100%);
+}
+
+.quad-panel {
+    display: none;
+    width: 100%;
+    animation: fadeIn 0.35s ease;
+}
+
+.quad-panel.active {
+    display: block;
 }

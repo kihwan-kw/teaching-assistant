@@ -1,323 +1,403 @@
 /* ========================================================= */
-/* --- Quadratic Function Max/Min (이차함수 최대/최소) Logic --- */
+/* --- Quadratic Function (이차함수: 평행이동 & 최대/최소) --- */
 /* ========================================================= */
 
-let isQuadInit = false;
+window.initQuad = (function () {
+    let _initialized = false;
 
-function initQuad() {
-    if (isQuadInit) return;
-    isQuadInit = true;
+    return function () {
+        if (_initialized) return;
+        _initialized = true;
 
-    const qCanvas = document.getElementById('quadCanvas');
-    if (!qCanvas) return;
-    const qCtx = qCanvas.getContext('2d');
+        const qCanvas = document.getElementById('quadCanvas');
+        if (!qCanvas) return;
+        const qCtx = qCanvas.getContext('2d');
 
-    const funcInput = document.getElementById('quad-func-input');
-    const drawBtn = document.getElementById('quad-draw-btn');
-    const errorMsg = document.getElementById('quad-error');
+        // 상태 변수
+        let currentQuadTab = 'shift'; // 'shift' 또는 'maxmin'
 
-    const aSlider = document.getElementById('quad-a-slider');
-    const bSlider = document.getElementById('quad-b-slider');
-    const aInput = document.getElementById('quad-a-input');
-    const bInput = document.getElementById('quad-b-input');
-    const analysisBox = document.getElementById('quad-analysis');
+        // [평행이동 상태]
+        let pVal = 0, qVal = 0;
 
-    let quadExpr = null;
-    let rangeA = -1;
-    let rangeB = 4;
+        // [최대최소 상태]
+        let quadExpr = null;
+        let rangeA = -1, rangeB = 4;
 
-    // Zoom & Pan 제어 변수
-    let zoom = 40; // 1 unit = 40px
-    let offsetX = qCanvas.width / 2;
-    let offsetY = qCanvas.height / 2 + 100; // 포물선이 잘 보이게 y축을 살짝 내림
-    let isDragging = false;
-    let lastMouse = { x: 0, y: 0 };
+        // 공통 Zoom & Pan
+        let zoom = 40;
+        let offsetX = qCanvas.width / 2;
+        let offsetY = qCanvas.height / 2 + 50;
+        let isPanning = false, lastMouse = { x: 0, y: 0 };
 
-    /* --- 마우스 줌/패닝 이벤트 --- */
-    qCanvas.addEventListener('mousedown', e => { isDragging = true; lastMouse = { x: e.offsetX, y: e.offsetY }; qCanvas.style.cursor = 'grabbing'; });
-    qCanvas.addEventListener('mousemove', e => {
-        if (!isDragging) return;
-        offsetX += e.offsetX - lastMouse.x;
-        offsetY += e.offsetY - lastMouse.y;
-        lastMouse = { x: e.offsetX, y: e.offsetY };
-        renderQuadGraph();
-    });
-    window.addEventListener('mouseup', () => { isDragging = false; if (qCanvas) qCanvas.style.cursor = 'grab'; });
-    qCanvas.addEventListener('wheel', e => {
-        e.preventDefault();
-        const oldZoom = zoom;
-        zoom *= e.deltaY < 0 ? 1.1 : 0.9;
-        zoom = Math.max(10, Math.min(zoom, 300));
-        offsetX = e.offsetX - (e.offsetX - offsetX) * (zoom / oldZoom);
-        offsetY = e.offsetY - (e.offsetY - offsetY) * (zoom / oldZoom);
-        renderQuadGraph();
-    }, { passive: false });
+        // 🌟 [드래그(Drag) 객체 상태]
+        let isDraggingVertex = false; // 꼭짓점 잡기 (평행이동)
+        let isDraggingLineA = false;  // a 경계선 잡기 (최대최소)
+        let isDraggingLineB = false;  // b 경계선 잡기 (최대최소)
+        const HIT_RADIUS = 15; // 마우스 클릭 판정 반경
 
-    /* --- 🌟 슬라이더 & 직접 입력 동기화 로직 🌟 --- */
-    function updateRange(source) {
-        let valA, valB;
+        /* ==================== 1. 탭 제어 ==================== */
+        window.quadSwitchPanel = function (tabName) {
+            currentQuadTab = tabName;
+            document.querySelectorAll('.quad-panel').forEach(p => p.style.display = 'none');
+            document.getElementById(`quad-panel-${tabName}`).style.display = 'block';
 
-        // 슬라이더를 움직였을 때 -> 입력칸(Input) 값 업데이트
-        if (source === 'slider') {
-            valA = parseFloat(aSlider.value);
-            valB = parseFloat(bSlider.value);
+            if (tabName === 'shift') updateShiftFormula();
+            if (tabName === 'maxmin') parseAndDrawMaxMin();
 
-            if (valA >= valB) { valA = valB - 0.1; aSlider.value = valA; }
+            drawQuad();
+        };
 
-            aInput.value = valA.toFixed(1);
-            bInput.value = valB.toFixed(1);
-        }
-        // 숫자를 직접 입력했을 때 -> 슬라이더 위치 업데이트
-        else if (source === 'input') {
-            valA = parseFloat(aInput.value);
-            valB = parseFloat(bInput.value);
-
-            if (isNaN(valA)) valA = rangeA;
-            if (isNaN(valB)) valB = rangeB;
-            if (valA >= valB) { valA = valB - 0.1; aInput.value = valA.toFixed(1); }
-
-            // 입력값이 슬라이더의 범위를 벗어나면 슬라이더의 최소/최대 범위 자체를 넓혀줍니다.
-            if (valA < aSlider.min) aSlider.min = Math.floor(valA - 5);
-            if (valB > bSlider.max) bSlider.max = Math.ceil(valB + 5);
-
-            aSlider.value = valA;
-            bSlider.value = valB;
+        /* ==================== 2. 마우스 이벤트 (드래그 & 줌) ==================== */
+        function getMousePos(e) {
+            const rect = qCanvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
         }
 
-        rangeA = valA;
-        rangeB = valB;
-        renderQuadGraph();
-    }
+        qCanvas.addEventListener('mousedown', e => {
+            const pos = getMousePos(e);
+            const mathX = (pos.x - offsetX) / zoom;
+            const mathY = (offsetY - pos.y) / zoom;
 
-    // 슬라이더를 움직일 때 이벤트 연결
-    aSlider.addEventListener('input', () => updateRange('slider'));
-    bSlider.addEventListener('input', () => updateRange('slider'));
+            if (currentQuadTab === 'shift') {
+                // 평행이동: 꼭짓점(p, q) 반경 안을 클릭했는가?
+                let vPx = offsetX + pVal * zoom;
+                let vPy = offsetY - qVal * zoom;
+                if (Math.hypot(pos.x - vPx, pos.y - vPy) < HIT_RADIUS + 10) {
+                    isDraggingVertex = true;
+                    qCanvas.style.cursor = 'grabbing';
+                    return; // 캔버스 패닝 금지
+                }
+            } else if (currentQuadTab === 'maxmin') {
+                // 최대최소: a 또는 b 수직선을 클릭했는가?
+                let aPx = offsetX + rangeA * zoom;
+                let bPx = offsetX + rangeB * zoom;
+                if (Math.abs(pos.x - aPx) < HIT_RADIUS) { isDraggingLineA = true; qCanvas.style.cursor = 'ew-resize'; return; }
+                if (Math.abs(pos.x - bPx) < HIT_RADIUS) { isDraggingLineB = true; qCanvas.style.cursor = 'ew-resize'; return; }
+            }
 
-    // 숫자를 직접 입력하고 엔터를 치거나 포커스를 벗어날 때 이벤트 연결
-    aInput.addEventListener('change', () => updateRange('input'));
-    bInput.addEventListener('change', () => updateRange('input'));
+            // 허공 클릭 시 패닝(화면 이동) 시작
+            isPanning = true;
+            lastMouse = pos;
+            qCanvas.style.cursor = 'move';
+        });
 
-    // (엔터키 쳤을 때 즉시 반영)
-    aInput.addEventListener('keypress', e => { if (e.key === 'Enter') { updateRange('input'); aInput.blur(); } });
-    bInput.addEventListener('keypress', e => { if (e.key === 'Enter') { updateRange('input'); bInput.blur(); } });
+        qCanvas.addEventListener('mousemove', e => {
+            const pos = getMousePos(e);
 
-    function parseAndDraw() {
-        const exprStr = funcInput.value.trim();
-        try {
-            quadExpr = math.parse(exprStr);
-            quadExpr.evaluate({ x: 0 }); // 문법 테스트
-            errorMsg.innerText = "";
-            renderQuadGraph();
-        } catch (e) {
-            errorMsg.innerText = "올바른 수식을 입력하세요.";
+            // 1. 마우스 호버 (커서 모양 변경)
+            if (!isPanning && !isDraggingVertex && !isDraggingLineA && !isDraggingLineB) {
+                if (currentQuadTab === 'shift') {
+                    let vPx = offsetX + pVal * zoom, vPy = offsetY - qVal * zoom;
+                    qCanvas.style.cursor = (Math.hypot(pos.x - vPx, pos.y - vPy) < HIT_RADIUS + 10) ? 'grab' : 'default';
+                } else if (currentQuadTab === 'maxmin') {
+                    let aPx = offsetX + rangeA * zoom, bPx = offsetX + rangeB * zoom;
+                    if (Math.abs(pos.x - aPx) < HIT_RADIUS || Math.abs(pos.x - bPx) < HIT_RADIUS) qCanvas.style.cursor = 'ew-resize';
+                    else qCanvas.style.cursor = 'default';
+                }
+            }
+
+            // 2. 실제 드래그 처리
+            if (isDraggingVertex) {
+                // 수식을 위해 정수 단위로 딱딱 끊어지게 스냅(Snap) 적용
+                pVal = Math.round((pos.x - offsetX) / zoom);
+                qVal = Math.round((offsetY - pos.y) / zoom);
+
+                // 슬라이더 동기화
+                document.getElementById('quad-p-slider').value = pVal;
+                document.getElementById('quad-q-slider').value = qVal;
+                document.getElementById('quad-p-val').innerText = pVal;
+                document.getElementById('quad-q-val').innerText = qVal;
+
+                updateShiftFormula();
+                drawQuad();
+            } else if (isDraggingLineA) {
+                let mathX = (pos.x - offsetX) / zoom;
+                if (mathX >= rangeB) mathX = rangeB - 0.1; // 역전 방지
+                rangeA = parseFloat(mathX.toFixed(1));
+                syncMaxMinInput('slider');
+            } else if (isDraggingLineB) {
+                let mathX = (pos.x - offsetX) / zoom;
+                if (mathX <= rangeA) mathX = rangeA + 0.1;
+                rangeB = parseFloat(mathX.toFixed(1));
+                syncMaxMinInput('slider');
+            } else if (isPanning) {
+                offsetX += pos.x - lastMouse.x;
+                offsetY += pos.y - lastMouse.y;
+                lastMouse = pos;
+                drawQuad();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false; isDraggingVertex = false;
+            isDraggingLineA = false; isDraggingLineB = false;
+            if (qCanvas) qCanvas.style.cursor = 'default';
+        });
+
+        qCanvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            const oldZoom = zoom;
+            zoom *= e.deltaY < 0 ? 1.1 : 0.9;
+            zoom = Math.max(10, Math.min(zoom, 150));
+            offsetX = e.offsetX - (e.offsetX - offsetX) * (zoom / oldZoom);
+            offsetY = e.offsetY - (e.offsetY - offsetY) * (zoom / oldZoom);
+            drawQuad();
+        }, { passive: false });
+
+        /* ==================== 3. 평행이동 로직 ==================== */
+        const pSlider = document.getElementById('quad-p-slider');
+        const qSlider = document.getElementById('quad-q-slider');
+        const pValTxt = document.getElementById('quad-p-val');
+        const qValTxt = document.getElementById('quad-q-val');
+
+        function updateShiftFromSlider() {
+            pVal = parseInt(pSlider.value);
+            qVal = parseInt(qSlider.value);
+            pValTxt.innerText = pVal;
+            qValTxt.innerText = qVal;
+            updateShiftFormula();
+            drawQuad();
         }
-    }
 
-    drawBtn.addEventListener('click', parseAndDraw);
-    funcInput.addEventListener('keypress', e => { if (e.key === 'Enter') parseAndDraw(); });
+        pSlider.addEventListener('input', updateShiftFromSlider);
+        qSlider.addEventListener('input', updateShiftFromSlider);
 
-    /* --- 그리드 및 축 그리기 --- */
-    function drawGrid() {
-        qCtx.clearRect(0, 0, qCanvas.width, qCanvas.height);
-        qCtx.lineWidth = 1; qCtx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+        document.getElementById('quad-shift-reset').addEventListener('click', () => {
+            pSlider.value = 0; qSlider.value = 0; updateShiftFromSlider();
+            offsetX = qCanvas.width / 2; offsetY = qCanvas.height / 2 + 50; zoom = 40; drawQuad();
+        });
 
-        let startCol = Math.floor(-offsetX / zoom);
-        let endCol = Math.ceil((qCanvas.width - offsetX) / zoom);
-        for (let i = startCol; i <= endCol; i++) {
-            let px = offsetX + i * zoom;
-            qCtx.beginPath(); qCtx.moveTo(px, 0); qCtx.lineTo(px, qCanvas.height); qCtx.stroke();
-        }
-        let startRow = Math.floor((offsetY - qCanvas.height) / zoom);
-        let endRow = Math.ceil(offsetY / zoom);
-        for (let i = startRow; i <= endRow; i++) {
-            let py = offsetY - i * zoom;
-            qCtx.beginPath(); qCtx.moveTo(0, py); qCtx.lineTo(qCanvas.width, py); qCtx.stroke();
+        function updateShiftFormula() {
+            // y = (x - p)^2 + q 수식 렌더링
+            const pStr = pVal === 0 ? '0' : (pVal > 0 ? pVal : `(${pVal})`);
+            const qStr = qVal === 0 ? '0' : (qVal > 0 ? `+ ${qVal}` : `- ${Math.abs(qVal)}`);
+            document.getElementById('quad-shift-formula').innerHTML = `y = (x - <span style="color:#e53e3e;">${pStr}</span>)² <span style="color:#38a169;">${qStr}</span>`;
         }
 
-        // 메인 축 (X, Y)
-        qCtx.lineWidth = 2; qCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-        qCtx.beginPath(); qCtx.moveTo(0, offsetY); qCtx.lineTo(qCanvas.width, offsetY); qCtx.stroke();
-        qCtx.beginPath(); qCtx.moveTo(offsetX, 0); qCtx.lineTo(offsetX, qCanvas.height); qCtx.stroke();
+        function drawShiftGraph() {
+            // y = x^2 (기본형, 흐릿하게)
+            qCtx.beginPath();
+            qCtx.strokeStyle = 'rgba(160, 174, 192, 0.4)';
+            qCtx.lineWidth = 2; qCtx.setLineDash([5, 5]);
+            for (let x = -10; x <= 10; x += 0.1) {
+                let y = x * x;
+                let px = offsetX + x * zoom; let py = offsetY - y * zoom;
+                if (x === -10) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
+            }
+            qCtx.stroke(); qCtx.setLineDash([]);
 
-        qCtx.fillStyle = '#718096'; qCtx.font = '12px Outfit, sans-serif';
-        let stepSize = zoom < 20 ? 5 : (zoom < 40 ? 2 : 1);
-        for (let i = startCol; i <= endCol; i++) {
-            if (i !== 0 && i % stepSize === 0) qCtx.fillText(i, offsetX + i * zoom - 5, offsetY + 16);
+            // y = (x-p)^2 + q (이동형, 진하게)
+            qCtx.beginPath();
+            qCtx.strokeStyle = '#a78bfa'; // 보라색
+            qCtx.lineWidth = 4;
+            for (let x = pVal - 10; x <= pVal + 10; x += 0.1) {
+                let y = (x - pVal) * (x - pVal) + qVal;
+                let px = offsetX + x * zoom; let py = offsetY - y * zoom;
+                if (x === pVal - 10) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
+            }
+            qCtx.stroke();
+
+            // 꼭짓점 마킹
+            let vx = offsetX + pVal * zoom; let vy = offsetY - qVal * zoom;
+            qCtx.beginPath(); qCtx.arc(vx, vy, 8, 0, Math.PI * 2);
+            qCtx.fillStyle = '#a78bfa'; qCtx.fill(); qCtx.strokeStyle = 'white'; qCtx.lineWidth = 2; qCtx.stroke();
+            qCtx.fillStyle = '#2d3748'; qCtx.font = 'bold 16px Outfit'; qCtx.fillText(`(${pVal}, ${qVal})`, vx + 12, vy - 12);
         }
-        for (let i = startRow; i <= endRow; i++) {
-            if (i !== 0 && i % stepSize === 0) qCtx.fillText(i, offsetX + 8, offsetY - i * zoom + 4);
+
+        /* ==================== 4. 최대/최소 로직 ==================== */
+        const aInput = document.getElementById('quad-a-input');
+        const bInput = document.getElementById('quad-b-input');
+        const aSld = document.getElementById('quad-a-slider');
+        const bSld = document.getElementById('quad-b-slider');
+
+        function syncMaxMinInput(source) {
+            if (source === 'slider') {
+                let vA = parseFloat(aSld.value), vB = parseFloat(bSld.value);
+                if (vA >= vB) { vA = vB - 0.1; aSld.value = vA; }
+                rangeA = vA; rangeB = vB;
+                aInput.value = vA.toFixed(1); bInput.value = vB.toFixed(1);
+            } else if (source === 'input') {
+                let vA = parseFloat(aInput.value), vB = parseFloat(bInput.value);
+                if (isNaN(vA)) vA = rangeA; if (isNaN(vB)) vB = rangeB;
+                if (vA >= vB) { vA = vB - 0.1; aInput.value = vA.toFixed(1); }
+                rangeA = vA; rangeB = vB;
+                if (vA < aSld.min) aSld.min = Math.floor(vA - 2);
+                if (vB > bSld.max) bSld.max = Math.ceil(vB + 2);
+                aSld.value = vA; bSld.value = vB;
+            }
+            drawQuad();
         }
-        qCtx.fillText('O', offsetX - 12, offsetY + 15);
-    }
 
-    /* --- 메인 렌더링 함수 --- */
-    function renderQuadGraph() {
-        drawGrid();
-        if (!quadExpr) return;
+        aSld.addEventListener('input', () => syncMaxMinInput('slider'));
+        bSld.addEventListener('input', () => syncMaxMinInput('slider'));
+        aInput.addEventListener('change', () => syncMaxMinInput('input'));
+        bInput.addEventListener('change', () => syncMaxMinInput('input'));
 
-        const startX = (-offsetX / zoom) - 1;
-        const endX = ((qCanvas.width - offsetX) / zoom) + 1;
-        const step = (endX - startX) / 800; // 촘촘하게
-
-        qCtx.lineWidth = 3;
-
-        // 1. 전체 그래프 그리기 (점선/실선 분기 처리)
-        let prevPx = null, prevPy = null;
-
-        for (let t = startX; t <= endX; t += step) {
+        function parseAndDrawMaxMin() {
             try {
-                let y = quadExpr.evaluate({ x: t });
-                if (isNaN(y) || !isFinite(y)) continue;
+                quadExpr = math.parse(document.getElementById('quad-func-input').value.trim());
+                quadExpr.evaluate({ x: 0 });
+                document.getElementById('quad-error').innerText = "";
+                drawQuad();
+            } catch (e) { document.getElementById('quad-error').innerText = "수식 오류"; }
+        }
+        document.getElementById('quad-draw-btn').addEventListener('click', parseAndDrawMaxMin);
 
-                let px = offsetX + t * zoom;
-                let py = offsetY - y * zoom;
+        function drawMaxMinGraph() {
+            if (!quadExpr) return;
+            const startX = (-offsetX / zoom) - 1, endX = ((qCanvas.width - offsetX) / zoom) + 1;
+            const step = (endX - startX) / 800;
 
-                let isInside = (t >= rangeA && t <= rangeB);
+            qCtx.lineWidth = 3;
+            let prevPx = null, prevPy = null;
 
-                if (prevPx !== null) {
-                    qCtx.beginPath();
-                    qCtx.moveTo(prevPx, prevPy);
-                    qCtx.lineTo(px, py);
+            // 1. 전체 선 그리기
+            for (let t = startX; t <= endX; t += step) {
+                try {
+                    let y = quadExpr.evaluate({ x: t });
+                    if (isNaN(y) || !isFinite(y)) continue;
+                    let px = offsetX + t * zoom, py = offsetY - y * zoom;
+                    let isInside = (t >= rangeA && t <= rangeB);
 
-                    // 스타일 동적 변경
-                    if (isInside) {
-                        qCtx.strokeStyle = '#4fd1c5'; // 진한 청록색 (실선)
-                        qCtx.globalAlpha = 1.0;
-                        qCtx.setLineDash([]);
-                        qCtx.lineWidth = 4;
-                    } else {
-                        qCtx.strokeStyle = '#a0aec0'; // 흐릿한 회색 (점선)
-                        qCtx.globalAlpha = 0.5;
-                        qCtx.setLineDash([5, 5]);
-                        qCtx.lineWidth = 2;
+                    if (prevPx !== null) {
+                        qCtx.beginPath(); qCtx.moveTo(prevPx, prevPy); qCtx.lineTo(px, py);
+                        if (isInside) {
+                            qCtx.strokeStyle = '#4fd1c5'; // 사진과 동일한 예쁜 하늘색 실선
+                            qCtx.globalAlpha = 1.0; qCtx.setLineDash([]); qCtx.lineWidth = 4;
+                        } else {
+                            qCtx.strokeStyle = '#a0aec0'; qCtx.globalAlpha = 0.5; qCtx.setLineDash([5, 5]); qCtx.lineWidth = 2;
+                        }
+                        qCtx.stroke();
                     }
-                    qCtx.stroke();
+                    prevPx = px; prevPy = py;
+                } catch (e) { }
+            }
+            qCtx.setLineDash([]); qCtx.globalAlpha = 1.0;
+
+            // 2. 구간 경계선 그리기
+            let pxA = offsetX + rangeA * zoom, pxB = offsetX + rangeB * zoom;
+            qCtx.beginPath(); qCtx.moveTo(pxA, 0); qCtx.lineTo(pxA, qCanvas.height);
+            qCtx.strokeStyle = 'rgba(115, 165, 255, 0.4)'; qCtx.lineWidth = 2; qCtx.setLineDash([8, 4]); qCtx.stroke();
+            qCtx.beginPath(); qCtx.moveTo(pxB, 0); qCtx.lineTo(pxB, qCanvas.height);
+            qCtx.strokeStyle = 'rgba(255, 139, 173, 0.4)'; qCtx.stroke(); qCtx.setLineDash([]);
+
+            // 🌟 3. 완벽한 최대/최소값 찾기 (중복 및 겹침 방지 완벽 적용) 🌟
+            let maxVal = -Infinity, minVal = Infinity;
+            let maxPts = [], minPts = [];
+            const fineStep = (rangeB - rangeA) / 1000; // 정밀 탐색
+
+            // 3-1) 최고/최저 높이 찾기
+            for (let t = rangeA; t <= rangeB + fineStep / 2; t += fineStep) {
+                let xVal = Math.min(t, rangeB);
+                let y = quadExpr.evaluate({ x: xVal });
+                if (y > maxVal) maxVal = y;
+                if (y < minVal) minVal = y;
+            }
+
+            // 3-2) 그 높이와 일치하는 점들을 수집 (컴퓨터 계산 오차만 허용)
+            for (let t = rangeA; t <= rangeB + fineStep / 2; t += fineStep) {
+                let xVal = Math.min(t, rangeB);
+                let y = quadExpr.evaluate({ x: xVal });
+                let px = offsetX + xVal * zoom, py = offsetY - y * zoom;
+
+                // 🌟 수정: 오차를 1e-5 로 극단적으로 줄이고, x거리가 0.5 이내인 점은 중복 방지
+                if (Math.abs(y - maxVal) < 1e-5) {
+                    if (!maxPts.some(pt => Math.abs(pt.x - xVal) < 0.5)) {
+                        maxPts.push({ x: xVal, y: y, px: px, py: py });
+                    }
                 }
 
-                prevPx = px; prevPy = py;
-            } catch (e) { }
-        }
-        qCtx.setLineDash([]); // 설정 초기화
-        qCtx.globalAlpha = 1.0;
-
-        // 2. 구간 [a, b]의 경계선 (수직 점선) 그리기
-        let pxA = offsetX + rangeA * zoom;
-        let pxB = offsetX + rangeB * zoom;
-
-        qCtx.beginPath();
-        qCtx.moveTo(pxA, 0); qCtx.lineTo(pxA, qCanvas.height);
-        qCtx.strokeStyle = 'rgba(115, 165, 255, 0.3)'; // a 경계선 (파랑)
-        qCtx.lineWidth = 2; qCtx.setLineDash([8, 4]); qCtx.stroke();
-
-        qCtx.beginPath();
-        qCtx.moveTo(pxB, 0); qCtx.lineTo(pxB, qCanvas.height);
-        qCtx.strokeStyle = 'rgba(255, 139, 173, 0.3)'; // b 경계선 (빨강)
-        qCtx.stroke();
-        qCtx.setLineDash([]);
-
-        // 3. 최댓값 / 최솟값 분석 및 마킹 (해석적 방식 적용)
-        let criticalX = [rangeA, rangeB];
-        try {
-            let d1 = math.derivative(quadExpr, 'x');
-            let d2 = math.derivative(d1, 'x');
-            let d2_0 = d2.evaluate({x: 0});
-            let d2_1 = d2.evaluate({x: 1});
-            
-            // 이차함수 여부 검증 (이계도함수가 상수인지 확인)
-            if (Math.abs(d2_0 - d2_1) < 1e-8) {
-                let c = d2_0; // 2a
-                if (Math.abs(c) > 1e-10) {
-                    let b = d1.evaluate({x: 0});
-                    let x_v = -b / c; // 꼭짓점 x
-                    // 꼭짓점이 구간 내에 있으면 후보에 추가
-                    if (x_v >= rangeA && x_v <= rangeB) {
-                        criticalX.push(x_v);
+                if (Math.abs(y - minVal) < 1e-5) {
+                    if (!minPts.some(pt => Math.abs(pt.x - xVal) < 0.5)) {
+                        minPts.push({ x: xVal, y: y, px: px, py: py });
                     }
                 }
             }
-        } catch(e) {}
 
-        // 임의의 비-이차함수에 대해서도 대체로 올바른 값을 구하기 위해 샘플링 포인트 병합
-        let sampleStep = (rangeB - rangeA) / 800;
-        if (sampleStep > 0) {
-            for (let t = rangeA; t <= rangeB; t += sampleStep) {
-                criticalX.push(t);
-            }
-        }
-
-        let evaluated = [];
-        for (let x of criticalX) {
-            try {
-                let y = quadExpr.evaluate({x: x});
-                if (!isNaN(y) && isFinite(y)) evaluated.push({x: x, y: y});
-            } catch(e) {}
-        }
-
-        function getExtremums(points, isMax) {
-            if (points.length === 0) return { val: 0, pts: [] };
-            points.sort((a, b) => isMax ? b.y - a.y : a.y - b.y);
-            let bestVal = points[0].y;
-            // 허용 오차 내의 모든 값을 같은 최고/최저점으로 간주
-            let bestPts = points.filter(p => Math.abs(p.y - bestVal) < 1e-7);
-            
-            // X축이 아주 가까운 점들 제거 (단일 지점으로 클러스터링)
-            let clustered = [];
-            bestPts.forEach(p => {
-                if (!clustered.some(c => Math.abs(c.x - p.x) < 0.05)) {
-                    clustered.push(p);
-                }
-            });
-            clustered.sort((a, b) => a.x - b.x);
-            return { val: bestVal, pts: clustered };
-        }
-
-        if (evaluated.length > 0) {
-            let maxData = getExtremums(evaluated, true);
-            let minData = getExtremums(evaluated, false);
-
-            maxData.pts.forEach(pt => {
-                let px = offsetX + pt.x * zoom;
-                let py = offsetY - pt.y * zoom;
-                qCtx.beginPath(); qCtx.arc(px, py, 7, 0, Math.PI * 2);
+            // 🌟 4. 수집된 모든 최대/최소 지점에 마킹 & 라벨 텍스트 그리기
+            maxPts.forEach(pt => {
+                qCtx.beginPath(); qCtx.arc(pt.px, pt.py, 7, 0, Math.PI * 2);
                 qCtx.fillStyle = '#e53e3e'; qCtx.fill(); qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2; qCtx.stroke();
-                qCtx.font = 'bold 14px Outfit'; qCtx.fillText(`Max (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`, px + 10, py - 10);
+
+                // 텍스트에 하얀색 테두리(Stroke)를 주어 선과 겹쳐도 잘 보이게 처리
+                qCtx.font = '800 15px Outfit, sans-serif';
+                qCtx.strokeStyle = '#ffffff'; qCtx.lineWidth = 3;
+                qCtx.strokeText(`Max (${pt.x.toFixed(2)}, ${pt.y.toFixed(2)})`, pt.px + 10, pt.py - 10);
+                qCtx.fillStyle = '#e53e3e';
+                qCtx.fillText(`Max (${pt.x.toFixed(2)}, ${pt.y.toFixed(2)})`, pt.px + 10, pt.py - 10);
             });
 
-            minData.pts.forEach(pt => {
-                let px = offsetX + pt.x * zoom;
-                let py = offsetY - pt.y * zoom;
-                qCtx.beginPath(); qCtx.arc(px, py, 7, 0, Math.PI * 2);
+            minPts.forEach(pt => {
+                qCtx.beginPath(); qCtx.arc(pt.px, pt.py, 7, 0, Math.PI * 2);
                 qCtx.fillStyle = '#3182ce'; qCtx.fill(); qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2; qCtx.stroke();
-                qCtx.font = 'bold 14px Outfit'; qCtx.fillText(`Min (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`, px + 10, py + 20);
+
+                qCtx.font = '800 15px Outfit, sans-serif';
+                qCtx.strokeStyle = '#ffffff'; qCtx.lineWidth = 3;
+                qCtx.strokeText(`Min (${pt.x.toFixed(2)}, ${pt.y.toFixed(2)})`, pt.px + 10, pt.py + 25);
+                qCtx.fillStyle = '#3182ce';
+                qCtx.fillText(`Min (${pt.x.toFixed(2)}, ${pt.y.toFixed(2)})`, pt.px + 10, pt.py + 25);
             });
 
-            let maxXVals = maxData.pts.map(p => p.x.toFixed(2)).join(', ');
-            let minXVals = minData.pts.map(p => p.x.toFixed(2)).join(', ');
+            // 🌟 5. 좌측 결과 패널 업데이트 (사진과 동일한 UI 디자인 적용)
+            if (maxPts.length > 0 && minPts.length > 0) {
+                // 여러 개일 경우 콤마로 연결하여 표시 (예: "0.00, 4.00")
+                let maxXs = maxPts.map(p => p.x.toFixed(2)).join(', ');
+                let minXs = minPts.map(p => p.x.toFixed(2)).join(', ');
 
-            analysisBox.innerHTML = `
-                <div style="margin-bottom: 12px; font-size: 15px; color: #4a5568;">구간: [ <strong>${rangeA.toFixed(1)}</strong>, <strong>${rangeB.toFixed(1)}</strong> ]</div>
-                
-                <div style="margin-bottom: 10px; background: rgba(229, 62, 62, 0.08); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #e53e3e;">
-                    <div style="color: #4a5568; font-size: 14px; margin-bottom: 4px;">
-                        <strong style="color:#e53e3e; font-size:17px; letter-spacing: 0.5px;">x = ${maxXVals}</strong> 일 때
+                document.getElementById('quad-analysis').innerHTML = `
+                    <div style="margin-bottom: 12px; color: #718096; font-size: 14px;">구간: [ <strong>${rangeA.toFixed(2)}, ${rangeB.toFixed(2)}</strong> ]</div>
+                    
+                    <!-- 최댓값 박스 -->
+                    <div style="background: #fff5f5; border-left: 5px solid #fc8181; border-radius: 8px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 14px; color: #4a5568; font-weight: 700; margin-bottom: 6px;">
+                            <span style="color:#e53e3e; font-size: 16px;">x = ${maxXs}</span> 일 때
+                        </div>
+                        <div style="font-size: 15px; color: #4a5568; font-weight: 700;">
+                            최댓값 <span style="color:#e53e3e; font-size:24px; font-weight: 800; margin-left: 5px;">${maxVal.toFixed(2)}</span>
+                        </div>
                     </div>
-                    <div style="font-size: 15px;">
-                        최댓값 <strong style="color:#e53e3e; font-size:22px; margin-left: 5px;">${maxData.val.toFixed(2)}</strong>
-                    </div>
-                </div>
 
-                <div style="background: rgba(49, 130, 206, 0.08); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #3182ce;">
-                    <div style="color: #4a5568; font-size: 14px; margin-bottom: 4px;">
-                        <strong style="color:#3182ce; font-size:17px; letter-spacing: 0.5px;">x = ${minXVals}</strong> 일 때
+                    <!-- 최솟값 박스 -->
+                    <div style="background: #ebf4ff; border-left: 5px solid #73a5ff; border-radius: 8px; padding: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 14px; color: #4a5568; font-weight: 700; margin-bottom: 6px;">
+                            <span style="color:#3182ce; font-size: 16px;">x = ${minXs}</span> 일 때
+                        </div>
+                        <div style="font-size: 15px; color: #4a5568; font-weight: 700;">
+                            최솟값 <span style="color:#3182ce; font-size:24px; font-weight: 800; margin-left: 5px;">${minVal.toFixed(2)}</span>
+                        </div>
                     </div>
-                    <div style="font-size: 15px;">
-                        최솟값 <strong style="color:#3182ce; font-size:22px; margin-left: 5px;">${minData.val.toFixed(2)}</strong>
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
-    }
 
-    // 처음 켰을 때 수식 파싱 후 화면 출력
-    parseAndDraw();
-}
+        /* ==================== 5. 통합 그리기 ==================== */
+        function drawQuadGrid() {
+            qCtx.clearRect(0, 0, qCanvas.width, qCanvas.height);
+            qCtx.lineWidth = 1; qCtx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+            let startCol = Math.floor(-offsetX / zoom), endCol = Math.ceil((qCanvas.width - offsetX) / zoom);
+            for (let i = startCol; i <= endCol; i++) { let px = offsetX + i * zoom; qCtx.beginPath(); qCtx.moveTo(px, 0); qCtx.lineTo(px, qCanvas.height); qCtx.stroke(); }
+            let startRow = Math.floor((offsetY - qCanvas.height) / zoom), endRow = Math.ceil(offsetY / zoom);
+            for (let i = startRow; i <= endRow; i++) { let py = offsetY - i * zoom; qCtx.beginPath(); qCtx.moveTo(0, py); qCtx.lineTo(qCanvas.width, py); qCtx.stroke(); }
+
+            qCtx.lineWidth = 2; qCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+            qCtx.beginPath(); qCtx.moveTo(0, offsetY); qCtx.lineTo(qCanvas.width, offsetY); qCtx.stroke();
+            qCtx.beginPath(); qCtx.moveTo(offsetX, 0); qCtx.lineTo(offsetX, qCanvas.height); qCtx.stroke();
+
+            qCtx.fillStyle = '#718096'; qCtx.font = '12px Outfit';
+            let stepSize = zoom < 20 ? 5 : (zoom < 40 ? 2 : 1);
+            for (let i = startCol; i <= endCol; i++) if (i !== 0 && i % stepSize === 0) qCtx.fillText(i, offsetX + i * zoom - 5, offsetY + 16);
+            for (let i = startRow; i <= endRow; i++) if (i !== 0 && i % stepSize === 0) qCtx.fillText(i, offsetX + 8, offsetY - i * zoom + 4);
+            qCtx.fillText('O', offsetX - 12, offsetY + 15);
+        }
+
+        function drawQuad() {
+            drawQuadGrid();
+            if (currentQuadTab === 'shift') drawShiftGraph();
+            else drawMaxMinGraph();
+        }
+
+        // 초기화 실행
+        updateShiftFormula();
+        parseAndDrawMaxMin();
+    };
+})();
