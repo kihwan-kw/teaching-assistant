@@ -159,14 +159,10 @@ function initQuad() {
         const endX = ((qCanvas.width - offsetX) / zoom) + 1;
         const step = (endX - startX) / 800; // 촘촘하게
 
-        // 최댓값/최솟값 추적 변수
-        let maxVal = -Infinity, minVal = Infinity;
-        let maxPt = null, minPt = null;
-
         qCtx.lineWidth = 3;
 
         // 1. 전체 그래프 그리기 (점선/실선 분기 처리)
-        let prevPx = null, prevPy = null, prevInside = false;
+        let prevPx = null, prevPy = null;
 
         for (let t = startX; t <= endX; t += step) {
             try {
@@ -177,12 +173,6 @@ function initQuad() {
                 let py = offsetY - y * zoom;
 
                 let isInside = (t >= rangeA && t <= rangeB);
-
-                // 구간 내부에서만 최대/최소 추적
-                if (isInside) {
-                    if (y > maxVal) { maxVal = y; maxPt = { x: t, y: y, px, py }; }
-                    if (y < minVal) { minVal = y; minPt = { x: t, y: y, px, py }; }
-                }
 
                 if (prevPx !== null) {
                     qCtx.beginPath();
@@ -204,7 +194,7 @@ function initQuad() {
                     qCtx.stroke();
                 }
 
-                prevPx = px; prevPy = py; prevInside = isInside;
+                prevPx = px; prevPy = py;
             } catch (e) { }
         }
         qCtx.setLineDash([]); // 설정 초기화
@@ -225,23 +215,105 @@ function initQuad() {
         qCtx.stroke();
         qCtx.setLineDash([]);
 
-        // 3. 최댓값 / 최솟값 점 마킹 및 피드백 텍스트 업데이트
-        if (maxPt && minPt) {
-            // 최댓값 점 (빨간색)
-            qCtx.beginPath(); qCtx.arc(maxPt.px, maxPt.py, 7, 0, Math.PI * 2);
-            qCtx.fillStyle = '#e53e3e'; qCtx.fill(); qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2; qCtx.stroke();
-            qCtx.font = 'bold 14px Outfit'; qCtx.fillText(`Max (${maxPt.x.toFixed(1)}, ${maxPt.y.toFixed(1)})`, maxPt.px + 10, maxPt.py - 10);
+        // 3. 최댓값 / 최솟값 분석 및 마킹 (해석적 방식 적용)
+        let criticalX = [rangeA, rangeB];
+        try {
+            let d1 = math.derivative(quadExpr, 'x');
+            let d2 = math.derivative(d1, 'x');
+            let d2_0 = d2.evaluate({x: 0});
+            let d2_1 = d2.evaluate({x: 1});
+            
+            // 이차함수 여부 검증 (이계도함수가 상수인지 확인)
+            if (Math.abs(d2_0 - d2_1) < 1e-8) {
+                let c = d2_0; // 2a
+                if (Math.abs(c) > 1e-10) {
+                    let b = d1.evaluate({x: 0});
+                    let x_v = -b / c; // 꼭짓점 x
+                    // 꼭짓점이 구간 내에 있으면 후보에 추가
+                    if (x_v >= rangeA && x_v <= rangeB) {
+                        criticalX.push(x_v);
+                    }
+                }
+            }
+        } catch(e) {}
 
-            // 최솟값 점 (파란색)
-            qCtx.beginPath(); qCtx.arc(minPt.px, minPt.py, 7, 0, Math.PI * 2);
-            qCtx.fillStyle = '#3182ce'; qCtx.fill(); qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2; qCtx.stroke();
-            qCtx.font = 'bold 14px Outfit'; qCtx.fillText(`Min (${minPt.x.toFixed(1)}, ${minPt.y.toFixed(1)})`, minPt.px + 10, minPt.py + 20);
+        // 임의의 비-이차함수에 대해서도 대체로 올바른 값을 구하기 위해 샘플링 포인트 병합
+        let sampleStep = (rangeB - rangeA) / 800;
+        if (sampleStep > 0) {
+            for (let t = rangeA; t <= rangeB; t += sampleStep) {
+                criticalX.push(t);
+            }
+        }
 
-            // 좌측 분석 패널 업데이트
+        let evaluated = [];
+        for (let x of criticalX) {
+            try {
+                let y = quadExpr.evaluate({x: x});
+                if (!isNaN(y) && isFinite(y)) evaluated.push({x: x, y: y});
+            } catch(e) {}
+        }
+
+        function getExtremums(points, isMax) {
+            if (points.length === 0) return { val: 0, pts: [] };
+            points.sort((a, b) => isMax ? b.y - a.y : a.y - b.y);
+            let bestVal = points[0].y;
+            // 허용 오차 내의 모든 값을 같은 최고/최저점으로 간주
+            let bestPts = points.filter(p => Math.abs(p.y - bestVal) < 1e-7);
+            
+            // X축이 아주 가까운 점들 제거 (단일 지점으로 클러스터링)
+            let clustered = [];
+            bestPts.forEach(p => {
+                if (!clustered.some(c => Math.abs(c.x - p.x) < 0.05)) {
+                    clustered.push(p);
+                }
+            });
+            clustered.sort((a, b) => a.x - b.x);
+            return { val: bestVal, pts: clustered };
+        }
+
+        if (evaluated.length > 0) {
+            let maxData = getExtremums(evaluated, true);
+            let minData = getExtremums(evaluated, false);
+
+            maxData.pts.forEach(pt => {
+                let px = offsetX + pt.x * zoom;
+                let py = offsetY - pt.y * zoom;
+                qCtx.beginPath(); qCtx.arc(px, py, 7, 0, Math.PI * 2);
+                qCtx.fillStyle = '#e53e3e'; qCtx.fill(); qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2; qCtx.stroke();
+                qCtx.font = 'bold 14px Outfit'; qCtx.fillText(`Max (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`, px + 10, py - 10);
+            });
+
+            minData.pts.forEach(pt => {
+                let px = offsetX + pt.x * zoom;
+                let py = offsetY - pt.y * zoom;
+                qCtx.beginPath(); qCtx.arc(px, py, 7, 0, Math.PI * 2);
+                qCtx.fillStyle = '#3182ce'; qCtx.fill(); qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2; qCtx.stroke();
+                qCtx.font = 'bold 14px Outfit'; qCtx.fillText(`Min (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`, px + 10, py + 20);
+            });
+
+            let maxXVals = maxData.pts.map(p => p.x.toFixed(2)).join(', ');
+            let minXVals = minData.pts.map(p => p.x.toFixed(2)).join(', ');
+
             analysisBox.innerHTML = `
-                <div style="margin-bottom: 8px;">구간: [ <strong>${rangeA.toFixed(1)}</strong>, <strong>${rangeB.toFixed(1)}</strong> ]</div>
-                <div>최댓값: <strong style="color:#e53e3e; font-size:18px;">${maxVal.toFixed(2)}</strong> <span style="font-size:12px; color:#a0aec0;">(x=${maxPt.x.toFixed(2)} 일 때)</span></div>
-                <div style="margin-top: 5px;">최솟값: <strong style="color:#3182ce; font-size:18px;">${minVal.toFixed(2)}</strong> <span style="font-size:12px; color:#a0aec0;">(x=${minPt.x.toFixed(2)} 일 때)</span></div>
+                <div style="margin-bottom: 12px; font-size: 15px; color: #4a5568;">구간: [ <strong>${rangeA.toFixed(1)}</strong>, <strong>${rangeB.toFixed(1)}</strong> ]</div>
+                
+                <div style="margin-bottom: 10px; background: rgba(229, 62, 62, 0.08); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #e53e3e;">
+                    <div style="color: #4a5568; font-size: 14px; margin-bottom: 4px;">
+                        <strong style="color:#e53e3e; font-size:17px; letter-spacing: 0.5px;">x = ${maxXVals}</strong> 일 때
+                    </div>
+                    <div style="font-size: 15px;">
+                        최댓값 <strong style="color:#e53e3e; font-size:22px; margin-left: 5px;">${maxData.val.toFixed(2)}</strong>
+                    </div>
+                </div>
+
+                <div style="background: rgba(49, 130, 206, 0.08); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #3182ce;">
+                    <div style="color: #4a5568; font-size: 14px; margin-bottom: 4px;">
+                        <strong style="color:#3182ce; font-size:17px; letter-spacing: 0.5px;">x = ${minXVals}</strong> 일 때
+                    </div>
+                    <div style="font-size: 15px;">
+                        최솟값 <strong style="color:#3182ce; font-size:22px; margin-left: 5px;">${minData.val.toFixed(2)}</strong>
+                    </div>
+                </div>
             `;
         }
     }
