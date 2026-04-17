@@ -4,6 +4,80 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // 🌟 1. 각 단원별 튜토리얼 내용 정의 🌟
+    const TUTORIAL_DATA = {
+        'exp': {
+            icon: '📈', title: '그래프 그리기', desc: '함수를 직접 입력하고 어떻게 변하는지 관찰해 보세요.',
+            items: ['수식을 입력하고 <strong>[추가하기]</strong>를 누르세요.', '우측 <strong>캔버스를 마우스로 드래그</strong>하여 화면을 이동할 수 있습니다.', '마우스 <strong>휠을 돌려 확대/축소(Zoom)</strong>가 가능합니다.', '대칭/평행 이동 버튼을 눌러 그래프의 변화를 확인하세요.']
+        },
+        'factor': {
+            icon: '✖️', title: '인수분해 훈련소', desc: '직접 숫자를 채워 넣으며 인수분해 원리를 체화합니다.',
+            items: ['좌측 탭에서 <strong>훈련하고 싶은 단계</strong>를 선택하세요.', '빈칸을 클릭한 후, <strong>미니 키패드</strong>나 키보드로 정답을 입력하세요.', '모르겠을 땐 <strong>[💡 힌트]</strong> 버튼을 적극 활용하세요!', '무한 퀴즈 탭에서 콤보를 쌓아 최고 점수에 도전해 보세요.']
+        },
+        'matrix': {
+            icon: '🔲', title: '행렬과 변환', desc: '행렬이 공간을 어떻게 찌그러뜨리고 회전시키는지 눈으로 확인합니다.',
+            items: ['이미지를 업로드하거나 기본 도형을 사용하세요.', '<strong>변환 행렬 a, b, c, d</strong> 값을 직접 조절해 보세요.', '행렬식(det)이 0이 되면 어떻게 되는지 관찰하세요.', '<strong>[▶ 변환 애니메이션]</strong>을 누르면 공간이 휘어지는 과정을 볼 수 있습니다.']
+        },
+        'trig': {
+            icon: '〽️', title: '삼각함수', desc: '원 위를 도는 점이 어떻게 파동(그래프)을 만들어내는지 이해합니다.',
+            items: ['<strong>각도 슬라이더</strong>를 좌우로 움직여 보세요.', '호도법 탭에서는 <strong>반지름과 호의 길이 비례 관계</strong>를 확인합니다.', '사인, 코사인, 탄젠트 탭에서 <strong>수선의 발</strong>이 어떻게 그래프가 되는지 관찰하세요.']
+        },
+        'integ': {
+            icon: '∫', title: '적분 (구분구적법)', desc: '직사각형을 무한히 잘게 쪼개면 어떻게 되는지 확인합니다.',
+            items: ['함수식을 입력하고 <strong>적분 구간 [a, b]</strong>를 설정하세요.', '<strong>분할 횟수 n 슬라이더</strong>를 최대로 당겨보세요.', '상합(Upper)과 하합(Lower)의 차이가 어떻게 0이 되는지(조임정리) 관찰하세요.']
+        },
+        'quad': { // (추가하신 이차함수)
+            icon: '🎢', title: '이차함수의 모든 것', desc: '포물선을 직접 이리저리 끌고 다니며 원리를 파악하세요.',
+            items: ['평행이동 탭에서 <strong>꼭짓점을 마우스로 잡고 드래그</strong>해 보세요.', '최대·최소 탭에서 <strong>파란색/빨간색 세로 경계선</strong>을 잡고 움직여 보세요.', '판별식 탭에서 c값을 조절하며 <strong>포물선이 수면(x축)에 닿는 순간</strong>을 찾아보세요.']
+        },
+        'seq': {
+            icon: '🔢', title: '시그마 테트리스', desc: '거듭제곱의 합 공식을 아름다운 퍼즐로 증명합니다.',
+            items: ['<strong>N 슬라이더</strong>를 올려 블록을 쌓아보세요.', '<strong>[▶ 애니메이션 실행]</strong>을 눌러 퍼즐이 어떻게 조립되는지 감상하세요.', '특히 <strong>세제곱의 합(Σk³)</strong> 탭에서 마법 같은 정사각형 조립 과정을 꼭 확인하세요!']
+        },
+        'deriv': {
+            icon: '📐', title: '미분의 본질', desc: '두 점 사이의 거리가 0이 되는 극한의 마법을 봅니다.',
+            items: ['<strong>할선 간격 h 슬라이더</strong>를 0에 가깝게 줄여보세요.', '주황색 할선(평균변화율)이 분홍색 접선(순간변화율)으로 바뀌는 것을 관찰하세요.', '원함수 위의 점을 움직여 <strong>아래쪽 도함수 그래프</strong>가 그려지는 것을 확인하세요.']
+        }
+    };
+
+    // 🌟 2. 팝업 제어 로직 🌟
+    const modal = document.getElementById('tutorial-modal');
+    const closeBtn = document.getElementById('tutorial-close-btn');
+    const dontShowChk = document.getElementById('tutorial-dont-show');
+    let currentTutorialUnit = '';
+
+    function showTutorial(unitId) {
+        // 이미 '다시 보지 않기'를 체크한 단원이면 패스
+        if (localStorage.getItem(`hide_tutorial_${unitId}`) === 'true') return;
+
+        const data = TUTORIAL_DATA[unitId];
+        if (!data) return; // 데이터가 없는 단원이면 패스
+
+        currentTutorialUnit = unitId;
+        document.getElementById('tutorial-icon').innerText = data.icon;
+        document.getElementById('tutorial-title').innerText = data.title;
+        document.getElementById('tutorial-desc').innerText = data.desc;
+
+        const listUl = document.getElementById('tutorial-list');
+        listUl.innerHTML = '';
+        data.items.forEach(item => {
+            const li = document.createElement('li');
+            li.innerHTML = item;
+            listUl.appendChild(li);
+        });
+
+        dontShowChk.checked = false; // 체크박스 초기화
+        modal.style.display = 'flex';
+    }
+
+    closeBtn.addEventListener('click', () => {
+        if (dontShowChk.checked && currentTutorialUnit) {
+            // 브라우저 로컬 스토리지에 저장하여 다음 방문 시 안 띄움
+            localStorage.setItem(`hide_tutorial_${currentTutorialUnit}`, 'true');
+        }
+        modal.style.display = 'none';
+    });
+
     const UNITS = [
         { id: 'exp', icon: '📈', title: '그래프 그리기', subtitle: '함수를 입력하고 다양한 변환을 시각화', ready: true, colorClass: 'card-exp', init: () => window.initGraph() },
         { id: 'factor', icon: '✖️', title: '인수분해', subtitle: 'X자 크로스 훈련장과 스피드 퀴즈', ready: true, colorClass: 'card-factor', init: () => window.initFactor() },
@@ -102,6 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unit.id === 'seq') setTimeout(() => window.seqRedraw && window.seqRedraw(), 50);
             if (unit.id === 'quad') setTimeout(() => window.initQuad(), 50);
         }
+        // 🌟 이 부분을 추가해 주세요! (해당 단원에 진입할 때 팝업 띄우기) 🌟
+        showTutorial(unit.id);
     }
 
     /* 홈으로 */

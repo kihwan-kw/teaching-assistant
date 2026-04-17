@@ -549,6 +549,260 @@ window.initQuad = (function () {
         // 초기화 실행
         updateDiscrimFromSlider();
 
+        /* ==================== 6. 이차부등식 (Ineq) 로직 (🌟 추가됨!) ==================== */
+        let ineqExpr = null;
+        let ineqA = 0, ineqB = 0, ineqC = 0;
+        let ineqSign = '<';
+        let ineqRoots = [];
+
+        function parseAndDrawIneq() {
+            const exprStr = document.getElementById('quad-ineq-input').value.trim();
+            ineqSign = document.getElementById('quad-ineq-sign').value;
+            try {
+                ineqExpr = math.parse(exprStr);
+                // 수학적 트릭: x=0, 1, -1 을 대입해 연립하여 a, b, c 계수를 자동으로 완벽히 추출해냅니다!
+                let y0 = ineqExpr.evaluate({ x: 0 });
+                let y1 = ineqExpr.evaluate({ x: 1 });
+                let ym1 = ineqExpr.evaluate({ x: -1 });
+
+                ineqC = y0;
+                ineqA = (y1 + ym1 - 2 * ineqC) / 2;
+                ineqB = y1 - ineqA - ineqC;
+
+                if (Math.abs(ineqA) < 1e-7) {
+                    document.getElementById('quad-ineq-error').innerText = "이차식이 아닙니다 (a가 0입니다).";
+                    return;
+                }
+                document.getElementById('quad-ineq-error').innerText = "";
+
+                calculateIneqSolution();
+                drawQuad();
+            } catch (e) {
+                document.getElementById('quad-ineq-error').innerText = "수식 오류";
+            }
+        }
+
+        document.getElementById('quad-ineq-draw-btn').addEventListener('click', parseAndDrawIneq);
+        document.getElementById('quad-ineq-input').addEventListener('keypress', e => { if (e.key === 'Enter') parseAndDrawIneq(); });
+        document.getElementById('quad-ineq-sign').addEventListener('change', parseAndDrawIneq);
+
+        // 해 구하기 및 텍스트 3단계 출력 (입력식 -> 인수분해형 -> 최종해)
+        function calculateIneqSolution() {
+            const D = ineqB * ineqB - 4 * ineqA * ineqC;
+            let finalAns = "";
+            let step1Str = ""; // 첫 번째 줄: 사용자가 입력한 식 + 부등호
+            let step2Str = ""; // 두 번째 줄: 인수분해 된 식 (또는 허근 설명)
+            ineqRoots = [];
+
+            // 1단계: 원래 식 구성 (a, b, c 계수로 예쁘게 조립)
+            let aStrOrig = ineqA === 1 ? 'x^2' : (ineqA === -1 ? '-x^2' : `${ineqA}x^2`);
+            let bStrOrig = ineqB === 0 ? '' : (ineqB > 0 ? `+${ineqB}x` : `${ineqB}x`);
+            let cStrOrig = ineqC === 0 ? '' : (ineqC > 0 ? `+${ineqC}` : `${ineqC}`);
+
+            // 사용자가 입력한 식에 부등호를 붙여서 1단계 수식 생성
+            // 예: "x^2 - 4x + 3 < 0"
+            let signLatex = ineqSign === '<=' ? '\\le' : (ineqSign === '>=' ? '\\ge' : ineqSign);
+            step1Str = `${aStrOrig}${bStrOrig}${cStrOrig} \\; ${signLatex} \\; 0`;
+
+            // 2단계 및 3단계: 판별식 D에 따른 분기 처리
+            if (D > 1e-7) { // 서로 다른 두 실근 (인수분해 가능)
+                let r1 = (-ineqB - Math.sqrt(D)) / (2 * ineqA);
+                let r2 = (-ineqB + Math.sqrt(D)) / (2 * ineqA);
+                let alpha = Math.min(r1, r2);
+                let beta = Math.max(r1, r2);
+                ineqRoots = [alpha, beta];
+
+                let aStr = alpha.toFixed(2).replace(/\.00$/, '');
+                let bStr = beta.toFixed(2).replace(/\.00$/, '');
+
+                // 2단계: (x - alpha)(x - beta) 형태로 인수분해 식 만들기
+                let fac1 = alpha > 0 ? `(x-${aStr})` : (alpha === 0 ? `x` : `(x+${Math.abs(alpha)})`);
+                let fac2 = beta > 0 ? `(x-${bStr})` : (beta === 0 ? `x` : `(x+${Math.abs(beta)})`);
+                let leadA = ineqA === 1 ? '' : (ineqA === -1 ? '-' : String(ineqA));
+                step2Str = `\\Rightarrow \\quad ${leadA}${fac1}${fac2} \\; ${signLatex} \\; 0`;
+
+                // 3단계: 부등호 방향에 따른 최종 해
+                if (ineqA > 0) {
+                    if (ineqSign === '>') finalAns = `x < ${aStr} \\text{ 또는 } x > ${bStr}`;
+                    else if (ineqSign === '<') finalAns = `${aStr} < x < ${bStr}`;
+                    else if (ineqSign === '>=') finalAns = `x \\le ${aStr} \\text{ 또는 } x \\ge ${bStr}`;
+                    else if (ineqSign === '<=') finalAns = `${aStr} \\le x \\le ${bStr}`;
+                } else { // 위로 볼록일 때 해가 뒤집힘
+                    if (ineqSign === '>') finalAns = `${aStr} < x < ${bStr}`;
+                    else if (ineqSign === '<') finalAns = `x < ${aStr} \\text{ 또는 } x > ${bStr}`;
+                    else if (ineqSign === '>=') finalAns = `${aStr} \\le x \\le ${bStr}`;
+                    else if (ineqSign === '<=') finalAns = `x \\le ${aStr} \\text{ 또는 } x \\ge ${bStr}`;
+                }
+
+            } else if (Math.abs(D) <= 1e-7) { // 중근 (완전제곱식)
+                let alpha = -ineqB / (2 * ineqA);
+                ineqRoots = [alpha];
+                let aStr = alpha.toFixed(2).replace(/\.00$/, '');
+
+                // 2단계: 완전제곱식 형태
+                let fac = alpha > 0 ? `(x-${aStr})^2` : (alpha === 0 ? `x^2` : `(x+${Math.abs(alpha)})^2`);
+                let leadA = ineqA === 1 ? '' : (ineqA === -1 ? '-' : String(ineqA));
+                step2Str = `\\Rightarrow \\quad ${leadA}${fac} \\; ${signLatex} \\; 0`;
+
+                // 3단계: 부등호 방향에 따른 최종 해
+                if (ineqA > 0) {
+                    if (ineqSign === '>') finalAns = `x < ${aStr} \\quad \\text{또는} \\quad x > ${bStr}`;
+                    else if (ineqSign === '<') finalAns = `${aStr} < x < ${bStr}`;
+                    else if (ineqSign === '>=') finalAns = `x \\le ${aStr} \\quad \\text{또는} \\quad x \\ge ${bStr}`;
+                    else if (ineqSign === '<=') finalAns = `${aStr} \\le x \\le ${bStr}`;
+                } else { // 위로 볼록일 때 해가 뒤집힘
+                    if (ineqSign === '>') finalAns = `${aStr} < x < ${bStr}`;
+                    else if (ineqSign === '<') finalAns = `x < ${aStr} \\quad \\text{또는} \\quad x > ${bStr}`;
+                    else if (ineqSign === '>=') finalAns = `${aStr} \\le x \\le ${bStr}`;
+                    else if (ineqSign === '<=') finalAns = `x \\le ${aStr} \\quad \\text{또는} \\quad x \\ge ${bStr}`;
+                }
+
+            } else if (Math.abs(D) <= 1e-7) { // 중근 (완전제곱식)
+                let alpha = -ineqB / (2 * ineqA);
+                ineqRoots = [alpha];
+                let aStr = alpha.toFixed(2).replace(/\.00$/, '');
+
+                // 2단계: 완전제곱식 형태
+                let fac = alpha > 0 ? `(x-${aStr})^2` : (alpha === 0 ? `x^2` : `(x+${Math.abs(alpha)})^2`);
+                let leadA = ineqA === 1 ? '' : (ineqA === -1 ? '-' : String(ineqA));
+                step2Str = `\\Rightarrow \\quad ${leadA}${fac} \\; ${signLatex} \\; 0`;
+
+                // 3단계: 최종 해
+                if (ineqA > 0) {
+                    if (ineqSign === '>') finalAns = `x \\neq ${aStr} \\text{ 인 모든 실수}`;
+                    else if (ineqSign === '<') finalAns = `\\text{해가 없다}`;
+                    else if (ineqSign === '>=') finalAns = `\\text{모든 실수}`;
+                    else if (ineqSign === '<=') finalAns = `x = ${aStr}`;
+                } else {
+                    if (ineqSign === '>') finalAns = `\\text{해가 없다}`;
+                    else if (ineqSign === '<') finalAns = `x \\neq ${aStr} \\text{ 인 모든 실수}`;
+                    else if (ineqSign === '>=') finalAns = `x = ${aStr}`;
+                    else if (ineqSign === '<=') finalAns = `\\text{모든 실수}`;
+                }
+
+            } else { // 서로 다른 두 허근 (x축과 만나지 않음)
+                // 2단계: 허근 설명 텍스트
+                step2Str = `\\Rightarrow \\quad \\text{판별식 } D < 0 \\text{ 이므로 } x\\text{축과 만나지 않음}`;
+
+                // 3단계: 최종 해
+                if (ineqA > 0) { // 붕 떠있는 상태 (항상 0보다 큼)
+                    if (ineqSign === '>' || ineqSign === '>=') finalAns = `\\text{모든 실수}`;
+                    else finalAns = `\\text{해가 없다}`;
+                } else { // 푹 가라앉은 상태 (항상 0보다 작음)
+                    if (ineqSign === '<' || ineqSign === '<=') finalAns = `\\text{모든 실수}`;
+                    else finalAns = `\\text{해가 없다}`;
+                }
+            }
+
+            // 🌟 최종 출력 조립: gathered 환경을 사용해 3줄을 완벽한 가운데 정렬로 띄워줍니다.
+            // 🌟 \mathbf 를 제거하여 정답의 x 폰트가 KaTeX 특유의 이탤릭체로 예쁘게 나오도록 수정했습니다.
+            let displayLatex = `\\begin{gathered} ${step1Str} \\\\[0.5em] ${step2Str} \\\\[0.8em] \\therefore \\quad \\textcolor{#e53e3e}{${finalAns}} \\end{gathered}`;
+
+            const resultBox = document.getElementById('quad-ineq-result');
+            katex.render(displayLatex, resultBox, { throwOnError: false, displayMode: true });
+        }
+
+        // 해당 x가 부등식 영역을 만족하는가?
+        function checkIneq(x) {
+            let y = ineqA * x * x + ineqB * x + ineqC;
+            if (ineqSign === '>') return y > 1e-5;
+            if (ineqSign === '<') return y < -1e-5;
+            if (ineqSign === '>=') return y >= -1e-5;
+            if (ineqSign === '<=') return y <= 1e-5;
+            return false;
+        }
+
+        function drawIneqGraph() {
+            if (!ineqExpr) return;
+
+            // 1. 전체 포물선을 흐릿하게 밑바탕으로 그립니다.
+            const startX = (-offsetX / zoom) - 1, endX = ((qCanvas.width - offsetX) / zoom) + 1;
+            const step = 0.05;
+
+            qCtx.beginPath();
+            qCtx.strokeStyle = 'rgba(160, 174, 192, 0.4)';
+            qCtx.lineWidth = 2;
+            for (let x = startX; x <= endX; x += step) {
+                let y = ineqA * x * x + ineqB * x + ineqC;
+                let px = offsetX + x * zoom; let py = offsetY - y * zoom;
+                if (x === startX) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
+            }
+            qCtx.stroke();
+
+            // 🌟 2. 부등식 방향에 따라 하이라이트 색상 자동 결정 🌟
+            // '>' 나 '>=' 이면 빨간색 계열, '<' 나 '<=' 이면 파란색 계열
+            let isGreater = (ineqSign === '>' || ineqSign === '>=');
+            const hlColor = isGreater ? '#e53e3e' : '#3182ce';   // 그래프 색상 (빨강 or 파랑)
+            const xLineColor = '#38a169'; // x축 해 구간 색상 (초록색 고정)
+
+            let prevPx = null, prevPy = null, wasInside = false;
+
+            // 3. 부등식을 만족하는 그래프 영역 진하게 칠하기
+            qCtx.beginPath();
+            for (let x = startX; x <= endX; x += step) {
+                let y = ineqA * x * x + ineqB * x + ineqC;
+                let px = offsetX + x * zoom; let py = offsetY - y * zoom;
+                let isInside = checkIneq(x);
+
+                if (isInside) {
+                    if (!wasInside) qCtx.beginPath();
+                    if (prevPx !== null) { qCtx.moveTo(prevPx, prevPy); qCtx.lineTo(px, py); }
+                } else {
+                    if (wasInside) { qCtx.strokeStyle = hlColor; qCtx.lineWidth = 4; qCtx.stroke(); }
+                }
+                prevPx = px; prevPy = py; wasInside = isInside;
+            }
+            if (wasInside) { qCtx.strokeStyle = hlColor; qCtx.lineWidth = 4; qCtx.stroke(); }
+
+            // 4. x축의 '해(범위)'를 초록색 형광펜처럼 칠하기
+            wasInside = false; prevPx = null;
+            for (let x = startX; x <= endX; x += step) {
+                let px = offsetX + x * zoom;
+                let isInside = checkIneq(x);
+                if (isInside) {
+                    if (!wasInside) qCtx.beginPath();
+                    if (prevPx !== null) { qCtx.moveTo(prevPx, offsetY); qCtx.lineTo(px, offsetY); }
+                } else {
+                    if (wasInside) { qCtx.strokeStyle = xLineColor; qCtx.lineWidth = 7; qCtx.stroke(); }
+                }
+                prevPx = px; wasInside = isInside;
+            }
+            if (wasInside) { qCtx.strokeStyle = xLineColor; qCtx.lineWidth = 7; qCtx.stroke(); }
+
+            // 5. x절편(교점) 기하학적 표시 (등호 여부에 따라 빵꾸 뚫기)
+            let hasEqual = (ineqSign === '>=' || ineqSign === '<=');
+            ineqRoots.forEach((root, idx) => {
+                let px = offsetX + root * zoom;
+                qCtx.beginPath();
+                qCtx.arc(px, offsetY, 6, 0, Math.PI * 2);
+
+                if (hasEqual) {
+                    qCtx.fillStyle = xLineColor; qCtx.fill(); // 꽉 찬 원
+                } else {
+                    qCtx.fillStyle = '#fff'; qCtx.fill();     // 속 빈 원 (빵꾸)
+                    qCtx.strokeStyle = xLineColor; qCtx.lineWidth = 3; qCtx.stroke();
+                }
+
+                // 알파, 베타 라벨
+                qCtx.fillStyle = '#2d3748';
+                qCtx.font = 'bold 16px Outfit, sans-serif';
+                let label = ineqRoots.length === 2 ? (idx === 0 ? 'α' : 'β') : 'α';
+                let valStr = root.toFixed(1).replace(/\.0$/, '');
+                qCtx.fillText(`${label} (${valStr})`, px - 18, offsetY + 25);
+            });
+
+            // 6. y>0, y<0 영역 가이드 표시 (교과서처럼 위/아래 영역 표시)
+            // y > 0 영역 표시 (화면 위쪽)
+            qCtx.fillStyle = 'rgba(229, 62, 62, 0.15)'; // 연한 빨강 배경
+            qCtx.fillRect(10, 10, 70, 30);
+            qCtx.fillStyle = '#e53e3e'; qCtx.font = 'bold 16px sans-serif'; qCtx.fillText('y > 0', 25, 31);
+
+            // y < 0 영역 표시 (화면 아래쪽)
+            qCtx.fillStyle = 'rgba(49, 130, 206, 0.15)'; // 연한 파랑 배경
+            qCtx.fillRect(10, qCanvas.height - 40, 70, 30);
+            qCtx.fillStyle = '#3182ce'; qCtx.fillText('y < 0', 25, qCanvas.height - 19);
+        }
+
         /* ==================== 5. 통합 그리기 ==================== */
         function drawQuadGrid() {
             qCtx.clearRect(0, 0, qCanvas.width, qCanvas.height);
@@ -574,10 +828,12 @@ window.initQuad = (function () {
             if (currentQuadTab === 'shift') drawShiftGraph();
             else if (currentQuadTab === 'maxmin') drawMaxMinGraph();
             else if (currentQuadTab === 'discrim') drawDiscrimGraph();
+            else if (currentQuadTab === 'ineq') drawIneqGraph();
         }
 
         // 초기화 실행
         updateShiftFormula();
         parseAndDrawMaxMin();
+        parseAndDrawIneq();
     };
 })();
