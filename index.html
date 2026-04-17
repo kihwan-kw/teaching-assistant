@@ -154,10 +154,11 @@
             </div>
         </div>
 
-        <!-- 🌟 추가: 이차함수 전용 왼쪽 인덱스 -->
+        <!-- 🌟 이차함수 전용 왼쪽 인덱스 -->
         <div class="side-index-wrapper side-index-left" id="idx-quad" style="display:none;">
             <div class="index-tab active" data-quadtab="shift">평행이동</div>
             <div class="index-tab" data-quadtab="maxmin">최대·최소</div>
+            <div class="index-tab" data-quadtab="discrim">판별식</div>
         </div>
 
         <!-- ===== 이차함수 (Quadratic) ===== -->
@@ -166,13 +167,14 @@
 
             <div class="exp-main-content" style="max-width: 1200px;">
 
-                <!-- 좌측 컨트롤 패널 -->
+                <!-- 🌟 왼쪽: 컨트롤 패널 (여기에 3개의 패널이 모두 들어가야 합니다!) 🌟 -->
                 <div class="matrix-control-panel" style="flex: 0 0 350px;">
 
                     <!-- 내부 탭 (숨김 처리, 인덱스와 동기화됨) -->
                     <div style="display:none;">
                         <button class="tab-btn active" data-quadtab="shift"></button>
                         <button class="tab-btn" data-quadtab="maxmin"></button>
+                        <button class="tab-btn" data-quadtab="discrim"></button>
                     </div>
 
                     <!-- ① 평행이동 패널 -->
@@ -182,8 +184,6 @@
                             <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
                                 우측 캔버스의 <strong>꼭짓점을 마우스로 잡고 드래그</strong>해 보세요.<br>아래 슬라이더로 모양(a)과 위치(p, q)를 바꿀 수 있습니다.
                             </div>
-
-                            <!-- 수식 실시간 표시창 -->
                             <div
                                 style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:15px; text-align:center;">
                                 <div id="quad-shift-formula" style="font-size:24px; color:#2b6cb0; font-weight:800;">
@@ -194,8 +194,6 @@
 
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">그래프 모양 및 이동 조절</h3>
-
-                            <!-- a 슬라이더 -->
                             <div style="margin-bottom: 12px;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                     <span style="font-size:14px; font-weight:700; color:#4a5568;">모양 a = <span
@@ -204,8 +202,6 @@
                                 <input type="range" id="quad-a-shift-slider" min="-5" max="5" step="0.5" value="1"
                                     style="width:100%;">
                             </div>
-
-                            <!-- p 슬라이더 -->
                             <div style="margin-bottom: 12px;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                     <span style="font-size:14px; font-weight:700; color:#4a5568;">x축 이동 p = <span
@@ -214,8 +210,6 @@
                                 <input type="range" id="quad-p-slider" min="-10" max="10" step="1" value="0"
                                     style="width:100%;">
                             </div>
-
-                            <!-- q 슬라이더 -->
                             <div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                     <span style="font-size:14px; font-weight:700; color:#4a5568;">y축 이동 q = <span
@@ -224,14 +218,12 @@
                                 <input type="range" id="quad-q-slider" min="-10" max="10" step="1" value="0"
                                     style="width:100%;">
                             </div>
-
                             <div style="text-align:center; margin-top:15px;">
                                 <button class="t-btn" id="quad-shift-reset" style="padding:8px 20px;">↺ 기본형(y=x²)으로
                                     초기화</button>
                             </div>
                         </div>
 
-                        <!-- 🌟 대칭축과 꼭짓점 정보창 추가 -->
                         <div class="matrix-section" style="background:#fff5f5; border-color:#fed7d7;">
                             <h3 class="matrix-section-title" style="color:#c53030;">📌 그래프 분석</h3>
                             <div style="font-size:15px; font-weight:700; color:#4a5568; line-height:1.8;">
@@ -283,16 +275,81 @@
                             </div>
                         </div>
 
-                        <div class="matrix-section" style="background:#f8fafc; border-color:#e2e8f0;">
-                            <h3 class="matrix-section-title" style="color:#2b6cb0;">📊 최댓값과 최솟값</h3>
-                            <div id="quad-analysis" style="font-size:15px; color:var(--text-main); line-height:1.8;">
-                                함수를 입력하고 범위를 설정하세요.
+                        <div class="matrix-section"
+                            style="background:#f8fafc; border-color:#e2e8f0; padding:0; border:none; box-shadow:none;">
+                            <div id="quad-analysis">
+                                <!-- JS에서 분석 결과(최대/최솟값 박스)가 여기에 렌더링 됨 -->
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 우측 캔버스 영역 -->
+                    <!-- ③ 판별식 패널 (반드시 matrix-control-panel 안에 있어야 함!) -->
+                    <div id="quad-panel-discrim" class="quad-panel" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">✨ y = ax² + bx + c 만들기</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                슬라이더를 움직여 포물선이 <strong>x축(수면)과 만나는 점(근)의 개수</strong>가 어떻게 변하는지 관찰해 보세요!
+                            </div>
+
+                            <!-- 수식 실시간 표시창 -->
+                            <div
+                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:15px; text-align:center;">
+                                <div id="quad-discrim-formula" style="font-size:24px; color:#2d3748; font-weight:800;">
+                                    y = x²
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- a, b, c 조절 슬라이더 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">계수 조절 (a, b, c)</h3>
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">이차항 a = <span
+                                            id="quad-d-a-val" style="color:#805ad5; font-size:18px;">1</span></span>
+                                </div>
+                                <input type="range" id="quad-d-a-slider" min="-5" max="5" step="0.5" value="1"
+                                    style="width:100%;">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">일차항 b = <span
+                                            id="quad-d-b-val" style="color:#3182ce; font-size:18px;">0</span></span>
+                                </div>
+                                <input type="range" id="quad-d-b-slider" min="-10" max="10" step="1" value="0"
+                                    style="width:100%;">
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">상수항 c = <span
+                                            id="quad-d-c-val" style="color:#e53e3e; font-size:18px;">-4</span></span>
+                                </div>
+                                <input type="range" id="quad-d-c-slider" min="-10" max="10" step="1" value="-4"
+                                    style="width:100%;">
+                            </div>
+                        </div>
+
+                        <!-- 판별식 전광판 -->
+                        <div class="matrix-section" id="quad-discrim-result-box"
+                            style="background:#fff5f5; border-color:#fed7d7; transition: all 0.3s;">
+                            <h3 class="matrix-section-title" id="quad-discrim-title" style="color:#c53030;">📌 판별식 D =
+                                b² - 4ac</h3>
+                            <div style="text-align:center; padding: 10px 0;">
+                                <div id="quad-discrim-calc"
+                                    style="font-size:16px; color:#4a5568; font-weight:600; margin-bottom:5px;">0² -
+                                    4(1)(-4)</div>
+                                <div style="font-size:32px; font-weight:900; margin-bottom:5px;" id="quad-discrim-val">D
+                                    = 16</div>
+                                <div id="quad-discrim-msg"
+                                    style="font-size:18px; font-weight:800; padding:5px 15px; border-radius:50px; display:inline-block;">
+                                    서로 다른 두 실근</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- 🌟 여기서 왼쪽 컨트롤 패널(matrix-control-panel) 닫힘! -->
+
+                <!-- 🌟 오른쪽: 캔버스 영역 (3개 패널이 모두 이 캔버스 1개를 같이 씀) 🌟 -->
                 <div class="exp-right-panel" style="align-items:center;">
                     <div class="canvas-wrapper"
                         style="width:100%; max-width:800px; padding:20px; background:#fff; cursor: grab;">

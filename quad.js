@@ -418,6 +418,137 @@ window.initQuad = (function () {
             }
         }
 
+        /* ==================== 5. 판별식(D) 로직 (🌟 추가됨!) ==================== */
+        const daSlider = document.getElementById('quad-d-a-slider');
+        const dbSlider = document.getElementById('quad-d-b-slider');
+        const dcSlider = document.getElementById('quad-d-c-slider');
+        const daValTxt = document.getElementById('quad-d-a-val');
+        const dbValTxt = document.getElementById('quad-d-b-val');
+        const dcValTxt = document.getElementById('quad-d-c-val');
+
+        let d_a = 1, d_b = 0, d_c = -4; // 초기값 y = x^2 - 4
+
+        function updateDiscrimFromSlider() {
+            d_a = parseFloat(daSlider.value);
+            d_b = parseInt(dbSlider.value);
+            d_c = parseInt(dcSlider.value);
+
+            if (d_a === 0) { d_a = 0.5; daSlider.value = 0.5; } // 이차함수 유지
+
+            daValTxt.innerText = d_a;
+            dbValTxt.innerText = d_b;
+            dcValTxt.innerText = d_c;
+
+            // 수식 텍스트 업데이트
+            let eq = 'y = ';
+            eq += d_a === 1 ? 'x²' : (d_a === -1 ? '-x²' : `${d_a}x²`);
+            if (d_b !== 0) eq += d_b > 0 ? ` + ${d_b}x` : ` - ${Math.abs(d_b)}x`;
+            if (d_c !== 0) eq += d_c > 0 ? ` + ${d_c}` : ` - ${Math.abs(d_c)}`;
+            document.getElementById('quad-discrim-formula').innerText = eq;
+
+            // 판별식 계산
+            const D = d_b * d_b - 4 * d_a * d_c;
+            document.getElementById('quad-discrim-calc').innerText = `${d_b}² - 4(${d_a})(${d_c})`;
+            document.getElementById('quad-discrim-val').innerText = `D = ${D}`;
+
+            const resBox = document.getElementById('quad-discrim-result-box');
+            const title = document.getElementById('quad-discrim-title');
+            const msg = document.getElementById('quad-discrim-msg');
+
+            // 판별식 결과에 따른 UI 전광판 색상 변경
+            if (D > 0) {
+                resBox.style.background = '#f0fff4'; resBox.style.borderColor = '#c6f6d5';
+                title.style.color = '#2f855a'; msg.style.background = '#38a169'; msg.style.color = '#fff';
+                msg.innerText = '서로 다른 두 실근 (교점 2개)';
+            } else if (D === 0) {
+                resBox.style.background = '#ebf4ff'; resBox.style.borderColor = '#bee3f8';
+                title.style.color = '#2b6cb0'; msg.style.background = '#3182ce'; msg.style.color = '#fff';
+                msg.innerText = '중근 (x축에 접함, 교점 1개)';
+            } else {
+                resBox.style.background = '#fff5f5'; resBox.style.borderColor = '#fed7d7';
+                title.style.color = '#c53030'; msg.style.background = '#e53e3e'; msg.style.color = '#fff';
+                msg.innerText = '서로 다른 두 허근 (교점 없음)';
+            }
+
+            drawQuad();
+        }
+
+        daSlider.addEventListener('input', updateDiscrimFromSlider);
+        dbSlider.addEventListener('input', updateDiscrimFromSlider);
+        dcSlider.addEventListener('input', updateDiscrimFromSlider);
+
+        function drawDiscrimGraph() {
+            // 1. x축 (수면) 강조 선 (굵고 진하게)
+            qCtx.beginPath();
+            qCtx.moveTo(0, offsetY); qCtx.lineTo(qCanvas.width, offsetY);
+            qCtx.strokeStyle = '#2d3748'; qCtx.lineWidth = 3; qCtx.stroke();
+
+            // 2. 포물선 그리기
+            qCtx.beginPath();
+            qCtx.strokeStyle = '#3182ce'; // 파란색
+            qCtx.lineWidth = 4;
+
+            // 🌟 수정 포인트: 수학적 좌표(mathX)를 먼저 일정하게 쪼개고, 
+            // 마지막에 화면 좌표(px, py)로 일괄 변환하여 '왜곡(착시)'을 없앱니다.
+            const startX = (-offsetX / zoom) - 1;
+            const endX = ((qCanvas.width - offsetX) / zoom) + 1;
+            const step = 0.05; // (endX - startX) / 800 대신 고정된 해상도로 밀도 유지
+
+            for (let x = startX; x <= endX; x += step) {
+                // 수식 계산
+                let y = d_a * x * x + d_b * x + d_c;
+
+                // 화면 좌표계로 완벽하게 1:1 매핑
+                let px = offsetX + x * zoom;
+                let py = offsetY - y * zoom;
+
+                if (Math.abs(x - startX) < 0.01) {
+                    qCtx.moveTo(px, py);
+                } else {
+                    qCtx.lineTo(px, py);
+                }
+            }
+            qCtx.stroke();
+
+            // 3. 근(x축과의 교점) 마킹 로직
+            const D = d_b * d_b - 4 * d_a * d_c;
+
+            if (D >= 0) {
+                // 근의 공식 계산
+                let root1 = (-d_b + Math.sqrt(D)) / (2 * d_a);
+                let root2 = (-d_b - Math.sqrt(D)) / (2 * d_a);
+
+                let px1 = offsetX + root1 * zoom;
+                let px2 = offsetX + root2 * zoom;
+
+                qCtx.fillStyle = '#e53e3e'; // 근은 빨간 점으로 강력하게 표시!
+                qCtx.strokeStyle = '#fff'; qCtx.lineWidth = 2;
+
+                qCtx.beginPath(); qCtx.arc(px1, offsetY, 8, 0, Math.PI * 2);
+                qCtx.fill(); qCtx.stroke();
+
+                // 좌표 텍스트
+                qCtx.font = '800 15px Outfit, sans-serif';
+                qCtx.strokeStyle = '#ffffff'; qCtx.lineWidth = 3;
+                qCtx.strokeText(root1.toFixed(2), px1 - 10, offsetY + 25);
+                qCtx.fillStyle = '#2d3748';
+                qCtx.fillText(root1.toFixed(2), px1 - 10, offsetY + 25);
+
+                if (D > 0) { // 두 번째 근
+                    qCtx.beginPath(); qCtx.arc(px2, offsetY, 8, 0, Math.PI * 2);
+                    qCtx.fill(); qCtx.stroke();
+
+                    qCtx.strokeStyle = '#ffffff'; qCtx.lineWidth = 3;
+                    qCtx.strokeText(root2.toFixed(2), px2 - 10, offsetY + 25);
+                    qCtx.fillStyle = '#2d3748';
+                    qCtx.fillText(root2.toFixed(2), px2 - 10, offsetY + 25);
+                }
+            }
+        }
+
+        // 초기화 실행
+        updateDiscrimFromSlider();
+
         /* ==================== 5. 통합 그리기 ==================== */
         function drawQuadGrid() {
             qCtx.clearRect(0, 0, qCanvas.width, qCanvas.height);
@@ -441,7 +572,8 @@ window.initQuad = (function () {
         function drawQuad() {
             drawQuadGrid();
             if (currentQuadTab === 'shift') drawShiftGraph();
-            else drawMaxMinGraph();
+            else if (currentQuadTab === 'maxmin') drawMaxMinGraph();
+            else if (currentQuadTab === 'discrim') drawDiscrimGraph();
         }
 
         // 초기화 실행

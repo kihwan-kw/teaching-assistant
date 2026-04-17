@@ -3002,3 +3002,27 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .quad-panel.active {
     display: block;
 }
+
+/* --- 이차함수 (Quad) UI --- */
+#idx-quad .index-tab[data-quadtab="shift"].active {
+    background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+}
+
+#idx-quad .index-tab[data-quadtab="maxmin"].active {
+    background: linear-gradient(135deg, #f6ad55 0%, #f78181 100%);
+}
+
+/* 🌟 판별식 탭 색상 추가 (파란색 계열) */
+#idx-quad .index-tab[data-quadtab="discrim"].active {
+    background: linear-gradient(135deg, #73a5ff 0%, #3182ce 100%);
+}
+
+.quad-panel {
+    display: none;
+    width: 100%;
+    animation: fadeIn 0.35s ease;
+}
+
+.quad-panel.active {
+    display: block;
+}
