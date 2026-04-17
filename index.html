@@ -178,43 +178,67 @@
                     <!-- ① 평행이동 패널 -->
                     <div id="quad-panel-shift" class="quad-panel active">
                         <div class="matrix-section">
-                            <h3 class="matrix-section-title">✨ 마우스로 포물선 끌기</h3>
-                            <div style="font-size:14px; color:#718096; line-height:1.6; margin-bottom:15px;">
-                                우측 캔버스의 <strong>꼭짓점(또는 그래프)을 마우스로 잡고 드래그</strong>해 보세요.<br>식이 어떻게 변하는지 관찰합시다!
+                            <h3 class="matrix-section-title">✨ 𝑓(x) = a(x-p)² + q 만들기</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                우측 캔버스의 <strong>꼭짓점을 마우스로 잡고 드래그</strong>해 보세요.<br>아래 슬라이더로 모양(a)과 위치(p, q)를 바꿀 수 있습니다.
                             </div>
+
+                            <!-- 수식 실시간 표시창 -->
                             <div
-                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
-                                <div style="font-size:14px; font-weight:700; color:#4a5568; margin-bottom:8px;">표준형 수식
-                                </div>
-                                <!-- 수식이 실시간으로 렌더링될 공간 -->
-                                <div id="quad-shift-formula" style="font-size:26px; color:#2b6cb0; font-weight:800;">
-                                    y = (x - <span style="color:#e53e3e;">0</span>)² + <span
-                                        style="color:#38a169;">0</span>
+                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:15px; text-align:center;">
+                                <div id="quad-shift-formula" style="font-size:24px; color:#2b6cb0; font-weight:800;">
+                                    y = x²
                                 </div>
                             </div>
                         </div>
 
                         <div class="matrix-section">
-                            <h3 class="matrix-section-title">세부 조절 (p, q)</h3>
-                            <div style="margin-bottom: 15px;">
-                                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <h3 class="matrix-section-title">그래프 모양 및 이동 조절</h3>
+
+                            <!-- a 슬라이더 -->
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                    <span style="font-size:14px; font-weight:700; color:#4a5568;">모양 a = <span
+                                            id="quad-a-shift-val" style="color:#805ad5; font-size:18px;">1</span></span>
+                                </div>
+                                <input type="range" id="quad-a-shift-slider" min="-5" max="5" step="0.5" value="1"
+                                    style="width:100%;">
+                            </div>
+
+                            <!-- p 슬라이더 -->
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                     <span style="font-size:14px; font-weight:700; color:#4a5568;">x축 이동 p = <span
                                             id="quad-p-val" style="color:#e53e3e; font-size:18px;">0</span></span>
                                 </div>
                                 <input type="range" id="quad-p-slider" min="-10" max="10" step="1" value="0"
                                     style="width:100%;">
                             </div>
+
+                            <!-- q 슬라이더 -->
                             <div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                                     <span style="font-size:14px; font-weight:700; color:#4a5568;">y축 이동 q = <span
                                             id="quad-q-val" style="color:#38a169; font-size:18px;">0</span></span>
                                 </div>
                                 <input type="range" id="quad-q-slider" min="-10" max="10" step="1" value="0"
                                     style="width:100%;">
                             </div>
+
                             <div style="text-align:center; margin-top:15px;">
-                                <button class="t-btn" id="quad-shift-reset" style="padding:8px 20px;">↺ 원점으로
+                                <button class="t-btn" id="quad-shift-reset" style="padding:8px 20px;">↺ 기본형(y=x²)으로
                                     초기화</button>
+                            </div>
+                        </div>
+
+                        <!-- 🌟 대칭축과 꼭짓점 정보창 추가 -->
+                        <div class="matrix-section" style="background:#fff5f5; border-color:#fed7d7;">
+                            <h3 class="matrix-section-title" style="color:#c53030;">📌 그래프 분석</h3>
+                            <div style="font-size:15px; font-weight:700; color:#4a5568; line-height:1.8;">
+                                <div>대칭축의 방정식: <strong id="quad-axis-info" style="color:#e53e3e; font-size:18px;">x =
+                                        0</strong></div>
+                                <div>꼭짓점의 좌표: <strong id="quad-vertex-info" style="color:#e53e3e; font-size:18px;">(0,
+                                        0)</strong></div>
                             </div>
                         </div>
                     </div>

@@ -147,61 +147,109 @@ window.initQuad = (function () {
         /* ==================== 3. 평행이동 로직 ==================== */
         const pSlider = document.getElementById('quad-p-slider');
         const qSlider = document.getElementById('quad-q-slider');
+        const aShiftSlider = document.getElementById('quad-a-shift-slider'); // 🌟 추가
         const pValTxt = document.getElementById('quad-p-val');
         const qValTxt = document.getElementById('quad-q-val');
+        const aValTxt = document.getElementById('quad-a-shift-val'); // 🌟 추가
+
+        let aVal = 1; // 🌟 추가: 이차항의 계수
 
         function updateShiftFromSlider() {
             pVal = parseInt(pSlider.value);
             qVal = parseInt(qSlider.value);
+            aVal = parseFloat(aShiftSlider.value);
+            if (aVal === 0) { aVal = 0.5; aShiftSlider.value = 0.5; } // a가 0이 되면 이차함수가 아니므로 방지
+
             pValTxt.innerText = pVal;
             qValTxt.innerText = qVal;
+            aValTxt.innerText = aVal;
+
             updateShiftFormula();
             drawQuad();
         }
 
         pSlider.addEventListener('input', updateShiftFromSlider);
         qSlider.addEventListener('input', updateShiftFromSlider);
+        aShiftSlider.addEventListener('input', updateShiftFromSlider);
 
         document.getElementById('quad-shift-reset').addEventListener('click', () => {
-            pSlider.value = 0; qSlider.value = 0; updateShiftFromSlider();
-            offsetX = qCanvas.width / 2; offsetY = qCanvas.height / 2 + 50; zoom = 40; drawQuad();
+            pSlider.value = 0; qSlider.value = 0; aShiftSlider.value = 1;
+            offsetX = qCanvas.width / 2; offsetY = qCanvas.height / 2 + 50; zoom = 40;
+            updateShiftFromSlider();
         });
 
         function updateShiftFormula() {
-            // y = (x - p)^2 + q 수식 렌더링
-            const pStr = pVal === 0 ? '0' : (pVal > 0 ? pVal : `(${pVal})`);
-            const qStr = qVal === 0 ? '0' : (qVal > 0 ? `+ ${qVal}` : `- ${Math.abs(qVal)}`);
-            document.getElementById('quad-shift-formula').innerHTML = `y = (x - <span style="color:#e53e3e;">${pStr}</span>)² <span style="color:#38a169;">${qStr}</span>`;
+            // 🌟 y = a(x - p)^2 + q 수식 렌더링
+            let aStr = aVal === 1 ? '' : (aVal === -1 ? '-' : aVal);
+            let pStr = pVal === 0 ? 'x' : (pVal > 0 ? `(x - ${pVal})` : `(x + ${Math.abs(pVal)})`);
+            let pColorStr = pVal === 0 ? 'x' : `(x <span style="color:#e53e3e;">${pVal > 0 ? '-' : '+'} ${Math.abs(pVal)}</span>)`;
+            let qStr = qVal === 0 ? '' : (qVal > 0 ? `+ ${qVal}` : `- ${Math.abs(qVal)}`);
+            let qColorStr = qVal === 0 ? '' : `<span style="color:#38a169;">${qVal > 0 ? '+' : '-'} ${Math.abs(qVal)}</span>`;
+
+            let finalEq;
+            if (pVal === 0) {
+                finalEq = `y = <span style="color:#805ad5;">${aStr}</span>x² ${qColorStr}`;
+            } else {
+                finalEq = `y = <span style="color:#805ad5;">${aStr}</span>${pColorStr}² ${qColorStr}`;
+            }
+            document.getElementById('quad-shift-formula').innerHTML = finalEq;
+
+            // 🌟 대칭축 및 꼭짓점 텍스트 업데이트
+            document.getElementById('quad-axis-info').innerText = `x = ${pVal}`;
+            document.getElementById('quad-vertex-info').innerText = `(${pVal}, ${qVal})`;
         }
 
         function drawShiftGraph() {
-            // y = x^2 (기본형, 흐릿하게)
+            // 1. y = ax^2 (기본형, 흐릿하게 베이스로 깔아줌)
             qCtx.beginPath();
             qCtx.strokeStyle = 'rgba(160, 174, 192, 0.4)';
             qCtx.lineWidth = 2; qCtx.setLineDash([5, 5]);
-            for (let x = -10; x <= 10; x += 0.1) {
-                let y = x * x;
+            for (let x = -15; x <= 15; x += 0.1) {
+                let y = aVal * (x * x);
                 let px = offsetX + x * zoom; let py = offsetY - y * zoom;
-                if (x === -10) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
+                if (x === -15) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
             }
             qCtx.stroke(); qCtx.setLineDash([]);
 
-            // y = (x-p)^2 + q (이동형, 진하게)
+            // 2. y = a(x-p)^2 + q (이동형, 진하게)
             qCtx.beginPath();
             qCtx.strokeStyle = '#a78bfa'; // 보라색
             qCtx.lineWidth = 4;
-            for (let x = pVal - 10; x <= pVal + 10; x += 0.1) {
-                let y = (x - pVal) * (x - pVal) + qVal;
+            for (let x = pVal - 15; x <= pVal + 15; x += 0.1) {
+                let y = aVal * (x - pVal) * (x - pVal) + qVal;
                 let px = offsetX + x * zoom; let py = offsetY - y * zoom;
-                if (x === pVal - 10) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
+                if (x === pVal - 15) qCtx.moveTo(px, py); else qCtx.lineTo(px, py);
             }
             qCtx.stroke();
 
-            // 꼭짓점 마킹
-            let vx = offsetX + pVal * zoom; let vy = offsetY - qVal * zoom;
+            // 🌟 3. 대칭축 (x = p) 점선 그리기
+            let vx = offsetX + pVal * zoom;
+            let vy = offsetY - qVal * zoom;
+
+            qCtx.beginPath();
+            qCtx.moveTo(vx, 0);
+            qCtx.lineTo(vx, qCanvas.height);
+            qCtx.strokeStyle = 'rgba(229, 62, 62, 0.3)'; // 빨간색 점선
+            qCtx.lineWidth = 2;
+            qCtx.setLineDash([8, 6]);
+            qCtx.stroke();
+            qCtx.setLineDash([]);
+
+            // 축 라벨 표시
+            qCtx.fillStyle = '#e53e3e';
+            qCtx.font = 'bold 14px Outfit';
+            qCtx.fillText(`x = ${pVal}`, vx + 8, 20);
+
+            // 4. 꼭짓점 마킹
             qCtx.beginPath(); qCtx.arc(vx, vy, 8, 0, Math.PI * 2);
             qCtx.fillStyle = '#a78bfa'; qCtx.fill(); qCtx.strokeStyle = 'white'; qCtx.lineWidth = 2; qCtx.stroke();
-            qCtx.fillStyle = '#2d3748'; qCtx.font = 'bold 16px Outfit'; qCtx.fillText(`(${pVal}, ${qVal})`, vx + 12, vy - 12);
+
+            // 꼭짓점 좌표 라벨 배경 흰색 처리 (선과 겹치지 않게)
+            qCtx.font = '800 16px Outfit';
+            qCtx.strokeStyle = '#ffffff'; qCtx.lineWidth = 4;
+            qCtx.strokeText(`(${pVal}, ${qVal})`, vx + 12, vy - 12);
+            qCtx.fillStyle = '#2d3748';
+            qCtx.fillText(`(${pVal}, ${qVal})`, vx + 12, vy - 12);
         }
 
         /* ==================== 4. 최대/최소 로직 ==================== */
