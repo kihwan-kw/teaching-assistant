@@ -1,441 +1,316 @@
 /* ========================================================= */
 /* --- Derivative (미분) Logic --- */
-/* 할선 → 접선 수렴 애니메이션 + 도함수 실시간 그래프 */
+/* 기하적 의미 (교과서 맞춤 UI) */
 /* ========================================================= */
 
 (function() {
-    let derivCanvas, derivCtx, derivFCanvas, derivFCtx;
-    let DW, DH, FW, FH;
-    let D_CX, D_CY;
-    const D_SCALE = 55;   // px per unit
+    let tCanvas, tCtx, tWidth, tHeight;
+    let gCanvas, gCtx, gWidth, gHeight;
+    
+    // --- 1. 생각 열기 (Think Open) 상태 변수 ---
+    const tFunc = (x) => x * x - x + 1; // y = x^2 - x + 1
+    const tPointA = { x: 1, y: 1 };
+    let tPointP_x = 2; // 초기값
 
-    let derivExpr = null;
-    let derivX0 = 1;       // 접점 x 좌표
-    let derivH = 2.0;     // 할선 간격 h
-    let animFrameId = null;
-    let isAnimating = false;
-    let tracePoints = [];      // 도함수 trace
+    // --- 2. 기하적 의미 상태 변수 ---
+    const gFunc = (x) => 0.15 * x * x + 0.2 * x + 1;
+    const gPointA_x = 2;
+    let gDeltaX = 3.5; // 초기값 (slider가 1일 때)
 
-    /* ---- 헬퍼 함수 ---- */
-    const toCX = (x, cx, scale) => cx + x * scale;
-    const toCY = (y, cy, scale) => cy - y * scale;
+    /* 캔버스 좌표계 변환 함수 */
+    // 생각열기 캔버스 좌표계: x: -1 ~ 4, y: -0.5 ~ 4.5
+    function tx(mathX) { return (mathX + 1) * (tWidth / 5); }
+    function ty(mathY) { return tHeight - (mathY + 0.5) * (tHeight / 5); }
 
-    function numericalDeriv(expr, x, h = 1e-6) {
-        try {
-            const f1 = expr.evaluate({ x: x + h });
-            const f2 = expr.evaluate({ x: x - h });
-            if (!isFinite(f1) || !isFinite(f2)) return null;
-            return (f1 - f2) / (2 * h);
-        } catch { return null; }
+    // 기하적 의미 캔버스 좌표계: x: -1 ~ 6, y: -1 ~ 6
+    function gx(mathX) { return (mathX + 1) * (gWidth / 7); }
+    function gy(mathY) { return gHeight - (mathY + 1) * (gHeight / 7); }
+
+    /* ========================================================= */
+    /* --- 생각 열기 (Think Open) 렌더링 --- */
+    /* ========================================================= */
+    function renderThinkOpen() {
+        if (!tCtx) return;
+        tCtx.clearRect(0, 0, tWidth, tHeight);
+
+        // 1. 그리드 및 축
+        tCtx.lineWidth = 1;
+        tCtx.strokeStyle = '#e2e8f0';
+        for(let i = -1; i <= 4; i++) {
+            tCtx.beginPath(); tCtx.moveTo(tx(i), 0); tCtx.lineTo(tx(i), tHeight); tCtx.stroke();
+        }
+        for(let i = 0; i <= 4; i++) {
+            tCtx.beginPath(); tCtx.moveTo(0, ty(i)); tCtx.lineTo(tWidth, ty(i)); tCtx.stroke();
+        }
+
+        tCtx.strokeStyle = '#a0aec0'; tCtx.lineWidth = 2;
+        tCtx.beginPath(); tCtx.moveTo(0, ty(0)); tCtx.lineTo(tWidth, ty(0)); // x축
+        tCtx.moveTo(tx(0), 0); tCtx.lineTo(tx(0), tHeight); // y축
+        tCtx.stroke();
+
+        // 라벨
+        tCtx.fillStyle = '#718096'; tCtx.font = '12px Outfit';
+        tCtx.fillText('O', tx(0) - 15, ty(0) + 15);
+        tCtx.fillText('x', tWidth - 15, ty(0) + 15);
+        tCtx.fillText('y', tx(0) - 15, 15);
+
+        // 2. 포물선 그리기
+        tCtx.beginPath();
+        tCtx.strokeStyle = '#3182ce'; // 파란색
+        tCtx.lineWidth = 3;
+        for (let x = -1; x <= 4; x += 0.05) {
+            let px = tx(x); let py = ty(tFunc(x));
+            if (x === -1) tCtx.moveTo(px, py);
+            else tCtx.lineTo(px, py);
+        }
+        tCtx.stroke();
+
+        tCtx.fillStyle = '#3182ce';
+        tCtx.font = 'bold 16px Outfit';
+        tCtx.fillText('y = x² - x + 1', tx(2), ty(3.5));
+
+        // 3. 접선 (y = x) 그리기
+        tCtx.beginPath();
+        tCtx.strokeStyle = '#38a169'; // 녹색
+        tCtx.lineWidth = 2;
+        tCtx.moveTo(tx(-0.5), ty(-0.5));
+        tCtx.lineTo(tx(4), ty(4));
+        tCtx.stroke();
+        
+        tCtx.fillStyle = '#38a169';
+        tCtx.fillText('y = x', tx(3.5), ty(3.1));
+
+        // 4. 할선 AP 그리기
+        let P_y = tFunc(tPointP_x);
+        let m = (tPointP_x === 1) ? 1 : (P_y - tPointA.y) / (tPointP_x - tPointA.x);
+        let n = tPointA.y - m * tPointA.x;
+
+        tCtx.beginPath();
+        tCtx.strokeStyle = '#e53e3e'; // 빨간색
+        tCtx.lineWidth = 2;
+        tCtx.moveTo(tx(-1), ty(m * -1 + n));
+        tCtx.lineTo(tx(4), ty(m * 4 + n));
+        tCtx.stroke();
+
+        // 5. 점 A, P 그리기 및 라벨
+        tCtx.beginPath(); tCtx.arc(tx(tPointA.x), ty(tPointA.y), 6, 0, 2*Math.PI);
+        tCtx.fillStyle = '#38a169'; tCtx.fill(); tCtx.strokeStyle = '#fff'; tCtx.lineWidth = 2; tCtx.stroke();
+        
+        tCtx.beginPath(); tCtx.arc(tx(tPointP_x), ty(P_y), 6, 0, 2*Math.PI);
+        tCtx.fillStyle = '#e53e3e'; tCtx.fill(); tCtx.stroke();
+
+        tCtx.fillStyle = '#2d3748';
+        tCtx.font = 'bold 14px Outfit';
+        tCtx.fillText('A(1, 1)', tx(tPointA.x) + 12, ty(tPointA.y) + 6);
+        
+        tCtx.textAlign = 'right';
+        tCtx.fillText(`P(${tPointP_x.toFixed(2)}, ${P_y.toFixed(2)})`, tx(tPointP_x) - 10, ty(P_y) - 10);
+        tCtx.textAlign = 'left'; // reset
+
+        // 6. UI 문자열 업데이트
+        let xValEl = document.getElementById('deriv-think-x-val');
+        if (xValEl) xValEl.innerText = tPointP_x.toFixed(3);
+        
+        let nStr = (n < 0) ? `- ${Math.abs(n).toFixed(2)}` : `+ ${n.toFixed(2)}`;
+        if (Math.abs(n) < 0.005) nStr = ''; // n이 거의 0일 때
+        let eqEl = document.getElementById('deriv-think-eq');
+        if (eqEl) eqEl.innerText = `y = ${m.toFixed(2)}x ${nStr}`;
     }
 
-    function evalF(x) {
-        if (!derivExpr) return null;
-        try {
-            const v = derivExpr.evaluate({ x });
-            return isFinite(v) ? v : null;
-        } catch { return null; }
-    }
+    /* ========================================================= */
+    /* --- 기하적 의미 (Geometric Limit) 렌더링 --- */
+    /* ========================================================= */
+    function renderGeometric() {
+        if (!gCtx) return;
+        gCtx.clearRect(0, 0, gWidth, gHeight);
 
-    function updateDerivDimensions() {
-        derivCanvas = document.getElementById('derivCanvas');
-        if (derivCanvas) {
-            derivCtx = derivCanvas.getContext('2d');
-            DW = derivCanvas.width;
-            DH = derivCanvas.height;
-            D_CX = DW / 2;
-            D_CY = DH / 2;
-        }
-        derivFCanvas = document.getElementById('derivFCanvas');
-        if (derivFCanvas) {
-            derivFCtx = derivFCanvas.getContext('2d');
-            FW = derivFCanvas.width;
-            FH = derivFCanvas.height;
-        }
-    }
+        // 1. 그리드 및 축 (연하게)
+        gCtx.strokeStyle = '#a0aec0'; gCtx.lineWidth = 2;
+        gCtx.beginPath(); gCtx.moveTo(0, gy(0)); gCtx.lineTo(gWidth, gy(0)); 
+        gCtx.moveTo(gx(0), 0); gCtx.lineTo(gx(0), gHeight);
+        gCtx.stroke();
 
-    function drawDerivGrid(ctx, w, h, cx, cy, scale) {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, w, h);
-        ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-        ctx.lineWidth = 1;
-        for (let x = cx % scale; x < w; x += scale) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-        }
-        for (let y = cy % scale; y < h; y += scale) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-        }
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, cy); ctx.lineTo(w, cy);
-        ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
-        ctx.stroke();
-        ctx.fillStyle = '#a0aec0';
-        ctx.font = '11px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        const range = Math.ceil(w / scale / 2) + 1;
-        for (let i = -range; i <= range; i++) {
-            if (i === 0) continue;
-            const px = toCX(i, cx, scale);
-            const py = toCY(i, cy, scale);
-            if (px >= 0 && px <= w) ctx.fillText(i, px, cy + 16);
-            if (py >= 0 && py <= h) { ctx.textAlign = 'right'; ctx.fillText(i, cx - 5, py + 4); ctx.textAlign = 'center'; }
-        }
-        ctx.fillText('O', cx - 12, cy + 16);
-    }
+        gCtx.fillStyle = '#718096'; gCtx.font = '14px Outfit';
+        gCtx.fillText('O', gx(0) - 15, gy(0) + 15);
+        gCtx.fillText('x', gWidth - 15, gy(0) + 15);
+        gCtx.fillText('y', gx(0) - 15, 15);
 
-    function drawFunctionCurve(ctx, cx, cy, scale, color, lineWidth = 2.5) {
-        if (!derivExpr || !ctx) return;
-        const currentW = ctx.canvas.width;
-        const currentH = ctx.canvas.height;
-        ctx.beginPath();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = lineWidth;
-        ctx.setLineDash([]);
-        let first = true, prevY = null;
-        for (let px = 0; px <= currentW; px += 1) {
-            const x = (px - cx) / scale;
-            const fy = evalF(x);
-            if (fy === null) { first = true; prevY = null; continue; }
-            const py = toCY(fy, cy, scale);
-            if (prevY !== null && Math.abs(py - prevY) > currentH) { first = true; }
-            if (first) { ctx.moveTo(px, py); first = false; }
-            else ctx.lineTo(px, py);
-            prevY = py;
+        // 2. 포물선 곡선 그리기
+        gCtx.beginPath();
+        gCtx.strokeStyle = '#2d3748'; // 짙은 회색 곡선
+        gCtx.lineWidth = 3;
+        for (let x = -1; x <= 6; x += 0.1) {
+            let px = gx(x); let py = gy(gFunc(x));
+            if (x === -1) gCtx.moveTo(px, py);
+            else gCtx.lineTo(px, py);
         }
-        ctx.stroke();
-    }
+        gCtx.stroke();
+        gCtx.fillStyle = '#2d3748';
+        gCtx.font = 'bold 16px Outfit';
+        gCtx.fillText('y = f(x)', gx(4.5), gy(gFunc(4.5)) - 10);
 
-    function drawSecantLine(h) {
-        if (!derivExpr || !derivCtx) return;
-        const x0 = derivX0;
-        const f0 = evalF(x0);
-        const fh = evalF(x0 + h);
-        if (f0 === null || fh === null) return;
-        const slope = (fh - f0) / h;
-        const xLeft = (0 - D_CX) / D_SCALE;
-        const xRight = (DW - D_CX) / D_SCALE;
-        const yLeft = f0 + slope * (xLeft - x0);
-        const yRight = f0 + slope * (xRight - x0);
-        const alpha = Math.max(0.1, Math.min(0.7, Math.abs(h) / 2));
-        derivCtx.beginPath();
-        derivCtx.strokeStyle = `rgba(255,184,108,${alpha})`;
-        derivCtx.lineWidth = 1.5;
-        derivCtx.setLineDash([6, 4]);
-        derivCtx.moveTo(0, toCY(yLeft, D_CY, D_SCALE));
-        derivCtx.lineTo(DW, toCY(yRight, D_CY, D_SCALE));
-        derivCtx.stroke();
-        derivCtx.setLineDash([]);
-        const px1 = toCX(x0 + h, D_CX, D_SCALE);
-        const py1 = toCY(fh, D_CY, D_SCALE);
-        derivCtx.beginPath();
-        derivCtx.arc(px1, py1, 4, 0, Math.PI * 2);
-        derivCtx.fillStyle = 'rgba(255,184,108,0.8)';
-        derivCtx.fill();
-        const midX = (toCX(x0, D_CX, D_SCALE) + px1) / 2 + 10;
-        const midY = (toCY(f0, D_CY, D_SCALE) + py1) / 2 - 10;
-        derivCtx.fillStyle = '#ed8936';
-        derivCtx.font = '600 12px Outfit, sans-serif';
-        derivCtx.textAlign = 'left';
-        derivCtx.fillText(`m = ${slope.toFixed(3)}`, midX, midY);
-    }
+        let Ay = gFunc(gPointA_x);
 
-    function drawTangentLine() {
-        if (!derivExpr || !derivCtx) return;
-        const x0 = derivX0;
-        const f0 = evalF(x0);
-        const slope = numericalDeriv(derivExpr, x0);
-        if (f0 === null || slope === null) return;
-        const xLeft = (0 - D_CX) / D_SCALE;
-        const xRight = (DW - D_CX) / D_SCALE;
-        derivCtx.beginPath();
-        derivCtx.strokeStyle = '#ff8bad';
-        derivCtx.lineWidth = 2.5;
-        derivCtx.setLineDash([]);
-        derivCtx.moveTo(0, toCY(f0 + slope * (xLeft - x0), D_CY, D_SCALE));
-        derivCtx.lineTo(DW, toCY(f0 + slope * (xRight - x0), D_CY, D_SCALE));
-        derivCtx.stroke();
-        const px0 = toCX(x0, D_CX, D_SCALE);
-        const py0 = toCY(f0, D_CY, D_SCALE);
-        derivCtx.beginPath();
-        derivCtx.arc(px0, py0, 6, 0, Math.PI * 2);
-        derivCtx.fillStyle = '#ff8bad';
-        derivCtx.fill();
-        derivCtx.strokeStyle = 'white';
-        derivCtx.lineWidth = 2;
-        derivCtx.stroke();
-        derivCtx.fillStyle = '#ff8bad';
-        derivCtx.font = '700 13px Outfit, sans-serif';
-        derivCtx.textAlign = 'left';
-        derivCtx.fillText(`f'(${x0}) = ${slope.toFixed(4)}`, px0 + 10, py0 - 12);
-    }
-
-    function drawContactPoint() {
-        if (!derivCtx) return;
-        const x0 = derivX0;
-        const f0 = evalF(x0);
-        if (f0 === null) return;
-        const px = toCX(x0, D_CX, D_SCALE);
-        const py = toCY(f0, D_CY, D_SCALE);
-        derivCtx.beginPath();
-        derivCtx.strokeStyle = 'rgba(0,0,0,0.15)';
-        derivCtx.lineWidth = 1;
-        derivCtx.setLineDash([4, 4]);
-        derivCtx.moveTo(px, py);
-        derivCtx.lineTo(px, D_CY);
-        derivCtx.stroke();
-        derivCtx.setLineDash([]);
-        derivCtx.fillStyle = '#4a5568';
-        derivCtx.font = '600 12px Outfit, sans-serif';
-        derivCtx.textAlign = 'center';
-        derivCtx.fillText(`x₀ = ${x0}`, px, D_CY + 28);
-    }
-
-    function drawHLabel(h) {
-        if (!derivExpr || !derivCtx) return;
-        const x0 = derivX0, f0 = evalF(x0);
-        if (f0 === null) return;
-        const px0 = toCX(x0, D_CX, D_SCALE);
-        const px1 = toCX(x0 + h, D_CX, D_SCALE);
-        const py = toCY(f0, D_CY, D_SCALE) + 22;
-        if (Math.abs(px1 - px0) > 5) {
-            derivCtx.beginPath();
-            derivCtx.strokeStyle = 'rgba(255,184,108,0.6)';
-            derivCtx.lineWidth = 1.5;
-            derivCtx.moveTo(px0, py); derivCtx.lineTo(px1, py);
-            derivCtx.stroke();
-            derivCtx.fillStyle = '#ed8936';
-            derivCtx.font = '600 11px Outfit, sans-serif';
-            derivCtx.textAlign = 'center';
-            derivCtx.fillText(`h = ${h.toFixed(3)}`, (px0 + px1) / 2, py + 13);
-        }
-    }
-
-    window.renderDerivMain = function(h = derivH) {
-        updateDerivDimensions();
-        if (!derivCtx) return;
-        drawDerivGrid(derivCtx, DW, DH, D_CX, D_CY, D_SCALE);
-        drawFunctionCurve(derivCtx, D_CX, D_CY, D_SCALE, '#73a5ff', 2.5);
-        if (Math.abs(h) > 0.005) drawSecantLine(h);
-        drawTangentLine();
-        drawContactPoint();
-        if (Math.abs(h) > 0.005) drawHLabel(h);
-        if (derivExpr) {
-            const slope = numericalDeriv(derivExpr, derivX0);
-            derivCtx.fillStyle = 'rgba(255,255,255,0.9)';
-            derivCtx.beginPath();
-            derivCtx.roundRect(DW - 200, 12, 185, 70, 10);
-            derivCtx.fill();
-            derivCtx.fillStyle = '#2d3748';
-            derivCtx.font = '700 13px Outfit, sans-serif';
-            derivCtx.textAlign = 'left';
-            derivCtx.fillText(`f(${derivX0}) = ${evalF(derivX0)?.toFixed(4) ?? '—'}`, DW - 188, 35);
-            derivCtx.fillStyle = '#ff8bad';
-            derivCtx.fillText(`f'(${derivX0}) = ${slope?.toFixed(4) ?? '—'}`, DW - 188, 55);
-            derivCtx.fillStyle = '#ed8936';
-            derivCtx.fillText(`h = ${h.toFixed(4)}`, DW - 188, 75);
-        }
-    };
-
-    window.renderDerivF = function() {
-        updateDerivDimensions();
-        if (!derivFCtx) return;
-        const cx = FW / 2, cy = FH / 2, scale = D_SCALE;
-        drawDerivGrid(derivFCtx, FW, FH, cx, cy, scale);
-        if (!derivExpr) return;
-        derivFCtx.beginPath();
-        derivFCtx.strokeStyle = '#ff8bad';
-        derivFCtx.lineWidth = 2.5;
-        let first = true, prevY = null;
-        for (let px = 0; px <= FW; px += 1) {
-            const x = (px - cx) / scale;
-            const dy = numericalDeriv(derivExpr, x);
-            if (dy === null) { first = true; prevY = null; continue; }
-            const py = toCY(dy, cy, scale);
-            if (prevY !== null && Math.abs(py - prevY) > FH) { first = true; }
-            if (first) { derivFCtx.moveTo(px, py); first = false; }
-            else derivFCtx.lineTo(px, py);
-            prevY = py;
-        }
-        derivFCtx.stroke();
-        const slope = numericalDeriv(derivExpr, derivX0);
-        if (slope !== null) {
-            const px = toCX(derivX0, cx, scale);
-            const py = toCY(slope, cy, scale);
-            derivFCtx.beginPath();
-            derivFCtx.arc(px, py, 6, 0, Math.PI * 2);
-            derivFCtx.fillStyle = '#ff8bad';
-            derivFCtx.fill();
-            derivFCtx.strokeStyle = 'white';
-            derivFCtx.lineWidth = 2;
-            derivFCtx.stroke();
-            derivFCtx.beginPath();
-            derivFCtx.strokeStyle = 'rgba(255,139,173,0.3)';
-            derivFCtx.lineWidth = 1;
-            derivFCtx.setLineDash([4, 4]);
-            derivFCtx.moveTo(px, py); derivFCtx.lineTo(px, cy);
-            derivFCtx.stroke();
-            derivFCtx.setLineDash([]);
-            derivFCtx.fillStyle = '#ff8bad';
-            derivFCtx.font = '700 12px Outfit, sans-serif';
-            derivFCtx.textAlign = px > FW - 120 ? 'right' : 'left';
-            derivFCtx.fillText(`f'(${derivX0}) = ${slope.toFixed(3)}`, px + (px > FW - 120 ? -10 : 10), py - 10);
-        }
-        derivFCtx.fillStyle = '#ff8bad';
-        derivFCtx.font = '700 14px Outfit, sans-serif';
-        derivFCtx.textAlign = 'left';
-        derivFCtx.fillText("y = f'(x)", 12, 22);
-    };
-
-    function startSecantAnimation() {
-        if (isAnimating) {
-            cancelAnimationFrame(animFrameId);
-            isAnimating = false;
-            updateAnimBtn(false);
-            return;
-        }
-        if (!derivExpr) return;
-        derivH = 2.0;
-        isAnimating = true;
-        updateAnimBtn(true);
-        const startH = 2.0;
-        const endH = 0.001;
-        const dur = 2500;
-        let startTime = null;
-        function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-        function frame(ts) {
-            if (!startTime) startTime = ts;
-            const elapsed = ts - startTime;
-            const raw = Math.min(elapsed / dur, 1);
-            const t = ease(raw);
-            derivH = startH + (endH - startH) * t;
-            updateHSlider(derivH);
-            window.renderDerivMain(derivH);
-            window.renderDerivF();
-            if (raw < 1) animFrameId = requestAnimationFrame(frame);
-            else {
-                derivH = endH;
-                isAnimating = false;
-                updateAnimBtn(false);
-                window.renderDerivMain(derivH);
-                window.renderDerivF();
+        // 3. 잔상 (Trace) 그리기 (이전 할선들)
+        // 교과서 그림처럼, 현재 Delta X 보다 큰 위치의 고정된 할선들을 연하게 그려줍니다.
+        let traces = [3.0, 2.0, 1.0, 0.5];
+        traces.forEach(dx => {
+            if (dx > gDeltaX + 0.1) {
+                let Py = gFunc(gPointA_x + dx);
+                let m = (Py - Ay) / dx;
+                let n = Ay - m * gPointA_x;
+                gCtx.beginPath(); gCtx.strokeStyle = 'rgba(113, 128, 150, 0.25)'; gCtx.lineWidth = 2;
+                gCtx.moveTo(gx(gPointA_x - 1.5), gy(m * (gPointA_x - 1.5) + n));
+                gCtx.lineTo(gx(gPointA_x + dx + 1), gy(m * (gPointA_x + dx + 1) + n));
+                gCtx.stroke();
             }
-        }
-        animFrameId = requestAnimationFrame(frame);
-    }
+        });
 
-    function updateAnimBtn(running) {
-        const btn = document.getElementById('deriv-anim-btn');
-        if (!btn) return;
-        if (running) {
-            btn.innerText = '⏹ 중지';
-            btn.style.background = 'linear-gradient(135deg, #fc8181 0%, #e53e3e 100%)';
+        // 4. 현재 활성화된 점 P와 할선/접선 그리기
+        let Px = gPointA_x + gDeltaX;
+        let Py = gFunc(Px);
+        let m, lineColor;
+
+        if (gDeltaX < 0.01) {
+            // 접선 모드 (Delta X가 0)
+            m = 2 * 0.15 * gPointA_x + 0.2; // 미분계수 f'(2)
+            lineColor = '#3182ce'; // 파란색
         } else {
-            btn.innerText = '▶ 할선→접선 애니메이션';
-            btn.style.background = 'linear-gradient(135deg, #68d391 0%, #48bb78 100%)';
+            // 할선 모드
+            m = (Py - Ay) / gDeltaX;
+            lineColor = '#e53e3e'; // 빨간색
         }
-    }
 
-    function updateHSlider(h) {
-        const sliderEl = document.getElementById('deriv-h-slider');
-        const labelEl = document.getElementById('deriv-h-val');
-        if (sliderEl) sliderEl.value = Math.log10(h) * -1;
-        if (labelEl) labelEl.innerText = h.toFixed(4);
-    }
+        let n = Ay - m * gPointA_x;
 
-    function applyDerivFunc(exprStr) {
-        if (!exprStr) return;
-        try {
-            const expr = math.parse(exprStr);
-            expr.evaluate({ x: 1 });
-            derivExpr = expr;
-            document.getElementById('deriv-error').innerText = '';
-            window.renderDerivMain(derivH);
-            window.renderDerivF();
-            updateDerivInfo();
-        } catch (e) {
-            document.getElementById('deriv-error').innerText = '수식이 올바르지 않습니다.';
+        gCtx.beginPath();
+        gCtx.strokeStyle = lineColor;
+        gCtx.lineWidth = (gDeltaX < 0.01) ? 3 : 2;
+        gCtx.moveTo(gx(gPointA_x - 1.5), gy(m * (gPointA_x - 1.5) + n));
+        gCtx.lineTo(gx(Px + 2), gy(m * (Px + 2) + n));
+        gCtx.stroke();
+
+        // 접선일 경우 l 표시
+        if (gDeltaX < 0.01) {
+            gCtx.fillStyle = '#3182ce';
+            gCtx.font = 'bold 20px Outfit';
+            gCtx.fillText('l', gx(Px + 1.8), gy(m * (Px + 1.8) + n) - 10);
         }
+
+        // 5. 보조선 및 직각삼각형 (접선일 땐 안 그림)
+        if (gDeltaX >= 0.01) {
+            gCtx.beginPath();
+            gCtx.setLineDash([5, 5]);
+            gCtx.strokeStyle = '#a0aec0'; gCtx.lineWidth = 1;
+            
+            // 점선 (x, y축 연결)
+            gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(gPointA_x), gy(0)); // a 수선의 발
+            gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(0), gy(Ay)); // f(a) 수선의 발
+            gCtx.moveTo(gx(Px), gy(Py)); gCtx.lineTo(gx(Px), gy(0)); // a+dx 수선의 발
+            gCtx.moveTo(gx(Px), gy(Py)); gCtx.lineTo(gx(0), gy(Py)); // f(a+dx) 수선의 발
+
+            // 직각삼각형 밑변, 높이
+            gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(Px), gy(Ay));
+            gCtx.lineTo(gx(Px), gy(Py));
+            gCtx.stroke(); gCtx.setLineDash([]);
+
+            // 직각 기호
+            gCtx.strokeRect(gx(Px) - 8, gy(Ay), 8, -8);
+
+            // 라벨 (Delta x, Delta y)
+            gCtx.fillStyle = '#ed8936'; gCtx.font = 'bold 15px Outfit'; gCtx.textAlign = 'center';
+            gCtx.fillText('Δx', gx(gPointA_x + gDeltaX / 2), gy(Ay) + 20);
+            
+            gCtx.textAlign = 'left';
+            gCtx.fillText('Δy', gx(Px) + 8, gy((Ay + Py) / 2));
+        } else {
+            // 접선 모드일 때 보조선 간단히
+            gCtx.beginPath(); gCtx.setLineDash([5, 5]); gCtx.strokeStyle = '#a0aec0'; gCtx.lineWidth = 1;
+            gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(gPointA_x), gy(0));
+            gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(0), gy(Ay));
+            gCtx.stroke(); gCtx.setLineDash([]);
+        }
+
+        // 축 라벨 텍스트
+        gCtx.fillStyle = '#4a5568'; gCtx.textAlign = 'center'; gCtx.font = '15px Outfit';
+        gCtx.fillText('a', gx(gPointA_x), gy(0) + 20);
+        
+        gCtx.textAlign = 'right';
+        gCtx.fillText('f(a)', gx(0) - 5, gy(Ay) + 5);
+
+        if (gDeltaX >= 0.01) {
+            gCtx.textAlign = 'center';
+            gCtx.fillText('a+Δx', gx(Px), gy(0) + 20);
+            gCtx.textAlign = 'right';
+            gCtx.fillText('f(a+Δx)', gx(0) - 5, gy(Py) + 5);
+        }
+        gCtx.textAlign = 'left'; // reset
+
+        // 6. 점 A, P 그리기
+        gCtx.beginPath(); gCtx.arc(gx(gPointA_x), gy(Ay), 6, 0, 2*Math.PI);
+        gCtx.fillStyle = '#553c9a'; gCtx.fill(); gCtx.strokeStyle = '#fff'; gCtx.lineWidth = 2; gCtx.stroke();
+
+        gCtx.fillStyle = '#2d3748'; gCtx.textAlign = 'right'; gCtx.font = 'bold 16px Outfit';
+        gCtx.fillText('A', gx(gPointA_x) - 10, gy(Ay) - 10);
+
+        if (gDeltaX >= 0.01) {
+            gCtx.beginPath(); gCtx.arc(gx(Px), gy(Py), 6, 0, 2*Math.PI);
+            gCtx.fillStyle = '#e53e3e'; gCtx.fill(); gCtx.stroke();
+            gCtx.fillStyle = '#2d3748'; gCtx.textAlign = 'left';
+            gCtx.fillText('P', gx(Px) + 10, gy(Py) - 10);
+        }
+
+        // 7. UI 업데이트
+        let dxValEl = document.getElementById('deriv-geom-dx-val');
+        if (dxValEl) dxValEl.innerText = gDeltaX.toFixed(3);
     }
 
-    function updateDerivInfo() {
-        if (!derivExpr) return;
-        const slope = numericalDeriv(derivExpr, derivX0);
-        const fval = evalF(derivX0);
-        const sValEl = document.getElementById('deriv-slope-val');
-        const fValEl = document.getElementById('deriv-fval-val');
-        const xValEl = document.getElementById('deriv-x0-display');
-        if (sValEl) sValEl.innerText = slope?.toFixed(4) ?? '—';
-        if (fValEl) fValEl.innerText = fval?.toFixed(4) ?? '—';
-        if (xValEl) xValEl.innerText = derivX0.toString();
-    }
-
+    /* ========================================================= */
+    /* --- 초기화 및 이벤트 리스너 설정 --- */
+    /* ========================================================= */
     window.initDeriv = function() {
-        try {
-            updateDerivDimensions();
-            // 프리셋 렌더링
-            const container = document.getElementById('deriv-presets');
-            if (container) {
-                container.innerHTML = '';
-                const DERIV_PRESETS = [
-                    { label: 'x²', expr: 'x^2' }, { label: 'x³', expr: 'x^3' },
-                    { label: 'sin(x)', expr: 'sin(x)' }, { label: 'cos(x)', expr: 'cos(x)' },
-                    { label: 'eˣ', expr: 'exp(x)' }, { label: 'ln(x)', expr: 'log(x)' },
-                    { label: '1/x', expr: '1/x' }, { label: '√x', expr: 'sqrt(x)' }
-                ];
-                DERIV_PRESETS.forEach(p => {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-btn';
-                    btn.innerText = p.label;
-                    btn.addEventListener('click', () => {
-                        const input = document.getElementById('deriv-func-input');
-                        if (input) input.value = p.expr;
-                        applyDerivFunc(p.expr);
-                    });
-                    container.appendChild(btn);
+        tCanvas = document.getElementById('derivThinkCanvas');
+        gCanvas = document.getElementById('derivGeomCanvas');
+        
+        if (tCanvas && gCanvas) {
+            tCtx = tCanvas.getContext('2d');
+            tWidth = tCanvas.width;
+            tHeight = tCanvas.height;
+
+            gCtx = gCanvas.getContext('2d');
+            gWidth = gCanvas.width;
+            gHeight = gCanvas.height;
+
+            // 슬라이더 이벤트 1 (생각 열기)
+            const tSlider = document.getElementById('deriv-think-slider');
+            if (tSlider) {
+                tSlider.addEventListener('input', (e) => {
+                    tPointP_x = parseFloat(e.target.value);
+                    renderThinkOpen();
                 });
             }
 
-            const funcInput = document.getElementById('deriv-func-input');
-            const applyBtn = document.getElementById('deriv-apply-btn');
-            if (applyBtn && funcInput) {
-                applyBtn.onclick = () => applyDerivFunc(funcInput.value.trim());
-                funcInput.onkeypress = e => { if (e.key === 'Enter') applyDerivFunc(funcInput.value.trim()); };
+            // 슬라이더 이벤트 2 (기하적 의미)
+            const gSlider = document.getElementById('deriv-geom-slider');
+            if (gSlider) {
+                gSlider.addEventListener('input', (e) => {
+                    let v = parseFloat(e.target.value);
+                    // v가 작아질수록 dx도 작아지게 (0일 때 dx=0, 1일 때 dx=3.5)
+                    gDeltaX = v * 3.5; 
+                    renderGeometric();
+                });
+                // Initialize deltaX correctly based on DOM default
+                gDeltaX = parseFloat(gSlider.value) * 3.5;
             }
 
-            const x0Slider = document.getElementById('deriv-x0-slider');
-            if (x0Slider) {
-                x0Slider.oninput = e => {
-                    derivX0 = parseFloat(e.target.value);
-                    const label = document.getElementById('deriv-x0-val');
-                    if (label) label.innerText = derivX0.toFixed(1);
-                    window.renderDerivMain(derivH);
-                    window.renderDerivF();
-                    updateDerivInfo();
-                };
-            }
-
-            const hSlider = document.getElementById('deriv-h-slider');
-            if (hSlider) {
-                hSlider.oninput = e => {
-                    const logH = parseFloat(e.target.value);
-                    derivH = Math.pow(10, -logH);
-                    const label = document.getElementById('deriv-h-val');
-                    if (label) label.innerText = derivH.toFixed(4);
-                    if (!isAnimating) {
-                        window.renderDerivMain(derivH);
-                        window.renderDerivF();
-                    }
-                };
-            }
-
-            const animBtn = document.getElementById('deriv-anim-btn');
-            if (animBtn) animBtn.onclick = startSecantAnimation;
-
-            applyDerivFunc('x^2');
-        } catch (err) {
-            console.error('initDeriv failed:', err);
+            // 초기 렌더링
+            renderThinkOpen();
+            renderGeometric();
         }
     };
+
+    window.derivSwitchPanel = function(tabName) {
+        // 단원이 분리되지 않고 하나에 통합되어 있으므로 패널 숨김처리는 불필요함.
+    };
+
 })();

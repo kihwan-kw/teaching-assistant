@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         integ: 'idx-integ',
         seq: 'idx-seq',
         quad: 'idx-quad',
+        deriv: 'idx-deriv'
     };
 
     const initialized = new Set();
@@ -144,6 +145,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#idx-quad .index-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             if (window.quadSwitchPanel) window.quadSwitchPanel(tab.dataset.quadtab);
+        });
+    });
+
+    /* 미분 인덱스 탭 → deriv.js 탭 연 연동 */
+    document.querySelectorAll('#idx-deriv .index-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#idx-deriv .index-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            if (window.derivSwitchPanel) window.derivSwitchPanel(tab.dataset.derivtab);
         });
     });
 
