@@ -696,7 +696,7 @@ window.initQuad = (function () {
 
             // 🌟 최종 출력 조립: gathered 환경을 사용해 3줄을 완벽한 가운데 정렬로 띄워줍니다.
             // 🌟 \mathbf 를 제거하여 정답의 x 폰트가 KaTeX 특유의 이탤릭체로 예쁘게 나오도록 수정했습니다.
-            let displayLatex = `\\begin{gathered} ${step1Str} \\\\[0.5em] ${step2Str} \\\\[0.8em] \\therefore \\quad \\textcolor{#e53e3e}{${finalAns}} \\end{gathered}`;
+            let displayLatex = `\\begin{gathered} ${step1Str} \\\\[0.5em] ${step2Str} \\\\[0.8em] \\therefore \\quad \\textcolor{#38a169}{${finalAns}} \\end{gathered}`;
 
             const resultBox = document.getElementById('quad-ineq-result');
             katex.render(displayLatex, resultBox, { throwOnError: false, displayMode: true });
