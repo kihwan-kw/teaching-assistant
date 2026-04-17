@@ -592,39 +592,40 @@
                     <span id="seq-n-val-sum2" class="seq-n-val">4</span>
                 </div>
             </div>
-        </div>
 
-        <!-- ③ 세제곱의 합 패널 -->
-        <div id="seq-panel-sum3" class="seq-panel">
-            <div class="seq-layout">
-                <div class="seq-control-panel">
-                    <div class="seq-formula-box seq-formula-box--purple">
-                        <div class="seq-formula-title">세제곱의 합 ✨ 마법의 증명</div>
-                        <div id="seq-formula-sum3" class="seq-katex"></div>
+            <!-- ③ 세제곱의 합 패널 -->
+            <div id="seq-panel-sum3" class="seq-panel">
+                <div class="seq-layout">
+                    <div class="seq-control-panel">
+                        <div class="seq-formula-box seq-formula-box--purple">
+                            <div class="seq-formula-title">세제곱의 합 ✨ 마법의 증명</div>
+                            <div id="seq-formula-sum3" class="seq-katex"></div>
+                        </div>
+                        <div class="seq-desc">
+                            k³ 넓이의 ㄱ자 조각들이 기존 정사각형을 둘러싸며
+                            항상 완벽한 <strong>(1+2+···+n)²</strong> 정사각형을 유지합니다!
+                        </div>
+                        <div class="seq-slider-row">
+                            <span class="seq-slider-label">n =</span>
+                            <span id="seq-n-val-sum3" class="seq-n-val">3</span>
+                        </div>
+                        <input type="range" id="seq-slider-sum3" min="1" max="7" value="3"
+                            class="seq-slider seq-slider--purple">
+                        <div class="seq-slider-ends"><span>1</span><span>7</span></div>
+                        <div class="seq-btn-row">
+                            <button id="seq-run-btn-sum3" class="seq-run-btn seq-run-btn--purple">▶ 테트리스 애니메이션</button>
+                            <button id="seq-reset-btn-sum3" class="seq-reset-btn">↺ 초기화</button>
+                        </div>
                     </div>
-                    <div class="seq-desc">
-                        k³ 넓이의 ㄱ자 조각들이 기존 정사각형을 둘러싸며
-                        항상 완벽한 <strong>(1+2+···+n)²</strong> 정사각형을 유지합니다!
+                    <div class="seq-canvas-area">
+                        <div class="seq-canvas-wrapper">
+                            <canvas id="seq-canvas-sum3"></canvas>
+                        </div>
+                        <div id="seq-feedback-sum3" class="seq-feedback seq-feedback--purple"></div>
                     </div>
-                    <div class="seq-slider-row">
-                        <span class="seq-slider-label">n =</span>
-                        <span id="seq-n-val-sum3" class="seq-n-val">3</span>
-                    </div>
-                    <input type="range" id="seq-slider-sum3" min="1" max="7" value="3"
-                        class="seq-slider seq-slider--purple">
-                    <div class="seq-slider-ends"><span>1</span><span>7</span></div>
-                    <div class="seq-btn-row">
-                        <button id="seq-run-btn-sum3" class="seq-run-btn seq-run-btn--purple">▶ 테트리스 애니메이션</button>
-                        <button id="seq-reset-btn-sum3" class="seq-reset-btn">↺ 초기화</button>
-                    </div>
-                </div>
-                <div class="seq-canvas-area">
-                    <div class="seq-canvas-wrapper">
-                        <canvas id="seq-canvas-sum3"></canvas>
-                    </div>
-                    <div id="seq-feedback-sum3" class="seq-feedback seq-feedback--purple"></div>
                 </div>
             </div>
+
         </div>
 
         <!-- ===== 극한과 연속 (준비 중) ===== -->
