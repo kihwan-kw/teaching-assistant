@@ -3167,3 +3167,50 @@ input[type="range"]::-webkit-slider-thumb:hover {
 #idx-quad .index-tab[data-quadtab="ineq"].active {
     background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
 }
+
+/* ========================================================= */
+/* --- 확률과 통계 (Probability) UI --- */
+/* ========================================================= */
+#idx-prob .index-tab[data-probtab="monty"].active {
+    background: linear-gradient(135deg, #f6e05e 0%, #ed8936 100%);
+}
+
+/* 몬티홀 버튼 호버 액션 */
+#monty-btn-stay:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+}
+
+#monty-btn-switch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+}
+
+/* ========================================================= */
+/* --- 정다면체 (Polyhedra) UI --- */
+/* ========================================================= */
+#idx-poly .index-tab[data-polytab="solid"].active {
+    background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+}
+
+#idx-poly .index-tab[data-polytab="net"].active {
+    background: linear-gradient(135deg, #f6ad55 0%, #f78181 100%);
+}
+
+#idx-poly .index-tab[data-polytab="cross"].active {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+#idx-poly .index-tab[data-polytab=" Euler"].active {
+    background: linear-gradient(135deg, #73a5ff 0%, #b19cd9 100%);
+}
+
+.poly-panel {
+    display: none;
+    width: 100%;
+    animation: fadeIn 0.35s ease;
+}
+
+.poly-panel.active {
+    display: block;
+}

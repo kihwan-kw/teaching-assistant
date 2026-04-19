@@ -3,10 +3,10 @@
 /* 기하적 의미 (교과서 맞춤 UI) */
 /* ========================================================= */
 
-(function() {
+(function () {
     let tCanvas, tCtx, tWidth, tHeight;
     let gCanvas, gCtx, gWidth, gHeight;
-    
+
     // --- 1. 생각 열기 (Think Open) 상태 변수 ---
     const tFunc = (x) => x * x - x + 1; // y = x^2 - x + 1
     const tPointA = { x: 1, y: 1 };
@@ -36,10 +36,10 @@
         // 1. 그리드 및 축
         tCtx.lineWidth = 1;
         tCtx.strokeStyle = '#e2e8f0';
-        for(let i = -1; i <= 4; i++) {
+        for (let i = -1; i <= 4; i++) {
             tCtx.beginPath(); tCtx.moveTo(tx(i), 0); tCtx.lineTo(tx(i), tHeight); tCtx.stroke();
         }
-        for(let i = 0; i <= 4; i++) {
+        for (let i = 0; i <= 4; i++) {
             tCtx.beginPath(); tCtx.moveTo(0, ty(i)); tCtx.lineTo(tWidth, ty(i)); tCtx.stroke();
         }
 
@@ -76,7 +76,7 @@
         tCtx.moveTo(tx(-0.5), ty(-0.5));
         tCtx.lineTo(tx(4), ty(4));
         tCtx.stroke();
-        
+
         tCtx.fillStyle = '#38a169';
         tCtx.fillText('y = x', tx(3.5), ty(3.1));
 
@@ -93,16 +93,16 @@
         tCtx.stroke();
 
         // 5. 점 A, P 그리기 및 라벨
-        tCtx.beginPath(); tCtx.arc(tx(tPointA.x), ty(tPointA.y), 6, 0, 2*Math.PI);
+        tCtx.beginPath(); tCtx.arc(tx(tPointA.x), ty(tPointA.y), 6, 0, 2 * Math.PI);
         tCtx.fillStyle = '#38a169'; tCtx.fill(); tCtx.strokeStyle = '#fff'; tCtx.lineWidth = 2; tCtx.stroke();
-        
-        tCtx.beginPath(); tCtx.arc(tx(tPointP_x), ty(P_y), 6, 0, 2*Math.PI);
+
+        tCtx.beginPath(); tCtx.arc(tx(tPointP_x), ty(P_y), 6, 0, 2 * Math.PI);
         tCtx.fillStyle = '#e53e3e'; tCtx.fill(); tCtx.stroke();
 
         tCtx.fillStyle = '#2d3748';
         tCtx.font = 'bold 14px Outfit';
         tCtx.fillText('A(1, 1)', tx(tPointA.x) + 12, ty(tPointA.y) + 6);
-        
+
         tCtx.textAlign = 'right';
         tCtx.fillText(`P(${tPointP_x.toFixed(2)}, ${P_y.toFixed(2)})`, tx(tPointP_x) - 10, ty(P_y) - 10);
         tCtx.textAlign = 'left'; // reset
@@ -110,7 +110,7 @@
         // 6. UI 문자열 업데이트
         let xValEl = document.getElementById('deriv-think-x-val');
         if (xValEl) xValEl.innerText = tPointP_x.toFixed(3);
-        
+
         let nStr = (n < 0) ? `- ${Math.abs(n).toFixed(2)}` : `+ ${n.toFixed(2)}`;
         if (Math.abs(n) < 0.005) nStr = ''; // n이 거의 0일 때
         let eqEl = document.getElementById('deriv-think-eq');
@@ -126,7 +126,7 @@
 
         // 1. 그리드 및 축 (연하게)
         gCtx.strokeStyle = '#a0aec0'; gCtx.lineWidth = 2;
-        gCtx.beginPath(); gCtx.moveTo(0, gy(0)); gCtx.lineTo(gWidth, gy(0)); 
+        gCtx.beginPath(); gCtx.moveTo(0, gy(0)); gCtx.lineTo(gWidth, gy(0));
         gCtx.moveTo(gx(0), 0); gCtx.lineTo(gx(0), gHeight);
         gCtx.stroke();
 
@@ -202,7 +202,7 @@
             gCtx.beginPath();
             gCtx.setLineDash([5, 5]);
             gCtx.strokeStyle = '#a0aec0'; gCtx.lineWidth = 1;
-            
+
             // 점선 (x, y축 연결)
             gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(gPointA_x), gy(0)); // a 수선의 발
             gCtx.moveTo(gx(gPointA_x), gy(Ay)); gCtx.lineTo(gx(0), gy(Ay)); // f(a) 수선의 발
@@ -220,7 +220,7 @@
             // 라벨 (Delta x, Delta y)
             gCtx.fillStyle = '#ed8936'; gCtx.font = 'bold 15px Outfit'; gCtx.textAlign = 'center';
             gCtx.fillText('Δx', gx(gPointA_x + gDeltaX / 2), gy(Ay) + 20);
-            
+
             gCtx.textAlign = 'left';
             gCtx.fillText('Δy', gx(Px) + 8, gy((Ay + Py) / 2));
         } else {
@@ -234,7 +234,7 @@
         // 축 라벨 텍스트
         gCtx.fillStyle = '#4a5568'; gCtx.textAlign = 'center'; gCtx.font = '15px Outfit';
         gCtx.fillText('a', gx(gPointA_x), gy(0) + 20);
-        
+
         gCtx.textAlign = 'right';
         gCtx.fillText('f(a)', gx(0) - 5, gy(Ay) + 5);
 
@@ -247,14 +247,14 @@
         gCtx.textAlign = 'left'; // reset
 
         // 6. 점 A, P 그리기
-        gCtx.beginPath(); gCtx.arc(gx(gPointA_x), gy(Ay), 6, 0, 2*Math.PI);
+        gCtx.beginPath(); gCtx.arc(gx(gPointA_x), gy(Ay), 6, 0, 2 * Math.PI);
         gCtx.fillStyle = '#553c9a'; gCtx.fill(); gCtx.strokeStyle = '#fff'; gCtx.lineWidth = 2; gCtx.stroke();
 
         gCtx.fillStyle = '#2d3748'; gCtx.textAlign = 'right'; gCtx.font = 'bold 16px Outfit';
         gCtx.fillText('A', gx(gPointA_x) - 10, gy(Ay) - 10);
 
         if (gDeltaX >= 0.01) {
-            gCtx.beginPath(); gCtx.arc(gx(Px), gy(Py), 6, 0, 2*Math.PI);
+            gCtx.beginPath(); gCtx.arc(gx(Px), gy(Py), 6, 0, 2 * Math.PI);
             gCtx.fillStyle = '#e53e3e'; gCtx.fill(); gCtx.stroke();
             gCtx.fillStyle = '#2d3748'; gCtx.textAlign = 'left';
             gCtx.fillText('P', gx(Px) + 10, gy(Py) - 10);
@@ -268,10 +268,10 @@
     /* ========================================================= */
     /* --- 초기화 및 이벤트 리스너 설정 --- */
     /* ========================================================= */
-    window.initDeriv = function() {
+    window.initDeriv = function () {
         tCanvas = document.getElementById('derivThinkCanvas');
         gCanvas = document.getElementById('derivGeomCanvas');
-        
+
         if (tCanvas && gCanvas) {
             tCtx = tCanvas.getContext('2d');
             tWidth = tCanvas.width;
@@ -296,7 +296,7 @@
                 gSlider.addEventListener('input', (e) => {
                     let v = parseFloat(e.target.value);
                     // v가 작아질수록 dx도 작아지게 (0일 때 dx=0, 1일 때 dx=3.5)
-                    gDeltaX = v * 3.5; 
+                    gDeltaX = v * 3.5;
                     renderGeometric();
                 });
                 // Initialize deltaX correctly based on DOM default
@@ -309,7 +309,7 @@
         }
     };
 
-    window.derivSwitchPanel = function(tabName) {
+    window.derivSwitchPanel = function (tabName) {
         // 단원이 분리되지 않고 하나에 통합되어 있으므로 패널 숨김처리는 불필요함.
     };
 

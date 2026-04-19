@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const UNITS = [
+        { id: 'poly', icon: '💎', title: '정다면체', subtitle: '5가지 정다면체의 입체와 성질', ready: true, colorClass: 'card-trig', init: () => window.initPoly() },
         { id: 'exp', icon: '📈', title: '그래프 그리기', subtitle: '함수를 입력하고 다양한 변환을 시각화', ready: true, colorClass: 'card-exp', init: () => window.initGraph() },
         { id: 'factor', icon: '✖️', title: '인수분해', subtitle: 'X자 크로스 훈련장과 스피드 퀴즈', ready: true, colorClass: 'card-factor', init: () => window.initFactor() },
         { id: 'quad', icon: '〰️', title: '이차함수', subtitle: '평행이동과 제한된 구간의 최대/최소', ready: true, colorClass: 'card-quad', init: () => window.initQuad() },
@@ -87,18 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'seq', icon: '🔢', title: '수열', subtitle: '시그마(Σ) 거듭제곱의 합 테트리스 퍼즐', ready: true, colorClass: 'card-seq', init: () => window.initSeq() },
         { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '함수의 극한과 연속', ready: false, colorClass: 'card-limit', init: null },
         { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => window.initDeriv() },
-        { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => window.initInteg() }
+        { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => window.initInteg() },
+        { id: 'prob', icon: '🎲', title: '확률과 통계', subtitle: '직관을 깨는 몬티홀 딜레마 시뮬레이션', ready: true, colorClass: 'card-limit', init: () => window.initProb() },
     ];
 
 
     // 단원별 인덱스 패널 ID (없는 단원은 항목 없음 → 인덱스 전부 숨김)
     const UNIT_INDEX_MAP = {
+        poly: 'idx-poly',
         factor: 'idx-factor',
         trig: 'idx-trig',
         integ: 'idx-integ',
         seq: 'idx-seq',
         quad: 'idx-quad',
-        deriv: 'idx-deriv'
+        deriv: 'idx-deriv',
+        prob: 'idx-prob',
     };
 
     const initialized = new Set();
@@ -168,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
             initialized.add(unit.id);
             setTimeout(unit.init, 50);
         } else {
+            if (unit.id === 'poly') setTimeout(() => window.initPoly(), 50);
             if (unit.id === 'exp') setTimeout(() => window.renderAllExpGraphs(), 50);
             if (unit.id === 'integ') setTimeout(() => window.drawInteg(), 50);
             if (unit.id === 'matrix') setTimeout(() => { window.drawOriginal(); window.applyMatrixTransform(); }, 50);
@@ -175,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unit.id === 'deriv') setTimeout(() => { window.renderDerivMain(); window.renderDerivF(); }, 50);
             if (unit.id === 'seq') setTimeout(() => window.seqRedraw && window.seqRedraw(), 50);
             if (unit.id === 'quad') setTimeout(() => window.initQuad(), 50);
+            if (unit.id === 'prob') setTimeout(() => window.initProb(), 50);
         }
         // 🌟 이 부분을 추가해 주세요! (해당 단원에 진입할 때 팝업 띄우기) 🌟
         showTutorial(unit.id);
@@ -230,6 +236,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#idx-deriv .index-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             if (window.derivSwitchPanel) window.derivSwitchPanel(tab.dataset.derivtab);
+        });
+    });
+
+    document.querySelectorAll('#idx-prob .index-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#idx-prob .index-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            if (window.probSwitchPanel) window.probSwitchPanel(tab.dataset.probtab);
         });
     });
 

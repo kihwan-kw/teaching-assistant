@@ -34,6 +34,95 @@
     <!-- ★ 앱 컨테이너 -->
     <div class="app-container">
 
+        <!-- ===== 정다면체 (Polyhedron) - 홈 화면 첫번째 기능 ===== -->
+        <div id="unit-poly" class="unit-content">
+            <h2 class="unit-title">정다면체의 입체와 전개도</h2>
+
+            <div class="exp-main-content" style="max-width: 1200px;">
+
+                <!-- 좌측 컨트롤 패널 -->
+                <div class="matrix-control-panel" style="flex: 0 0 380px;">
+
+                    <div class="matrix-section" style="padding-bottom: 10px;">
+                        <h3 class="matrix-section-title">✨ 정다면체 선택</h3>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+                            <button class="t-btn poly-btn active" data-type="tetra"
+                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:15px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">정사면체</button>
+                            <button class="t-btn poly-btn" data-type="hexa"
+                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:15px;">정육면체</button>
+                            <button class="t-btn poly-btn" data-type="octa"
+                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:15px;">정팔면체</button>
+                            <button class="t-btn poly-btn" data-type="dodeca"
+                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:15px;">정십이면체</button>
+                            <button class="t-btn poly-btn" data-type="icosa"
+                                style="flex:1 1 100%; padding:10px; font-weight:800; font-size:15px;">정이십면체</button>
+                        </div>
+                    </div>
+
+                    <!-- 정다면체 속성 표 (교과서 포맷) -->
+                    <div class="matrix-section" style="padding: 15px; background: #fffaf0; border-color: #fbd38d;">
+                        <h3 class="matrix-section-title" style="color: #dd6b20;">📌 <span
+                                id="poly-name-title">정사면체</span>의 성질</h3>
+                        <table class="poly-table">
+                            <tbody>
+                                <tr>
+                                    <th class="poly-th">면의 모양</th>
+                                    <td class="poly-td" id="poly-info-shape" style="font-weight:800; color:#2d3748;">
+                                        정삼각형</td>
+                                </tr>
+                                <tr>
+                                    <th class="poly-th">한 꼭짓점에<br>모인 면의 개수</th>
+                                    <td class="poly-td" id="poly-info-meet">3개</td>
+                                </tr>
+                                <tr>
+                                    <th class="poly-th">면의 개수 (F)</th>
+                                    <td class="poly-td"><strong id="poly-info-f"
+                                            style="color:#e53e3e; font-size:18px;">4</strong>개</td>
+                                </tr>
+                                <tr>
+                                    <th class="poly-th">꼭짓점의 개수 (V)</th>
+                                    <td class="poly-td"><strong id="poly-info-v"
+                                            style="color:#3182ce; font-size:18px;">4</strong>개</td>
+                                </tr>
+                                <tr>
+                                    <th class="poly-th">모서리의 개수 (E)</th>
+                                    <td class="poly-td"><strong id="poly-info-e"
+                                            style="color:#38a169; font-size:18px;">6</strong>개</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- 우측 캔버스 영역 -->
+                <div class="exp-right-panel" style="align-items:center;">
+                    <div class="canvas-wrapper"
+                        style="width:100%; max-width:800px; padding:20px; background:#fff; position:relative;">
+
+                        <div
+                            style="position:absolute; top:20px; left:30px; font-weight:800; color:#a0aec0; font-size:14px; z-index:10;">
+                            🖱 마우스로 드래그하여 입체를 돌려보세요
+                        </div>
+
+                        <!-- 3D 렌더링 캔버스 -->
+                        <canvas id="polyCanvas" width="760" height="400"
+                            style="display:block; width:100%; height:auto; outline:none; cursor:grab;"></canvas>
+
+                    </div>
+
+                    <!-- 입체 분해(전개) 슬라이더 -->
+                    <div class="slider-container"
+                        style="max-width: 600px; margin-top: 10px; background:#f8fafc; border:2px solid #e2e8f0;">
+                        <span style="font-weight:800; color:#4a5568; min-width:80px;">겨냥도(3D)</span>
+                        <input type="range" id="poly-explode-slider" min="0" max="100" value="0" style="flex:1;">
+                        <span style="font-weight:800; color:#e53e3e; min-width:80px;">해체 / 분해</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <div class="side-index-wrapper side-index-left" id="idx-factor" style="display:none;">
             <div class="index-tab active" data-factortab="gcf">공통인수</div>
             <div class="index-tab" data-factortab="cross">X자크로스</div>
@@ -66,6 +155,11 @@
         <!-- 4. 미분 전용 왼쪽 인덱스 -->
         <div class="side-index-wrapper side-index-left" id="idx-deriv" style="display:none;">
             <div class="index-tab active" data-derivtab="geometric">기하적 의미</div>
+        </div>
+
+        <!-- 확률 전용 왼쪽 인덱스 -->
+        <div class="side-index-wrapper side-index-left" id="idx-prob" style="display:none;">
+            <div class="index-tab active" data-probtab="monty">몬티홀 딜레마</div>
         </div>
 
         <!-- ===== 그래프 그리기 (인덱스 없음) ===== -->
@@ -637,6 +731,109 @@
             </div>
         </div>
 
+        <!-- ===== 확률과 통계 (Probability) ===== -->
+        <div id="unit-prob" class="unit-content">
+            <h2 class="unit-title">확률과 통계 : 직관을 깨는 몬티홀 딜레마</h2>
+
+            <div class="exp-main-content" style="max-width: 1200px;">
+
+                <!-- 좌측 컨트롤 패널 -->
+                <div class="matrix-control-panel" style="flex: 0 0 350px;">
+
+                    <!-- 내부 탭 (숨김 처리, 인덱스와 동기화됨) -->
+                    <div style="display:none;">
+                        <button class="tab-btn active" data-probtab="monty"></button>
+                    </div>
+
+                    <!-- 몬티홀 컨트롤 패널 -->
+                    <div id="prob-panel-monty" class="quad-panel active">
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📺 몬티홀 게임 쇼</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                3개의 문 뒤에는 <strong>1대의 스포츠카🚗</strong>와 <strong>2마리의 염소🐐</strong>가 있습니다.<br>
+                                우측 캔버스에서 직접 문을 하나 선택해 보세요!
+                            </div>
+
+                            <!-- 게임 상태 알림 전광판 -->
+                            <div
+                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:15px; text-align:center; min-height:80px; display:flex; align-items:center; justify-content:center;">
+                                <div id="monty-status-msg"
+                                    style="font-size:18px; color:#2b6cb0; font-weight:800; line-height:1.4;">
+                                    문을 하나 골라주세요!
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 시뮬레이션 컨트롤 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🤖 자동 시뮬레이션 (대수의 법칙)</h3>
+                            <div style="font-size:13px; color:#a0aec0; margin-bottom:10px; text-align:center;">
+                                직관이 맞을까요, 수학이 맞을까요? 1,000번 반복해 봅시다.
+                            </div>
+
+                            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                                <button class="t-btn" id="monty-sim-10"
+                                    style="flex:1; padding:10px; font-weight:700;">10번</button>
+                                <button class="t-btn" id="monty-sim-100"
+                                    style="flex:1; padding:10px; font-weight:700;">100번</button>
+                                <button class="draw-btn" id="monty-sim-1000"
+                                    style="flex:1; padding:10px; font-size:15px; background:linear-gradient(135deg, #e53e3e, #fc8181);">1,000번
+                                    🔥</button>
+                            </div>
+
+                            <!-- 통계 결과 -->
+                            <div
+                                style="background:#fff5f5; border:1px solid #fed7d7; border-radius:12px; padding:15px;">
+                                <div
+                                    style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; font-weight:700;">
+                                    <span style="color:#4a5568;">선택 유지 승률:</span>
+                                    <span id="monty-stay-rate" style="color:#3182ce; font-size:18px;">0.0%</span>
+                                </div>
+                                <div
+                                    style="display:flex; justify-content:space-between; font-size:14px; font-weight:700;">
+                                    <span style="color:#4a5568;">선택 변경 승률:</span>
+                                    <span id="monty-switch-rate" style="color:#e53e3e; font-size:18px;">0.0%</span>
+                                </div>
+                                <div style="text-align:right; font-size:11px; color:#a0aec0; margin-top:5px;">
+                                    총 <span id="monty-total-sim">0</span>회 시도
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="matrix-section" style="text-align:center;">
+                            <button class="t-btn" id="monty-reset-btn"
+                                style="padding:10px 30px; font-weight:800; color:#718096;">↺ 게임 완전 초기화</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측 캔버스 영역 -->
+                <div class="exp-right-panel" style="align-items:center;">
+                    <div class="canvas-wrapper"
+                        style="width:100%; max-width:800px; padding:20px; background:#fff; position: relative;">
+                        <!-- 몬티홀 전용 캔버스 -->
+                        <canvas id="probCanvas" width="760" height="500"></canvas>
+
+                        <!-- 선택 변경/유지 팝업 버튼 (캔버스 위에 오버레이) -->
+                        <div id="monty-choice-overlay"
+                            style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,255,255,0.95); padding:30px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.15); text-align:center; border:2px solid #e2e8f0; z-index:10;">
+                            <h3 style="margin:0 0 20px 0; color:#2d3748; font-size:22px;">선택을 바꾸시겠습니까?</h3>
+                            <div style="display:flex; gap:15px; justify-content:center;">
+                                <button id="monty-btn-stay"
+                                    style="padding:15px 30px; font-size:18px; font-weight:800; border:none; border-radius:12px; cursor:pointer; background:#edf2f7; color:#4a5568; transition:all 0.2s; box-shadow:0 4px 6px rgba(0,0,0,0.05);">그대로
+                                    유지</button>
+                                <button id="monty-btn-switch"
+                                    style="padding:15px 30px; font-size:18px; font-weight:800; border:none; border-radius:12px; cursor:pointer; background:linear-gradient(135deg, #48bb78, #38a169); color:white; transition:all 0.2s; box-shadow:0 4px 15px rgba(72,187,120,0.4);">바꾸기
+                                    🔄</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <!-- ===== 미분 단원 ===== -->
         <div id="unit-deriv" class="unit-content">
             <h2 class="unit-title">미분계수의 기하적 의미</h2>
@@ -1134,6 +1331,8 @@
     <script src="main.js"></script>
     <script src="deriv.js"></script>
     <script src="quad.js"></script>
+    <script src="prob.js"></script>
+    <script src="poly.js"></script>
 
     <!-- 🌟 공통 안내 팝업 (모달) 🌟 -->
     <div id="tutorial-modal" class="tutorial-modal-overlay" style="display: none;">
@@ -1157,8 +1356,6 @@
         </div>
     </div>
 
-    <!-- 스크립트 단 하나로 통합! (에러 완벽 차단) -->
-    <script src="app.js"></script>
 </body>
 
 </html>
