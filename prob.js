@@ -703,39 +703,344 @@ window.initPascal = (function () {
     };
 })();
 
-/* 확률 단원 내부 탭 전환 로직 (몬티홀 <-> 파스칼) */
-document.addEventListener("DOMContentLoaded", () => {
-    // 확률 단원 탭 버튼들
-    const probTabs = document.querySelectorAll('#idx-prob .index-tab');
-    const probPanelMonty = document.getElementById('prob-panel-monty');
-    const probPanelPascal = document.getElementById('prob-panel-pascal');
-    const canvasWrapMonty = document.getElementById('canvas-wrap-monty');
-    const canvasWrapPascal = document.getElementById('canvas-wrap-pascal');
+/* ========================================================= */
+/* --- 갈톤 보드 (Galton Board) Logic --- */
+/* ========================================================= */
+window.initGalton = (function () {
+    let _initialized = false;
 
-    probTabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            // 모든 탭 비활성화
-            probTabs.forEach(t => t.classList.remove('active'));
-            e.target.classList.add('active');
+    return function () {
+        if (_initialized) return;
 
-            const targetTab = e.target.dataset.probtab;
+        const canvas = document.getElementById('galtonCanvas');
+        if (!canvas) return;
 
-            if (targetTab === 'monty') {
-                probPanelPascal.style.display = 'none';
-                canvasWrapPascal.style.display = 'none';
+        if (canvas.offsetWidth === 0) return;
 
-                probPanelMonty.style.display = 'block';
-                canvasWrapMonty.style.display = 'block';
-                if (window.initProb) window.initProb();
+        _initialized = true;
+
+        const ctx = canvas.getContext('2d');
+
+        const W = canvas.width;
+        const H = canvas.height;
+
+        let ROWS = 10;
+        let P = 0.5;
+        let ballRadius = 6;
+        let ballSpeed = 3;
+        let isRunning = false;
+        let animRaf = null;
+        let autoMode = false;
+
+        let balls = [];
+        let bins = [];
+        let totalDropped = 0;
+        let pins = [];
+        let autoDropTimer = 0;
+        let layout = {};
+
+        function calcLayout() {
+            const topPad = 60, botPad = 130, sidePad = 40;
+            const boardH = H - topPad - botPad;
+            const boardW = W - sidePad * 2;
+            const rowGap = boardH / (ROWS + 1);
+            const colGap = boardW / (ROWS + 1);
+            const startX = W / 2;
+            const startY = topPad;
+
+            pins = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c <= r; c++) {
+                    pins.push({
+                        x: startX + (c - r / 2) * colGap,
+                        y: startY + (r + 1) * rowGap,
+                        r, c
+                    });
+                }
             }
-            else if (targetTab === 'pascal') {
-                probPanelMonty.style.display = 'none';
-                canvasWrapMonty.style.display = 'none';
+            bins = new Array(ROWS + 1).fill(0);
+            return { topPad, botPad, sidePad, boardH, boardW, rowGap, colGap, startX, startY };
+        }
 
-                probPanelPascal.style.display = 'block';
-                canvasWrapPascal.style.display = 'block';
-                if (window.initPascal) window.initPascal();
+        function pickColor(idx) {
+            const colors = ['#ff8bad', '#73a5ff', '#b5ead7', '#ffd6a5', '#c9b1ff', '#4fd1c5', '#f6ad55', '#fc8181'];
+            return colors[idx % colors.length];
+        }
+
+        function dropBall() {
+            totalDropped++;
+            balls.push({
+                x: layout.startX, y: layout.startY - 10,
+                vx: 0, vy: ballSpeed * 0.5,
+                row: 0, col: 0,
+                phase: 'fall',
+                settled: false,
+                binIdx: -1,
+                color: pickColor(totalDropped),
+                trail: [],
+            });
+        }
+
+        function updateBalls() {
+            const GRAVITY = 0.18 * ballSpeed;
+            const BOUNCE_VY = ballSpeed * 1.8;
+            const BOUNCE_VX = ballSpeed * 1.2;
+
+            balls.forEach(ball => {
+                if (ball.settled) return;
+
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 8) ball.trail.shift();
+
+                if (ball.phase === 'fall') {
+                    ball.vy += GRAVITY;
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+
+                    if (ball.row < ROWS) {
+                        const pinIdx = ball.row * (ball.row + 1) / 2 + ball.col;
+                        const pin = pins[pinIdx];
+                        if (pin && ball.y >= pin.y - 4 - ballRadius) {
+                            const goRight = Math.random() < P;
+                            ball.vx = goRight ? BOUNCE_VX : -BOUNCE_VX;
+                            ball.vy = -BOUNCE_VY * 0.6;
+                            ball.x = pin.x;
+                            ball.y = pin.y - 4 - ballRadius;
+                            if (goRight) ball.col++;
+                            ball.row++;
+                            ball.phase = 'bounce';
+                        }
+                    } else {
+                        ball.phase = 'bin';
+                        ball.binIdx = ball.col;
+                    }
+                } else if (ball.phase === 'bounce') {
+                    ball.vy += GRAVITY;
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+                    ball.vx *= 0.88;
+                    if (ball.vy > 0) ball.phase = 'fall';
+                } else if (ball.phase === 'bin') {
+                    ball.vy += GRAVITY;
+                    ball.y += ball.vy;
+                    ball.vx *= 0.7;
+                    ball.x += ball.vx;
+
+                    const stackH = bins[ball.binIdx] * (ballRadius * 2 + 1);
+                    const floorY = H - layout.botPad + 10 - stackH;
+
+                    if (ball.y >= floorY - ballRadius) {
+                        ball.y = floorY - ballRadius;
+                        ball.vy = 0;
+                        ball.vx = 0;
+                        ball.settled = true;
+                        bins[ball.binIdx]++;
+                    }
+                }
+            });
+
+            if (balls.filter(b => !b.settled).length === 0 && balls.length > 300) {
+                balls = balls.filter(b => !b.settled).concat(balls.filter(b => b.settled).slice(-300));
             }
+        }
+
+        function getBinCenterX(idx) { return layout.startX + (idx - ROWS / 2) * layout.colGap; }
+        function getBinWidth() { return layout.colGap * 0.82; }
+
+        function comb(n, k) {
+            if (k < 0 || k > n) return 0;
+            if (k === 0 || k === n) return 1;
+            let result = 1;
+            for (let i = 0; i < k; i++) result = result * (n - i) / (i + 1);
+            return result;
+        }
+        function binomialP(n, k, p) { return comb(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k); }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
+
+            const floorY = H - layout.botPad + 10;
+            const binW = getBinWidth();
+            const maxBin = Math.max(...bins, 1);
+
+            // 칸 & 막대
+            for (let i = 0; i <= ROWS; i++) {
+                const cx = getBinCenterX(i);
+                const cnt = bins[i];
+                const barH = (cnt / maxBin) * (layout.botPad - 40);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.03)';
+                ctx.fillRect(cx - binW / 2, floorY - layout.botPad + 20, binW, layout.botPad - 20);
+
+                if (cnt > 0) {
+                    const alpha = 0.25 + (cnt / maxBin) * 0.4;
+                    ctx.fillStyle = `rgba(115,165,255,${alpha})`;
+                    ctx.fillRect(cx - binW / 2, floorY - barH, binW, barH);
+                }
+
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+                ctx.strokeRect(cx - binW / 2, floorY - layout.botPad + 20, binW, layout.botPad - 20);
+
+                if (cnt > 0) {
+                    ctx.fillStyle = '#4a5568';
+                    ctx.font = 'bold 11px Outfit, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(cnt, cx, floorY + 16);
+                }
+            }
+
+            // 바닥선
+            ctx.strokeStyle = '#cbd5e0'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(layout.sidePad, floorY); ctx.lineTo(W - layout.sidePad, floorY); ctx.stroke();
+
+            // 핀
+            pins.forEach(pin => {
+                ctx.beginPath(); ctx.arc(pin.x, pin.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#4a5568'; ctx.fill();
+                ctx.strokeStyle = '#718096'; ctx.lineWidth = 1; ctx.stroke();
+            });
+
+            // 잔상 & 공
+            balls.forEach(ball => {
+                if (!ball.settled && ball.trail.length > 1) {
+                    ball.trail.forEach((pt, i) => {
+                        const r = parseInt(ball.color.slice(1, 3), 16), g = parseInt(ball.color.slice(3, 5), 16), b = parseInt(ball.color.slice(5, 7), 16);
+                        ctx.beginPath();
+                        ctx.arc(pt.x, pt.y, ballRadius * (i / ball.trail.length) * 0.6, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(${r},${g},${b},${i / ball.trail.length * 0.25})`;
+                        ctx.fill();
+                    });
+                }
+            });
+
+            balls.forEach(ball => {
+                if (ball.settled) {
+                    ctx.beginPath();
+                    ctx.arc(getBinCenterX(ball.binIdx), ball.y, ballRadius - 1, 0, Math.PI * 2);
+                    ctx.fillStyle = ball.color; ctx.fill();
+                } else {
+                    ctx.beginPath(); ctx.arc(ball.x + 2, ball.y + 2, ballRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fill();
+                    const grad = ctx.createRadialGradient(ball.x - 1, ball.y - 2, 1, ball.x, ball.y, ballRadius);
+                    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.4, ball.color); grad.addColorStop(1, ball.color);
+                    ctx.beginPath(); ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = grad; ctx.fill();
+                }
+            });
+
+            // 이론값 점선
+            if (totalDropped >= 5) {
+                ctx.beginPath(); ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 3]);
+                for (let i = 0; i <= ROWS; i++) {
+                    const cx = getBinCenterX(i);
+                    const expected = binomialP(ROWS, i, P) * totalDropped;
+                    const barH = (expected / maxBin) * (layout.botPad - 40);
+                    if (i === 0) ctx.moveTo(cx, floorY - barH); else ctx.lineTo(cx, floorY - barH);
+                }
+                ctx.stroke(); ctx.setLineDash([]);
+            }
+
+            // HUD
+            ctx.fillStyle = '#2d3748'; ctx.font = 'bold 15px Outfit, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(`갈톤 보드 | 핀 ${ROWS}행 | p = ${P.toFixed(2)} | 총 ${totalDropped}개`, W / 2, 24);
+            ctx.fillStyle = '#718096'; ctx.font = '12px Outfit, sans-serif';
+            ctx.fillText(`B(${ROWS}, ${P.toFixed(2)})  평균 μ = ${(ROWS * P).toFixed(1)}  표준편차 σ = ${Math.sqrt(ROWS * P * (1 - P)).toFixed(2)}`, W / 2, 42);
+        }
+
+        function loop() {
+            animRaf = requestAnimationFrame(loop);
+            if (autoMode) {
+                autoDropTimer++;
+                const interval = Math.max(1, Math.floor(8 / ballSpeed));
+                if (autoDropTimer >= interval && totalDropped < 500) {
+                    autoDropTimer = 0; dropBall();
+                }
+            }
+            updateBalls(); draw();
+        }
+
+        function resetBoard() {
+            balls = []; totalDropped = 0; autoDropTimer = 0;
+            layout = calcLayout(); draw();
+        }
+
+        // 버튼 연결
+        document.getElementById('galton-drop-1')?.addEventListener('click', () => dropBall());
+        document.getElementById('galton-drop-10')?.addEventListener('click', () => {
+            for (let i = 0; i < 10; i++) setTimeout(() => dropBall(), i * 80);
         });
+        document.getElementById('galton-auto-on')?.addEventListener('click', function () {
+            autoMode = !autoMode;
+            this.innerText = autoMode ? '⏹ 자동 중지' : '▶ 자동 투하';
+            this.style.background = autoMode
+                ? 'linear-gradient(135deg,#fc8181,#e53e3e)'
+                : 'linear-gradient(135deg,#68d391,#48bb78)';
+        });
+        document.getElementById('galton-reset')?.addEventListener('click', () => {
+            autoMode = false;
+            const btn = document.getElementById('galton-auto-on');
+            if (btn) { btn.innerText = '▶ 자동 투하'; btn.style.background = 'linear-gradient(135deg,#68d391,#48bb78)'; }
+            resetBoard();
+        });
+        document.getElementById('galton-rows')?.addEventListener('input', function () {
+            ROWS = parseInt(this.value);
+            document.getElementById('galton-rows-val').innerText = ROWS;
+            resetBoard();
+        });
+        document.getElementById('galton-p')?.addEventListener('input', function () {
+            P = parseFloat(this.value);
+            document.getElementById('galton-p-val').innerText = P.toFixed(2);
+            resetBoard();
+        });
+        document.getElementById('galton-speed')?.addEventListener('input', function () {
+            ballSpeed = parseFloat(this.value);
+            document.getElementById('galton-speed-val').innerText = ballSpeed.toFixed(1) + 'x';
+        });
+
+        layout = calcLayout();
+        loop();
+    };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+    const probTabs = document.querySelectorAll('#idx-prob .index-tab');
+    const panels = {
+        monty: document.getElementById('prob-panel-monty'),
+        pascal: document.getElementById('prob-panel-pascal'),
+        galton: document.getElementById('prob-panel-galton'),
+    };
+    const canvasWraps = {
+        monty: document.getElementById('canvas-wrap-monty'),
+        pascal: document.getElementById('canvas-wrap-pascal'),
+        galton: document.getElementById('canvas-wrap-galton'),
+    };
+
+    function showTab(targetTab) {
+        /* 모든 패널 숨기기 */
+        Object.values(panels).forEach(p => { if (p) p.style.display = 'none'; });
+        Object.values(canvasWraps).forEach(c => { if (c) c.style.display = 'none'; });
+
+        /* 탭 버튼 active 처리 */
+        probTabs.forEach(t =>
+            t.classList.toggle('active', t.dataset.probtab === targetTab)
+        );
+
+        /* 해당 패널 보이기 */
+        if (panels[targetTab]) panels[targetTab].style.display = 'block';
+        if (canvasWraps[targetTab]) canvasWraps[targetTab].style.display = 'block';
+
+        /* 초기화 */
+        if (targetTab === 'pascal' && window.initPascal) window.initPascal();
+        if (targetTab === 'monty' && window.initProb) window.initProb();
+        if (targetTab === 'galton' && window.initGalton) window.initGalton();
+    }
+
+    /* 탭 클릭 이벤트 */
+    probTabs.forEach(tab => {
+        tab.addEventListener('click', e => showTab(e.target.dataset.probtab));
     });
+
+    /* ★ 첫 진입 시 파스칼 탭을 기본으로 활성화 */
+    showTab('pascal');
 });

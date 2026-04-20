@@ -157,7 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function navigateTo(unit) {
         homeScreen.style.display = 'none';
         unitTopbar.style.display = 'flex';
+        unitTopbar.style.marginBottom = '16px';
         appContainer.style.display = 'block';
+        appContainer.style.marginTop = '0';
         if (unitFooter) unitFooter.style.display = 'block';
 
         if (breadcrumb) breadcrumb.textContent = unit.title;
