@@ -3214,3 +3214,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .poly-panel.active {
     display: block;
 }
+
+/* 파스칼의 삼각형 모드 탭 색상 (보라색 계열) */
+#idx-prob .index-tab[data-probtab="pascal"].active {
+    background: linear-gradient(135deg, #b19cd9 0%, #9f7aea 100%);
+}
+
+/* 파스칼 수식 강조 색상들 */
+.pascal-hl-blue {
+    color: #3182ce;
+    font-weight: 900;
+}
+
+.pascal-hl-red {
+    color: #e53e3e;
+    font-weight: 900;
+}
+
+.pascal-hl-green {
+    color: #38a169;
+    font-weight: 900;
+}
