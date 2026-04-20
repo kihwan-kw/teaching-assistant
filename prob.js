@@ -335,6 +335,35 @@ window.initPascal = (function () {
         const modeBtns = document.querySelectorAll('.pascal-mode-btn');
         const formulaBox = document.getElementById('pascal-formula-box');
 
+        let viewMode = 'number';
+
+        const viewBtns = {
+            number: document.getElementById('pascal-view-number'),
+            comb: document.getElementById('pascal-view-comb'),
+            both: document.getElementById('pascal-view-both'),
+        };
+
+        Object.entries(viewBtns).forEach(([key, btn]) => {
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                viewMode = key;
+                Object.values(viewBtns).forEach(b => {
+                    if (!b) return;
+                    b.style.background = 'transparent';
+                    b.style.color = '#718096';
+                });
+                btn.style.background = '#73a5ff';
+                btn.style.color = 'white';
+                draw();
+            });
+        });
+
+        // 아래첨자 헬퍼 ← 바로 이어서 추가
+        function toSub(n) {
+            const subs = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+            return String(n).split('').map(d => subs[parseInt(d)] || d).join('');
+        }
+
         // 모드 버튼 이벤트
         modeBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -686,13 +715,25 @@ window.initPascal = (function () {
 
                     drawHexagon(ctx, cx, cy, layout.hexRadius * 0.9, fill, stroke, lineWidth);
 
-                    // 프랙탈 모드에서 층수가 너무 높으면 글씨 생략 (도형만 예쁘게 보이게)
+                    // 수정 (깔끔하게 정리)
                     if (mode === 'sierpinski' && numRows > 12) {
-                        // 글씨 안 그림
-                    } else {
+                        // 프랙탈 고층수: 글씨 생략
+                    } else if (viewMode === 'comb') {
+                        const combStr = n === 0 ? '₀C₀' : `${toSub(n)}C${toSub(r)}`;
+                        ctx.font = `bold ${Math.max(9, layout.hexRadius * 0.55)}px Outfit`;
                         ctx.fillStyle = textCol;
+                        ctx.fillText(combStr, cx, cy);
+                    } else if (viewMode === 'both') {
+                        const combStr = n === 0 ? '₀C₀' : `${toSub(n)}C${toSub(r)}`;
+                        ctx.font = `bold ${Math.max(7, layout.hexRadius * 0.42)}px Outfit`;
+                        ctx.fillStyle = textCol;
+                        ctx.fillText(combStr, cx, cy - layout.hexRadius * 0.28);
+                        ctx.font = `bold ${Math.max(9, layout.hexRadius * 0.55)}px Outfit`;
+                        ctx.fillText(val, cx, cy + layout.hexRadius * 0.28);
+                    } else {
                         if (val > 999) ctx.font = `bold ${Math.max(8, layout.hexRadius * 0.5)}px Outfit`;
                         else ctx.font = `bold ${Math.max(10, layout.hexRadius * 0.7)}px Outfit`;
+                        ctx.fillStyle = textCol;
                         ctx.fillText(val, cx, cy);
                     }
                 }
