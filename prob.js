@@ -397,8 +397,14 @@ window.initPascal = (function () {
             if (mode === 'sierpinski') return; // 프랙탈 모드는 마우스 오버 불필요
 
             const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+
+            // 🌟 [핵심 수정] 화면(CSS) 크기와 캔버스 실제(내부) 크기의 비율을 구합니다.
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            // 🌟 구한 비율(scale)을 곱해서 마우스 좌표를 캔버스 내부 좌표로 완벽히 일치시킵니다!
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
 
             let found = null;
             const layout = getLayoutInfo();
@@ -541,21 +547,38 @@ window.initPascal = (function () {
                 let currR = isLeftHalf ? r - 1 : r;
                 let nodes = [];
 
+                // 1. 선택한 꼭짓점(결과값)부터 시작하여 대각선 위로 올라가며 노드 수집
                 while (true) {
                     nodes.push({ n: currN, r: currR, val: getComb(currN, currR) });
                     if (isLeftHalf) { if (currN === currR) break; currN--; }
                     else { if (currR === 0) break; currN--; currR--; }
                 }
-                nodes.reverse();
+                nodes.reverse(); // 위에서 아래로 순서 뒤집기
 
+                // 2. 조합 기호(nCr) 식 만들기
+                let combHTML = nodes.length <= 5 ?
+                    nodes.map(nd => `<sub>${nd.n}</sub>C<sub>${nd.r}</sub>`).join(' + ') :
+                    `<sub>${nodes[0].n}</sub>C<sub>${nodes[0].r}</sub> + <sub>${nodes[1].n}</sub>C<sub>${nodes[1].r}</sub> + ··· + <sub>${nodes[nodes.length - 1].n}</sub>C<sub>${nodes[nodes.length - 1].r}</sub>`;
+
+                let finalCombHTML = `<sub>${n}</sub>C<sub>${r}</sub>`;
+
+                // 3. 실제 계산된 숫자 식 만들기
                 let stickValsHTML = nodes.length <= 5 ?
                     nodes.map(nd => nd.val).join(' + ') :
-                    `${nodes[0].val} + ${nodes[1].val} + ··· + ${nodes[nodes.length - 2].val} + ${nodes[nodes.length - 1].val}`;
+                    `${nodes[0].val} + ${nodes[1].val} + ··· + ${nodes[nodes.length - 1].val}`;
 
+                // 4. 화면 출력 (2줄 레이아웃)
                 formulaBox.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
                         <span style="font-size:15px; color:#718096; font-weight:700;">하키스틱 패턴 조합의 합</span>
-                        <div style="font-size: 20px;">
+                        
+                        <!-- 첫 번째 줄: 조합(nCr) 식 -->
+                        <div style="font-size: 18px; color: #4a5568; margin-top: 5px;">
+                            <span class="pascal-hl-blue">${combHTML}</span> = <span class="pascal-hl-red">${finalCombHTML}</span>
+                        </div>
+                        
+                        <!-- 두 번째 줄: 계산된 숫자 식 -->
+                        <div style="font-size: 20px; margin-top: 2px;">
                             <span class="pascal-hl-blue">${stickValsHTML}</span> = <span class="pascal-hl-red">${val}</span>
                         </div>
                     </div>
@@ -828,7 +851,7 @@ window.initGalton = (function () {
             const BOUNCE_VX = ballSpeed * 1.2;
 
             balls.forEach(ball => {
-                if (ball.settled) return;
+                if (ball.settled) return; // 이미 바닥에 닿아 폭발한 공은 무시
 
                 ball.trail.push({ x: ball.x, y: ball.y });
                 if (ball.trail.length > 8) ball.trail.shift();
@@ -867,22 +890,19 @@ window.initGalton = (function () {
                     ball.vx *= 0.7;
                     ball.x += ball.vx;
 
-                    const stackH = bins[ball.binIdx] * (ballRadius * 2 + 1);
-                    const floorY = H - layout.botPad + 10 - stackH;
+                    // 🌟 [수정] 바닥에 닿는 순간의 판정
+                    const floorY = H - layout.botPad + 10;
 
                     if (ball.y >= floorY - ballRadius) {
-                        ball.y = floorY - ballRadius;
-                        ball.vy = 0;
-                        ball.vx = 0;
+                        // 공이 바닥에 닿으면 즉시 settled(폭발) 처리하고 막대그래프 숫자 1 증가
                         ball.settled = true;
                         bins[ball.binIdx]++;
                     }
                 }
             });
 
-            if (balls.filter(b => !b.settled).length === 0 && balls.length > 300) {
-                balls = balls.filter(b => !b.settled).concat(balls.filter(b => b.settled).slice(-300));
-            }
+            // 🌟 [수정] 바닥에 닿은(settled) 공은 배열에서 즉시 삭제! (메모리 절약, 버벅임 방지)
+            balls = balls.filter(b => !b.settled);
         }
 
         function getBinCenterX(idx) { return layout.startX + (idx - ROWS / 2) * layout.colGap; }
@@ -905,29 +925,38 @@ window.initGalton = (function () {
             const binW = getBinWidth();
             const maxBin = Math.max(...bins, 1);
 
-            // 칸 & 막대
+            // 칸 & 막대그래프 그리기
             for (let i = 0; i <= ROWS; i++) {
                 const cx = getBinCenterX(i);
                 const cnt = bins[i];
-                const barH = (cnt / maxBin) * (layout.botPad - 40);
 
+                // 막대그래프 최대 높이 제한
+                const maxBarHeight = layout.botPad - 40;
+                const barH = (cnt / maxBin) * maxBarHeight;
+
+                // 배경 연한 박스
                 ctx.fillStyle = 'rgba(0,0,0,0.03)';
-                ctx.fillRect(cx - binW / 2, floorY - layout.botPad + 20, binW, layout.botPad - 20);
+                ctx.fillRect(cx - binW / 2, floorY - maxBarHeight + 20, binW, maxBarHeight - 20);
 
+                // 🌟 [수정] 누적된 숫자에 따라 자라나는 막대그래프 (진한 색상)
                 if (cnt > 0) {
-                    const alpha = 0.25 + (cnt / maxBin) * 0.4;
+                    // 공 색상(파스텔톤) 중 하나를 고정으로 사용하거나 파란색 계열 사용
+                    const alpha = 0.4 + (cnt / maxBin) * 0.4;
                     ctx.fillStyle = `rgba(115,165,255,${alpha})`;
                     ctx.fillRect(cx - binW / 2, floorY - barH, binW, barH);
                 }
 
+                // 칸막이 테두리
                 ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
-                ctx.strokeRect(cx - binW / 2, floorY - layout.botPad + 20, binW, layout.botPad - 20);
+                ctx.strokeRect(cx - binW / 2, floorY - maxBarHeight + 20, binW, maxBarHeight - 20);
 
+                // 🌟 [수정] 칸 위에 누적된 공의 개수(숫자) 표시
                 if (cnt > 0) {
-                    ctx.fillStyle = '#4a5568';
-                    ctx.font = 'bold 11px Outfit, sans-serif';
+                    ctx.fillStyle = '#2b6cb0'; // 숫자 색상 진하게
+                    ctx.font = 'bold 12px Outfit, sans-serif';
                     ctx.textAlign = 'center';
-                    ctx.fillText(cnt, cx, floorY + 16);
+                    // 막대그래프 바로 위나 바닥 근처에 숫자 표시
+                    ctx.fillText(cnt, cx, floorY - barH - 5);
                 }
             }
 
@@ -942,9 +971,10 @@ window.initGalton = (function () {
                 ctx.strokeStyle = '#718096'; ctx.lineWidth = 1; ctx.stroke();
             });
 
-            // 잔상 & 공
+            // 🌟 [수정] 굴러떨어지는 중인 공들만 잔상과 함께 그림 (settled된 공은 이미 삭제됨)
             balls.forEach(ball => {
-                if (!ball.settled && ball.trail.length > 1) {
+                // 잔상
+                if (ball.trail.length > 1) {
                     ball.trail.forEach((pt, i) => {
                         const r = parseInt(ball.color.slice(1, 3), 16), g = parseInt(ball.color.slice(3, 5), 16), b = parseInt(ball.color.slice(5, 7), 16);
                         ctx.beginPath();
@@ -953,31 +983,26 @@ window.initGalton = (function () {
                         ctx.fill();
                     });
                 }
+
+                // 공 본체
+                ctx.beginPath(); ctx.arc(ball.x + 2, ball.y + 2, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fill(); // 그림자
+                const grad = ctx.createRadialGradient(ball.x - 1, ball.y - 2, 1, ball.x, ball.y, ballRadius);
+                grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.4, ball.color); grad.addColorStop(1, ball.color);
+                ctx.beginPath(); ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = grad; ctx.fill();
             });
 
-            balls.forEach(ball => {
-                if (ball.settled) {
-                    ctx.beginPath();
-                    ctx.arc(getBinCenterX(ball.binIdx), ball.y, ballRadius - 1, 0, Math.PI * 2);
-                    ctx.fillStyle = ball.color; ctx.fill();
-                } else {
-                    ctx.beginPath(); ctx.arc(ball.x + 2, ball.y + 2, ballRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fill();
-                    const grad = ctx.createRadialGradient(ball.x - 1, ball.y - 2, 1, ball.x, ball.y, ballRadius);
-                    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.4, ball.color); grad.addColorStop(1, ball.color);
-                    ctx.beginPath(); ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = grad; ctx.fill();
-                }
-            });
-
-            // 이론값 점선
+            // 이론값 점선 (종 모양 정규분포 곡선)
             if (totalDropped >= 5) {
                 ctx.beginPath(); ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 3]);
                 for (let i = 0; i <= ROWS; i++) {
                     const cx = getBinCenterX(i);
                     const expected = binomialP(ROWS, i, P) * totalDropped;
-                    const barH = (expected / maxBin) * (layout.botPad - 40);
-                    if (i === 0) ctx.moveTo(cx, floorY - barH); else ctx.lineTo(cx, floorY - barH);
+                    const maxExpected = Math.max(...Array.from({ length: ROWS + 1 }, (_, k) => binomialP(ROWS, k, P) * totalDropped));
+                    // 막대그래프의 최대 높이에 맞춰 이론값 점선도 스케일링
+                    const lineH = (expected / Math.max(maxBin, maxExpected)) * (layout.botPad - 40);
+                    if (i === 0) ctx.moveTo(cx, floorY - lineH); else ctx.lineTo(cx, floorY - lineH);
                 }
                 ctx.stroke(); ctx.setLineDash([]);
             }
