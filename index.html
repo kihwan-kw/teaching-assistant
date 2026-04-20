@@ -159,8 +159,8 @@
 
         <!-- 확률 전용 왼쪽 인덱스 -->
         <div class="side-index-wrapper side-index-left" id="idx-prob" style="display:none;">
-            <div class="index-tab active" data-probtab="monty">몬티홀</div>
             <div class="index-tab" data-probtab="pascal">파스칼</div>
+            <div class="index-tab active" data-probtab="monty">몬티홀</div>
         </div>
 
         <!-- ===== 그래프 그리기 (인덱스 없음) ===== -->
@@ -743,13 +743,58 @@
 
                     <!-- 내부 탭 (숨김 처리, 인덱스와 동기화됨) -->
                     <div style="display:none;">
-                        <button class="tab-btn active" data-probtab="monty"></button>
                         <button class="tab-btn" data-probtab="pascal"></button>
+                        <button class="tab-btn active" data-probtab="monty"></button>
+                    </div>
+
+                    <!-- 🌟 파스칼의 삼각형 컨트롤 패널 -->
+                    <div id="prob-panel-pascal" class="quad-panel active" style="display:block;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">✨ 탐험 모드 선택</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                우측 삼각형의 숫자에 마우스를 올려보세요!<br>선택한 모드에 따라 수학적 비밀이 나타납니다.
+                            </div>
+                            <!-- 🌟 버튼을 2단 그리드로 배치 -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                                <button class="t-btn pascal-mode-btn active" data-mode="basic"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">①
+                                    역삼각형 합</button>
+                                <button class="t-btn pascal-mode-btn" data-mode="rowSum"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">② 각 행의 합</button>
+                                <button class="t-btn pascal-mode-btn" data-mode="hockey"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">③ 하키스틱</button>
+                                <button class="t-btn pascal-mode-btn" data-mode="sierpinski"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">④ 프랙탈 (홀/짝)</button>
+                                <button class="t-btn pascal-mode-btn" data-mode="fibonacci"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">⑤ 피보나치 수열</button>
+                                <button class="t-btn pascal-mode-btn" data-mode="polygonal"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">⑥ 다각수</button>
+                            </div>
+                        </div>
+
+                        <!-- 층수 조절 슬라이더 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">삼각형 층수 (n)</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                <span style="font-size:14px; font-weight:700; color:#4a5568;">n = <span
+                                        id="pascal-n-val" style="color:#805ad5; font-size:18px;">9</span></span>
+                            </div>
+                            <input type="range" id="pascal-n-slider" min="3" max="12" step="1" value="9"
+                                style="width:100%;">
+                        </div>
+
+                        <!-- 수식 결과 전광판 -->
+                        <div class="matrix-section" style="background:#fff5f5; border-color:#fed7d7;">
+                            <h3 class="matrix-section-title" style="color:#c53030;">📌 이항정리 공식</h3>
+                            <div id="pascal-formula-box"
+                                style="text-align:center; padding: 15px 0; font-size:22px; font-weight:800; color:#2d3748; min-height:60px; display:flex; align-items:center; justify-content:center;">
+                                마우스를 올려보세요!
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 몬티홀 컨트롤 패널 -->
-                    <div id="prob-panel-monty" class="quad-panel active">
-
+                    <div id="prob-panel-monty" class="quad-panel" style="display:none;">
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">📺 몬티홀 게임 쇼</h3>
                             <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
@@ -808,45 +853,6 @@
                                 style="padding:10px 30px; font-weight:800; color:#718096;">↺ 게임 완전 초기화</button>
                         </div>
                     </div>
-
-                    <!-- 🌟 파스칼의 삼각형 컨트롤 패널 -->
-                    <div id="prob-panel-pascal" class="quad-panel" style="display:none;">
-                        <div class="matrix-section">
-                            <h3 class="matrix-section-title">✨ 탐험 모드 선택</h3>
-                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
-                                우측 삼각형의 숫자에 마우스를 올려보세요!<br>선택한 모드에 따라 수학적 비밀이 나타납니다.
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:8px;">
-                                <button class="t-btn pascal-mode-btn active" data-mode="basic"
-                                    style="padding:10px; font-weight:800; font-size:15px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">①
-                                    조합의 성질 (역삼각형)</button>
-                                <button class="t-btn pascal-mode-btn" data-mode="rowSum"
-                                    style="padding:10px; font-weight:800; font-size:15px;">② 각 행의 합 (2ⁿ)</button>
-                                <button class="t-btn pascal-mode-btn" data-mode="hockey"
-                                    style="padding:10px; font-weight:800; font-size:15px;">③ 하키스틱 패턴</button>
-                            </div>
-                        </div>
-
-                        <!-- 층수 조절 슬라이더 -->
-                        <div class="matrix-section">
-                            <h3 class="matrix-section-title">삼각형 층수 (n)</h3>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                                <span style="font-size:14px; font-weight:700; color:#4a5568;">n = <span
-                                        id="pascal-n-val" style="color:#805ad5; font-size:18px;">9</span></span>
-                            </div>
-                            <input type="range" id="pascal-n-slider" min="3" max="12" step="1" value="9"
-                                style="width:100%;">
-                        </div>
-
-                        <!-- 수식 결과 전광판 -->
-                        <div class="matrix-section" style="background:#fff5f5; border-color:#fed7d7;">
-                            <h3 class="matrix-section-title" style="color:#c53030;">📌 이항정리 공식</h3>
-                            <div id="pascal-formula-box"
-                                style="text-align:center; padding: 15px 0; font-size:22px; font-weight:800; color:#2d3748; min-height:60px; display:flex; align-items:center; justify-content:center;">
-                                마우스를 올려보세요!
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- 우측 캔버스 영역 -->
@@ -854,8 +860,13 @@
                     <div class="canvas-wrapper"
                         style="width:100%; max-width:800px; padding:20px; background:#fff; position: relative; min-height: 540px;">
 
-                        <!-- 1. 몬티홀 전용 캔버스 래퍼 -->
-                        <div id="canvas-wrap-monty">
+                        <!-- 🌟 1. 파스칼 전용 캔버스 래퍼 -->
+                        <div id="canvas-wrap-pascal" style="display:block;">
+                            <canvas id="pascalCanvas" width="760" height="500" style="cursor: crosshair;"></canvas>
+                        </div>
+
+                        <!-- 2. 몬티홀 전용 캔버스 래퍼 -->
+                        <div id="canvas-wrap-monty" style="display:none">
                             <canvas id="probCanvas" width="760" height="500"></canvas>
                             <div id="monty-choice-overlay"
                                 style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,255,255,0.95); padding:30px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.15); text-align:center; border:2px solid #e2e8f0; z-index:10;">
@@ -871,10 +882,7 @@
                             </div>
                         </div>
 
-                        <!-- 🌟 2. 파스칼 전용 캔버스 래퍼 (처음엔 숨김) -->
-                        <div id="canvas-wrap-pascal" style="display:none;">
-                            <canvas id="pascalCanvas" width="760" height="500" style="cursor: crosshair;"></canvas>
-                        </div>
+
 
                     </div>
                 </div>

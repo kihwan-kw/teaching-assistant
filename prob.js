@@ -314,8 +314,8 @@ window.initPascal = (function () {
         const ctx = canvas.getContext('2d');
 
         // 상태 변수
-        let numRows = 10; // 초기 층수 (n=9)
-        let mode = 'basic'; // 'basic', 'rowSum', 'hockey'
+        let numRows = 10; // 초기 층수
+        let mode = 'basic'; // 'basic', 'rowSum', 'hockey', 'sierpinski', 'fibonacci', 'polygonal'
         let hoverNode = null; // {n, r}
 
         // 조합 (nCr) 계산 캐시
@@ -356,7 +356,7 @@ window.initPascal = (function () {
 
         // 층수 슬라이더 이벤트
         nSlider.addEventListener('input', (e) => {
-            numRows = parseInt(e.target.value) + 1; // n=9면 10층
+            numRows = parseInt(e.target.value) + 1;
             nValTxt.innerText = e.target.value;
             hoverNode = null;
             updateFormulaBox();
@@ -365,6 +365,8 @@ window.initPascal = (function () {
 
         // 마우스 이벤트 (Hover 추적)
         canvas.addEventListener('mousemove', (e) => {
+            if (mode === 'sierpinski') return; // 프랙탈 모드는 마우스 오버 불필요
+
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
@@ -385,7 +387,6 @@ window.initPascal = (function () {
             }
 
             if (found !== hoverNode) {
-                // 노드가 바뀌었을 때만 재렌더링
                 if (!found || !hoverNode || found.n !== hoverNode.n || found.r !== hoverNode.r) {
                     hoverNode = found;
                     updateFormulaBox();
@@ -396,8 +397,10 @@ window.initPascal = (function () {
 
         canvas.addEventListener('mouseleave', () => {
             hoverNode = null;
-            updateFormulaBox();
-            draw();
+            if (mode !== 'sierpinski') {
+                updateFormulaBox();
+                draw();
+            }
         });
 
         // 위치 계산 헬퍼 함수
@@ -421,7 +424,6 @@ window.initPascal = (function () {
             return { cx, cy };
         }
 
-        // 육각형 그리기 함수
         function drawHexagon(ctx, x, y, radius, fillStyle, strokeStyle, lineWidth) {
             ctx.beginPath();
             for (let i = 0; i < 6; i++) {
@@ -436,12 +438,25 @@ window.initPascal = (function () {
             if (strokeStyle) { ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidth; ctx.stroke(); }
         }
 
-        // 🌟 수정된 부분 1: 수식 업데이트 및 하키스틱 경로 수집
         function updateFormulaBox() {
+            // 프랙탈 모드는 기본 설명 고정
+            if (mode === 'sierpinski') {
+                formulaBox.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                        <span style="font-size:16px; color:#805ad5; font-weight:800;">시에르핀스키 삼각형 (프랙탈)</span>
+                        <div style="font-size:14px; color:#4a5568; line-height:1.5;">
+                            짝수는 투명하게, <strong style="color:#e53e3e;">홀수는 색칠하면</strong> 나타나는 신비한 패턴!<br>
+                            슬라이더로 층수(n)를 늘려보세요.
+                        </div>
+                    </div>`;
+                return;
+            }
+
             if (!hoverNode) {
                 formulaBox.innerHTML = "<span style='color:#a0aec0; font-size:16px;'>마우스를 올려보세요!</span>";
                 return;
             }
+
             const n = hoverNode.n;
             const r = hoverNode.r;
             const val = getComb(n, r);
@@ -468,90 +483,96 @@ window.initPascal = (function () {
                         </div>
                     </div>
                 `;
-
-            } else if (mode === 'rowSum') {
+            }
+            else if (mode === 'rowSum') {
                 let sum = Math.pow(2, n);
-
-                // n의 크기에 따라 보여줄 식 조절
-                let combText = "";
-                if (n <= 4) {
-                    let terms = [];
-                    for (let i = 0; i <= n; i++) terms.push(`<sub>${n}</sub>C<sub>${i}</sub>`);
-                    combText = terms.join(" + ");
-                } else {
-                    combText = `<sub>${n}</sub>C<sub>0</sub> + <sub>${n}</sub>C<sub>1</sub> + ··· + <sub>${n}</sub>C<sub>${n}</sub>`;
-                }
+                let combText = n <= 4 ?
+                    Array.from({ length: n + 1 }, (_, i) => `<sub>${n}</sub>C<sub>${i}</sub>`).join(" + ") :
+                    `<sub>${n}</sub>C<sub>0</sub> + <sub>${n}</sub>C<sub>1</sub> + ··· + <sub>${n}</sub>C<sub>${n}</sub>`;
 
                 formulaBox.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; gap:8px; line-height:1.3;">
                         <span style="font-size:15px; color:#718096; font-weight:700;">n = ${n} 행의 이항계수의 합</span>
-                        <div style="font-size:18px; color:#4a5568;">
-                            ${combText}
-                        </div>
+                        <div style="font-size:18px; color:#4a5568;">${combText}</div>
                         <div style="margin-top:2px;">
                             = <span class="pascal-hl-blue" style="font-size:24px;">2<sup>${n}</sup></span> 
                             = <span class="pascal-hl-red" style="font-size:24px;">${sum}</span>
                         </div>
                     </div>
                 `;
-
-            } else if (mode === 'hockey') {
+            }
+            else if (mode === 'hockey') {
                 if (n === 0 || r === 0 || r === n) {
                     formulaBox.innerHTML = "<span style='color:#a0aec0; font-size:15px;'>가장자리가 아닌 안쪽 숫자를 선택해 보세요!</span>";
                     return;
                 }
 
-                // 왼쪽 절반이면 스틱은 '오른쪽 위'로 뻗어나가고, 오른쪽 절반이면 '왼쪽 위'로 뻗어나감
                 let isLeftHalf = (r <= n / 2);
                 let currN = n - 1;
                 let currR = isLeftHalf ? r - 1 : r;
-
-                // 스틱 노드들을 수집
                 let nodes = [];
+
                 while (true) {
                     nodes.push({ n: currN, r: currR, val: getComb(currN, currR) });
-                    if (isLeftHalf) {
-                        if (currN === currR) break; // 끝(오른쪽 변)에 닿으면 종료
-                        currN--;
-                    } else {
-                        if (currR === 0) break; // 끝(왼쪽 변)에 닿으면 종료
-                        currN--;
-                        currR--;
-                    }
+                    if (isLeftHalf) { if (currN === currR) break; currN--; }
+                    else { if (currR === 0) break; currN--; currR--; }
                 }
-
-                // 역순 정렬 (가장자리 끝 1부터 순서대로 더하도록)
                 nodes.reverse();
 
-                let stickTermsHTML = [];
-                let stickValsHTML = [];
-
-                if (nodes.length <= 5) {
-                    stickTermsHTML = nodes.map(nd => `<sub>${nd.n}</sub>C<sub>${nd.r}</sub>`);
-                    stickValsHTML = nodes.map(nd => nd.val);
-                } else {
-                    // 항목이 너무 길면 줄임표(...) 사용
-                    let first2 = nodes.slice(0, 2);
-                    let last2 = nodes.slice(-2);
-
-                    stickTermsHTML = [
-                        `<sub>${first2[0].n}</sub>C<sub>${first2[0].r}</sub>`,
-                        `<sub>${first2[1].n}</sub>C<sub>${first2[1].r}</sub>`,
-                        '···',
-                        `<sub>${last2[0].n}</sub>C<sub>${last2[0].r}</sub>`,
-                        `<sub>${last2[1].n}</sub>C<sub>${last2[1].r}</sub>`
-                    ];
-                    stickValsHTML = [first2[0].val, first2[1].val, '···', last2[0].val, last2[1].val];
-                }
+                let stickValsHTML = nodes.length <= 5 ?
+                    nodes.map(nd => nd.val).join(' + ') :
+                    `${nodes[0].val} + ${nodes[1].val} + ··· + ${nodes[nodes.length - 2].val} + ${nodes[nodes.length - 1].val}`;
 
                 formulaBox.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px; line-height:1.3;">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
                         <span style="font-size:15px; color:#718096; font-weight:700;">하키스틱 패턴 조합의 합</span>
-                        <div style="font-size:16px; color:#4a5568;">
-                            <span class="pascal-hl-blue">${stickTermsHTML.join(' + ')}</span> = <span class="pascal-hl-red"><sub>${n}</sub>C<sub>${r}</sub></span>
+                        <div style="font-size: 20px;">
+                            <span class="pascal-hl-blue">${stickValsHTML}</span> = <span class="pascal-hl-red">${val}</span>
                         </div>
-                        <div style="margin-top:2px; font-size: 20px;">
-                            <span class="pascal-hl-blue">${stickValsHTML.join(' + ')}</span> = <span class="pascal-hl-red">${val}</span>
+                    </div>
+                `;
+            }
+            else if (mode === 'fibonacci') {
+                // 피보나치: n+r 이 같은 대각선
+                let targetK = n + r;
+                let fiboNodes = [];
+                for (let i = 0; i <= numRows; i++) {
+                    let cR = i;
+                    let cN = targetK - i;
+                    if (cN >= 0 && cR <= cN && cN < numRows) {
+                        fiboNodes.push(getComb(cN, cR));
+                    }
+                }
+                let sum = fiboNodes.reduce((a, b) => a + b, 0);
+
+                formulaBox.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                        <span style="font-size:15px; color:#718096; font-weight:700;">완만한 대각선의 합</span>
+                        <div style="font-size: 20px;">
+                            <span class="pascal-hl-blue">${fiboNodes.join(' + ')}</span> = <span class="pascal-hl-green">${sum}</span>
+                        </div>
+                        <span style="font-size:13px; color:#d69e2e; font-weight:800; background:#fefcbf; padding:3px 10px; border-radius:10px;">✨ 피보나치 수열의 ${targetK + 1}번째 수</span>
+                    </div>
+                `;
+            }
+            else if (mode === 'polygonal') {
+                // 대칭이므로 왼쪽 축(r)인지 오른쪽 축(n-r)인지 확인
+                let distFromEdge = Math.min(r, n - r);
+                let title = "";
+                let desc = "";
+
+                if (distFromEdge === 0) { title = "1의 배열"; desc = "가장자리는 항상 1입니다."; }
+                else if (distFromEdge === 1) { title = "자연수"; desc = "1, 2, 3, 4, 5... 자연수가 이어집니다."; }
+                else if (distFromEdge === 2) { title = "삼각수 (Triangular Numbers)"; desc = "점을 정삼각형 모양으로 찍을 때 필요한 개수 (1, 3, 6, 10...)"; }
+                else if (distFromEdge === 3) { title = "사면체수 (Tetrahedral Numbers)"; desc = "공을 입체 정사면체로 쌓을 때 필요한 개수 (1, 4, 10, 20...)"; }
+                else { title = `${distFromEdge + 1}차원 다각수`; desc = `고차원 도형을 구성하는 수 배열입니다.`; }
+
+                formulaBox.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;">
+                        <span style="font-size:18px; color:#2b6cb0; font-weight:800;">${title}</span>
+                        <div style="font-size:14px; color:#4a5568;">
+                            선택하신 값: <strong style="color:#e53e3e; font-size:18px;">${val}</strong><br>
+                            <span style="color:#718096; font-size:13px;">${desc}</span>
                         </div>
                     </div>
                 `;
@@ -566,7 +587,20 @@ window.initPascal = (function () {
             // 하이라이트 계산
             let hlNodes = {};
 
-            if (hoverNode) {
+            if (mode === 'sierpinski') {
+                updateFormulaBox();
+                // 시에르핀스키 모드는 마우스 오버 없이 전체 프랙탈 계산
+                for (let n = 0; n < numRows; n++) {
+                    for (let r = 0; r <= n; r++) {
+                        if (getComb(n, r) % 2 !== 0) {
+                            hlNodes[`${n},${r}`] = 'odd'; // 홀수 하이라이트
+                        } else {
+                            hlNodes[`${n},${r}`] = 'even'; // 짝수 투명
+                        }
+                    }
+                }
+            }
+            else if (hoverNode) {
                 if (mode === 'basic') {
                     if (hoverNode.n > 0) {
                         hlNodes[`${hoverNode.n - 1},${hoverNode.r - 1}`] = 'left';
@@ -575,31 +609,41 @@ window.initPascal = (function () {
                     hlNodes[`${hoverNode.n},${hoverNode.r}`] = 'sum';
                 }
                 else if (mode === 'rowSum') {
-                    for (let k = 0; k <= hoverNode.n; k++) {
-                        hlNodes[`${hoverNode.n},${k}`] = 'row';
-                    }
+                    for (let k = 0; k <= hoverNode.n; k++) hlNodes[`${hoverNode.n},${k}`] = 'row';
                 }
                 else if (mode === 'hockey') {
-                    // 🌟 수정된 부분 2: 하키스틱 렌더링 경로 올바른 계산
                     if (hoverNode.r > 0 && hoverNode.r < hoverNode.n) {
-                        hlNodes[`${hoverNode.n},${hoverNode.r}`] = 'sum'; // 꺾이는 부분(블레이드)
-
+                        hlNodes[`${hoverNode.n},${hoverNode.r}`] = 'sum';
                         let isLeftHalf = (hoverNode.r <= hoverNode.n / 2);
                         let currN = hoverNode.n - 1;
                         let currR = isLeftHalf ? hoverNode.r - 1 : hoverNode.r;
 
                         while (true) {
-                            hlNodes[`${currN},${currR}`] = 'stick'; // 손잡이 부분들
-                            if (isLeftHalf) {
-                                if (currN === currR) break;
-                                currN--;
-                            } else {
-                                if (currR === 0) break;
-                                currN--;
-                                currR--;
-                            }
+                            hlNodes[`${currN},${currR}`] = 'stick';
+                            if (isLeftHalf) { if (currN === currR) break; currN--; }
+                            else { if (currR === 0) break; currN--; currR--; }
                         }
                     }
+                }
+                else if (mode === 'fibonacci') {
+                    let targetK = hoverNode.n + hoverNode.r;
+                    for (let n = 0; n < numRows; n++) {
+                        for (let r = 0; r <= n; r++) {
+                            if (n + r === targetK) hlNodes[`${n},${r}`] = 'fibo';
+                        }
+                    }
+                }
+                else if (mode === 'polygonal') {
+                    let isLeft = (hoverNode.r <= hoverNode.n / 2);
+                    let targetDist = isLeft ? hoverNode.r : (hoverNode.n - hoverNode.r);
+
+                    for (let n = 0; n < numRows; n++) {
+                        for (let r = 0; r <= n; r++) {
+                            let dist = isLeft ? r : (n - r);
+                            if (dist === targetDist) hlNodes[`${n},${r}`] = 'poly';
+                        }
+                    }
+                    hlNodes[`${hoverNode.n},${hoverNode.r}`] = 'sum'; // 선택한 곳 강한 강조
                 }
             }
 
@@ -618,26 +662,39 @@ window.initPascal = (function () {
                     let lineWidth = 2;
 
                     const hlType = hlNodes[`${n},${r}`];
+
                     if (hlType) {
                         lineWidth = 3;
                         if (hlType === 'sum') {
                             fill = '#fff5f5'; stroke = '#fc8181'; textCol = '#c53030';
-                        } else if (hlType === 'left' || hlType === 'row' || hlType === 'stick') {
+                        } else if (hlType === 'left' || hlType === 'row' || hlType === 'stick' || hlType === 'poly') {
                             fill = '#ebf8ff'; stroke = '#73a5ff'; textCol = '#2b6cb0';
                         } else if (hlType === 'right') {
                             fill = '#f0fff4'; stroke = '#48bb78'; textCol = '#276749';
+                        } else if (hlType === 'fibo') {
+                            fill = '#f0fff4'; stroke = '#38a169'; textCol = '#276749'; // 초록색 대각선
+                        } else if (hlType === 'odd') {
+                            fill = '#faf5ff'; stroke = '#b794f4'; textCol = '#805ad5'; // 프랙탈 홀수 (보라색)
+                            lineWidth = 2;
+                        } else if (hlType === 'even') {
+                            fill = 'transparent'; stroke = 'rgba(226, 232, 240, 0.3)'; textCol = 'rgba(160, 174, 192, 0.2)'; // 짝수 투명화
+                            lineWidth = 1;
                         }
-                    } else if (hoverNode && hoverNode.n === n && hoverNode.r === r) {
+                    } else if (hoverNode && hoverNode.n === n && hoverNode.r === r && mode !== 'sierpinski') {
                         fill = '#fffff0'; stroke = '#f6e05e';
                     }
 
                     drawHexagon(ctx, cx, cy, layout.hexRadius * 0.9, fill, stroke, lineWidth);
 
-                    ctx.fillStyle = textCol;
-                    if (val > 999) ctx.font = `bold ${Math.max(8, layout.hexRadius * 0.5)}px Outfit`;
-                    else ctx.font = `bold ${Math.max(10, layout.hexRadius * 0.7)}px Outfit`;
-
-                    ctx.fillText(val, cx, cy);
+                    // 프랙탈 모드에서 층수가 너무 높으면 글씨 생략 (도형만 예쁘게 보이게)
+                    if (mode === 'sierpinski' && numRows > 12) {
+                        // 글씨 안 그림
+                    } else {
+                        ctx.fillStyle = textCol;
+                        if (val > 999) ctx.font = `bold ${Math.max(8, layout.hexRadius * 0.5)}px Outfit`;
+                        else ctx.font = `bold ${Math.max(10, layout.hexRadius * 0.7)}px Outfit`;
+                        ctx.fillText(val, cx, cy);
+                    }
                 }
             }
         }
