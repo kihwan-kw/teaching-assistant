@@ -325,10 +325,6 @@ window.initPoly = (function () {
             };
         });
 
-        // 위에서 아래로, 좌에서 우로 정렬
-        faceObjs.sort((a, b) => Math.abs(b.center.y - a.center.y) > 0.1 ? b.center.y - a.center.y : a.center.x - b.center.x);
-        netPos.sort((a, b) => Math.abs(b.y - a.y) > 0.1 ? b.y - a.y : a.x - b.x);
-
         const faceMat = new THREE.MeshPhongMaterial({
             color: meta.color,
             transparent: true,
@@ -434,12 +430,6 @@ window.initPoly = (function () {
     function animate() {
         requestAnimationFrame(animate);
 
-        /* 3D 상태(슬라이더 왼쪽)에서만 자동 회전 */
-        if (explodeValue < 0.05) {
-            polyMeshGroup.rotation.y += 0.005;
-            polyMeshGroup.rotation.x += 0.003;
-        }
-
         if (controls) controls.update();
         renderer.render(scene, camera);
     }
@@ -458,12 +448,9 @@ window.initPoly = (function () {
             btn.addEventListener('click', e => {
                 document.querySelectorAll('.poly-btn').forEach(b => {
                     b.classList.remove('active');
-                    b.style.cssText = '';
                 });
+
                 e.target.classList.add('active');
-                e.target.style.backgroundColor = '#ebf8ff';
-                e.target.style.color = '#3182ce';
-                e.target.style.borderColor = '#63b3ed';
 
                 currentPoly = e.target.dataset.type;
 

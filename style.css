@@ -3442,3 +3442,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     width: 100%;
     max-width: 1600px;
 }
+
+/* 정다면체 선택 버튼이 눌렸을 때(active)의 색상 */
+.poly-btn.active {
+    background: #ebf8ff !important;
+    color: #3182ce !important;
+    border-color: #bee3f8 !important;
+}
