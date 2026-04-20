@@ -443,6 +443,11 @@ window.initPoly = (function () {
 
         initThreeJS();
 
+        // 전개도 토글 상태 관리
+        let isUnfolded = false;
+        let animationFrameId = null;
+        const toggleBtn = document.getElementById('poly-toggle-btn');
+
         /* 정다면체 선택 버튼 */
         document.querySelectorAll('.poly-btn').forEach(btn => {
             btn.addEventListener('click', e => {
@@ -451,23 +456,53 @@ window.initPoly = (function () {
                 });
 
                 e.target.classList.add('active');
-
                 currentPoly = e.target.dataset.type;
 
-                const slider = document.getElementById('poly-explode-slider');
-                if (slider) slider.value = 0;
-                explodeValue = 0;
+                // [수정] 다른 도형 선택 시 입체로 초기화
+                isUnfolded = false;
+                if (toggleBtn) {
+                    toggleBtn.innerText = "전개도 보기 (2D)";
+                    toggleBtn.style.background = "#3182ce"; // 파란색
+                }
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
+                explodeValue = 0;
                 buildPolyhedron(currentPoly);
             });
         });
 
-        /* 3D ↔ 전개도 슬라이더 */
-        const slider = document.getElementById('poly-explode-slider');
-        if (slider) {
-            slider.addEventListener('input', e => {
-                explodeValue = parseInt(e.target.value) / 100;
-                updateExplosion();
+        /* [수정] 버튼 클릭 시 3D ↔ 전개도 부드러운 전환 애니메이션 */
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                isUnfolded = !isUnfolded; // 상태 반전
+
+                // 버튼 텍스트 및 색상 변경
+                toggleBtn.innerText = isUnfolded ? "겨냥도 보기 (3D)" : "전개도 보기 (2D)";
+                toggleBtn.style.background = isUnfolded ? "#e53e3e" : "#3182ce";
+
+                const targetValue = isUnfolded ? 1 : 0;
+                const startValue = explodeValue;
+                const duration = 500; // 애니메이션 진행 시간 (0.5초)
+                const startTime = performance.now();
+
+                // 진행 중인 애니메이션이 있으면 취소
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+                // 부드러운 변형 함수
+                function animateUnfold(time) {
+                    let progress = (time - startTime) / duration;
+                    if (progress > 1) progress = 1;
+
+                    // updateExplosion 내부에 자체 easeInOut 로직이 있으므로 시간은 선형 증가
+                    explodeValue = startValue + (targetValue - startValue) * progress;
+
+                    updateExplosion();
+
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animateUnfold);
+                    }
+                }
+                animationFrameId = requestAnimationFrame(animateUnfold);
             });
         }
 
