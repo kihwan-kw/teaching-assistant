@@ -1405,7 +1405,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (canvasWraps[targetTab]) canvasWraps[targetTab].style.display = 'block';
 
         const formulaBox = document.getElementById('binomial-formula-box');
-        if (formulaBox) formulaBox.style.display = targetTab === 'pascal' ? 'block' : 'none';
+        if (formulaBox) formulaBox.style.display = (targetTab === 'pascal' && window.pascalCurrentMode === 'binomial') ? 'block' : 'none';
 
         if (targetTab === 'pascal' && window.initPascal) window.initPascal();
         if (targetTab === 'monty' && window.initProb) window.initProb();
