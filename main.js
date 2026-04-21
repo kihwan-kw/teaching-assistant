@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => window.initDeriv() },
         { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => window.initInteg() },
         { id: 'prob', icon: '🎲', title: '확률과 통계', subtitle: '직관을 깨는 몬티홀 딜레마 시뮬레이션', ready: true, colorClass: 'card-limit', init: () => window.initProb() },
+        { id: 'geom', icon: '🌀', title: '기하', subtitle: '이차곡선과 벡터', ready: false, colorClass: 'card-trig', init: null },
     ];
 
 
