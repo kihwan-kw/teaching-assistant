@@ -315,7 +315,7 @@ window.initPascal = (function () {
 
         // 상태 변수
         let numRows = 10; // 초기 층수
-        let mode = 'basic'; // 'basic', 'rowSum', 'hockey', 'sierpinski', 'fibonacci', 'polygonal'
+        let mode = 'basic'; // 'basic', 'binomial', 'rowSum', 'hockey', 'sierpinski', 'fibonacci'
         let hoverNode = null; // {n, r}
 
         // 조합 (nCr) 계산 캐시
@@ -395,7 +395,7 @@ window.initPascal = (function () {
 
         // 마우스 이벤트 (Hover 추적)
         canvas.addEventListener('mousemove', (e) => {
-            if (mode === 'sierpinski') return; // 프랙탈 모드는 마우스 오버 불필요
+            if (mode === 'sierpinski') return;
 
             const rect = canvas.getBoundingClientRect();
 
@@ -426,8 +426,14 @@ window.initPascal = (function () {
                 if (!found || !hoverNode || found.n !== hoverNode.n || found.r !== hoverNode.r) {
                     hoverNode = found;
                     updateFormulaBox();
-                    let hlIndex = (hoverNode && hoverNode.n === numRows - 1) ? hoverNode.r : -1;
-                    updateBinomialFormula(numRows - 1, hlIndex);
+
+                    if (mode === 'binomial' && hoverNode) {
+                        // 이항 계수 모드: 호버한 셀의 행(n)으로 전개식, r번째 항 강조
+                        updateBinomialFormula(hoverNode.n, hoverNode.r);
+                    } else {
+                        let hlIndex = (hoverNode && hoverNode.n === numRows - 1) ? hoverNode.r : -1;
+                        updateBinomialFormula(numRows - 1, hlIndex);
+                    }
                     draw();
                 }
             }
@@ -437,7 +443,12 @@ window.initPascal = (function () {
             hoverNode = null;
             if (mode !== 'sierpinski') {
                 updateFormulaBox();
-                updateBinomialFormula(numRows - 1, -1);
+                // 이항 계수 모드일 때는 공식 초기화(n=-1)
+                if (mode === 'binomial') {
+                    updateBinomialFormula(-1, -1);
+                } else {
+                    updateBinomialFormula(numRows - 1, -1);
+                }
                 draw();
             }
         });
@@ -642,24 +653,16 @@ window.initPascal = (function () {
                     </div>
                 `;
             }
-            else if (mode === 'polygonal') {
-                // 대칭이므로 왼쪽 축(r)인지 오른쪽 축(n-r)인지 확인
-                let distFromEdge = Math.min(r, n - r);
-                let title = "";
-                let desc = "";
-
-                if (distFromEdge === 0) { title = "1의 배열"; desc = "가장자리는 항상 1입니다."; }
-                else if (distFromEdge === 1) { title = "자연수"; desc = "1, 2, 3, 4, 5... 자연수가 이어집니다."; }
-                else if (distFromEdge === 2) { title = "삼각수 (Triangular Numbers)"; desc = "점을 정삼각형 모양으로 찍을 때 필요한 개수 (1, 3, 6, 10...)"; }
-                else if (distFromEdge === 3) { title = "사면체수 (Tetrahedral Numbers)"; desc = "공을 입체 정사면체로 쌓을 때 필요한 개수 (1, 4, 10, 20...)"; }
-                else { title = `${distFromEdge + 1}차원 다각수`; desc = `고차원 도형을 구성하는 수 배열입니다.`; }
-
+            else if (mode === 'binomial') {
                 formulaBox.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;">
-                        <span style="font-size:18px; color:#2b6cb0; font-weight:800;">${title}</span>
-                        <div style="font-size:14px; color:#4a5568;">
-                            선택하신 값: <strong style="color:#e53e3e; font-size:18px;">${val}</strong><br>
-                            <span style="color:#718096; font-size:13px;">${desc}</span>
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                        <div style="font-size:20px; color:#718096;">
+                            (a+b)<sup>${n}</sup> 전개식의
+                            <strong style="color:#e53e3e; font-size:20px;">a<sup>${n - r}</sup>b<sup>${r}</sup></strong> 항의 계수
+                        </div>
+                        <div style="font-size:20px; color:#4a5568; margin-top:2px;">
+                            <sub>${n}</sub>C<sub>${r}</sub> = 
+                            <strong style="color:#e53e3e; font-size:20px;">${val}</strong>
                         </div>
                     </div>
                 `;
@@ -697,6 +700,10 @@ window.initPascal = (function () {
                 }
                 else if (mode === 'rowSum') {
                     for (let k = 0; k <= hoverNode.n; k++) hlNodes[`${hoverNode.n},${k}`] = 'row';
+                }
+                else if (mode === 'binomial') {
+                    // 호버한 셀만 강조
+                    hlNodes[`${hoverNode.n},${hoverNode.r}`] = 'sum';
                 }
                 else if (mode === 'hockey') {
                     if (hoverNode.r > 0 && hoverNode.r < hoverNode.n) {

@@ -759,20 +759,21 @@
                                 우측 삼각형의 숫자에 마우스를 올려보세요!<br>선택한 모드에 따라 수학적 비밀이 나타납니다.
                             </div>
                             <!-- 🌟 버튼을 2단 그리드로 배치 -->
+                            <!-- 기존 코드를 아래로 교체 -->
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                                 <button class="t-btn pascal-mode-btn active" data-mode="basic"
                                     style="padding:10px 4px; font-weight:800; font-size:13px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">①
                                     역삼각형 합</button>
+                                <button class="t-btn pascal-mode-btn" data-mode="binomial"
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">② 이항 계수</button>
                                 <button class="t-btn pascal-mode-btn" data-mode="rowSum"
-                                    style="padding:10px 4px; font-weight:800; font-size:13px;">② 각 행의 합</button>
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">③ 각 행의 합</button>
                                 <button class="t-btn pascal-mode-btn" data-mode="hockey"
-                                    style="padding:10px 4px; font-weight:800; font-size:13px;">③ 하키스틱</button>
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">④ 하키스틱</button>
                                 <button class="t-btn pascal-mode-btn" data-mode="sierpinski"
-                                    style="padding:10px 4px; font-weight:800; font-size:13px;">④ 프랙탈 (홀/짝)</button>
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">⑤ 프랙탈 (홀/짝)</button>
                                 <button class="t-btn pascal-mode-btn" data-mode="fibonacci"
-                                    style="padding:10px 4px; font-weight:800; font-size:13px;">⑤ 피보나치 수열</button>
-                                <button class="t-btn pascal-mode-btn" data-mode="polygonal"
-                                    style="padding:10px 4px; font-weight:800; font-size:13px;">⑥ 다각수</button>
+                                    style="padding:10px 4px; font-weight:800; font-size:13px;">⑥ 피보나치 수열</button>
                             </div>
                         </div>
                         <!-- 표시 모드 토글 버튼 -->
