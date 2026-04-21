@@ -32,7 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'seq': {
             icon: '🔢', title: '시그마 테트리스', desc: '거듭제곱의 합 공식을 아름다운 퍼즐로 증명합니다.',
-            items: ['<strong>N 슬라이더</strong>를 올려 블록을 쌓아보세요.', '<strong>[▶ 애니메이션 실행]</strong>을 눌러 퍼즐이 어떻게 조립되는지 감상하세요.', '특히 <strong>세제곱의 합(Σk³)</strong> 탭에서 마법 같은 정사각형 조립 과정을 꼭 확인하세요!']
+            items: [
+                '<strong>N 슬라이더</strong>를 올려 블록을 쌓아보세요.',
+                '<strong>[▶ 애니메이션 실행]</strong>을 눌러 퍼즐이 어떻게 조립되는지 감상하세요.',
+                '특히 <strong>세제곱의 합(Σk³)</strong> 탭에서 마법 같은 정사각형 조립 과정을 꼭 확인하세요!',
+                '<strong>하노이탑</strong> 탭에서 직접 원판을 옮기며 최소 이동 횟수 <strong>2ⁿ−1</strong>이 왜 나오는지 체험해 보세요.'
+            ]
         },
         'deriv': {
             icon: '📐', title: '미분의 본질', desc: '두 점 사이의 거리가 0이 되는 극한의 마법을 봅니다.',

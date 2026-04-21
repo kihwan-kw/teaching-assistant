@@ -37,6 +37,7 @@ window.initSeq = (function () {
             sum1: document.getElementById('seq-panel-sum1'),
             sum2: document.getElementById('seq-panel-sum2'),
             sum3: document.getElementById('seq-panel-sum3'),
+            hanoi: document.getElementById('seq-panel-hanoi'),
         };
 
         function switchPanel(tab) {
@@ -48,6 +49,7 @@ window.initSeq = (function () {
             if (tab === 'sum1') drawSum1();
             if (tab === 'sum2') sum2Redraw();
             if (tab === 'sum3') drawSum3();
+            if (tab === 'hanoi') { if (window.initHanoi) window.initHanoi(); }
         }
 
         document.querySelectorAll('#idx-seq .index-tab').forEach(t =>
@@ -660,6 +662,238 @@ window.initSeq = (function () {
             if (tab === 'sum1') drawSum1();
             else if (tab === 'sum2') sum2Redraw();
             else if (tab === 'sum3') drawSum3();
+            else if (tab === 'hanoi') { if (window.initHanoi) window.initHanoi(); }
         };
+    };
+})();
+
+/* ========================================================= */
+/* --- 하노이탑 (Tower of Hanoi) Logic --- */
+/* ========================================================= */
+window.initHanoi = (function () {
+    let _initialized = false;
+
+    return function () {
+        if (_initialized) { drawHanoi(); return; }
+        _initialized = true;
+
+        const canvas = document.getElementById('hanoi-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        let n = 3;
+        let pegs = [[], [], []];
+        let moveCount = 0;
+        let selected = null;
+        let autoTimer = null;
+
+        const COLORS = [
+            '#fc8181', '#f6ad55', '#f6e05e',
+            '#68d391', '#4fd1c5', '#73a5ff', '#b794f4'
+        ];
+
+        function initGame() {
+            pegs = [[], [], []];
+            for (let i = n; i >= 1; i--) pegs[0].push(i);
+            moveCount = 0;
+            selected = null;
+            updateUI();
+            drawHanoi();
+            document.getElementById('hanoi-feedback').innerText = '';
+        }
+
+        function updateUI() {
+            document.getElementById('hanoi-move-count').innerText = moveCount;
+            const minMoves = Math.pow(2, n) - 1;
+            document.getElementById('hanoi-min-moves').innerText = minMoves;
+            document.getElementById('hanoi-formula-detail').innerHTML =
+                `n=${n}일 때: 2<sup>${n}</sup> − 1 = <strong style="color:#e53e3e;">${minMoves}</strong>`;
+        }
+
+        function drawHanoi() {
+            const W = canvas.width, H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#f8faff');
+            bg.addColorStop(1, '#ffffff');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            const baseY = H - 50;
+            const pegX = [W / 4, W / 2, W * 3 / 4];
+            const pegH = H - 100;
+            const maxDiskW = W / 4 - 20;
+            const diskH = Math.min(28, (pegH - 20) / (n + 1));
+
+            // 바닥
+            ctx.fillStyle = '#cbd5e0';
+            ctx.beginPath();
+            ctx.roundRect(40, baseY, W - 80, 12, 6);
+            ctx.fill();
+
+            // 기둥 레이블
+            ['A', 'B', 'C'].forEach((label, i) => {
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = 'bold 16px Outfit';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, pegX[i], baseY + 35);
+            });
+
+            // 기둥 + 원판
+            pegs.forEach((peg, i) => {
+                const isSelected = selected !== null && selected.pegIdx === i;
+
+                // 기둥
+                ctx.fillStyle = isSelected ? '#73a5ff' : '#e2e8f0';
+                ctx.beginPath();
+                ctx.roundRect(pegX[i] - 6, baseY - pegH, 12, pegH, 6);
+                ctx.fill();
+
+                // 원판
+                peg.forEach((disk, j) => {
+                    const diskW = (disk / n) * maxDiskW;
+                    const dy = baseY - (j + 1) * (diskH + 3);
+                    const isTop = j === peg.length - 1;
+                    const liftOffset = (selected && selected.pegIdx === i && isTop) ? -30 : 0;
+
+                    // 그림자
+                    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+                    ctx.beginPath();
+                    ctx.roundRect(pegX[i] - diskW / 2 + 3, dy + liftOffset + 4, diskW, diskH - 2, 8);
+                    ctx.fill();
+
+                    // 원판 본체
+                    const grad = ctx.createLinearGradient(0, dy + liftOffset, 0, dy + liftOffset + diskH);
+                    grad.addColorStop(0, COLORS[(disk - 1) % COLORS.length]);
+                    grad.addColorStop(1, COLORS[(disk - 1) % COLORS.length] + 'bb');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.roundRect(pegX[i] - diskW / 2, dy + liftOffset, diskW, diskH - 2, 8);
+                    ctx.fill();
+
+                    // 테두리
+                    ctx.strokeStyle = isTop ? '#2d3748' : 'rgba(255,255,255,0.4)';
+                    ctx.lineWidth = isTop ? 2 : 1;
+                    ctx.stroke();
+
+                    // 번호
+                    ctx.fillStyle = 'white';
+                    ctx.font = `bold ${Math.max(10, diskH * 0.55)}px Outfit`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(disk, pegX[i], dy + liftOffset + (diskH - 2) / 2);
+                    ctx.textBaseline = 'alphabetic';
+                });
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (autoTimer) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const pegX = [canvas.width / 4, canvas.width / 2, canvas.width * 3 / 4];
+            const clickZone = canvas.width / 6;
+
+            let clickedPeg = -1;
+            pegX.forEach((px, i) => { if (Math.abs(mx - px) < clickZone) clickedPeg = i; });
+            if (clickedPeg === -1) return;
+
+            const feedback = document.getElementById('hanoi-feedback');
+
+            if (selected === null) {
+                if (pegs[clickedPeg].length > 0) {
+                    selected = { pegIdx: clickedPeg, disk: pegs[clickedPeg][pegs[clickedPeg].length - 1] };
+                    drawHanoi();
+                }
+            } else {
+                if (clickedPeg === selected.pegIdx) {
+                    selected = null;
+                    drawHanoi();
+                    return;
+                }
+                const targetPeg = pegs[clickedPeg];
+                if (targetPeg.length === 0 || targetPeg[targetPeg.length - 1] > selected.disk) {
+                    pegs[selected.pegIdx].pop();
+                    pegs[clickedPeg].push(selected.disk);
+                    moveCount++;
+                    selected = null;
+                    updateUI();
+                    drawHanoi();
+                    checkWin();
+                } else {
+                    feedback.style.color = '#e53e3e';
+                    feedback.innerText = '❌ 큰 원판을 작은 원판 위에 올릴 수 없어요!';
+                    setTimeout(() => { feedback.innerText = ''; }, 1500);
+                    selected = null;
+                    drawHanoi();
+                }
+            }
+        });
+
+        function checkWin() {
+            if (pegs[2].length === n) {
+                const min = Math.pow(2, n) - 1;
+                const fb = document.getElementById('hanoi-feedback');
+                fb.style.color = '#38a169';
+                fb.innerText = moveCount === min
+                    ? `🎉 완벽! 최소 횟수 ${min}번으로 클리어!`
+                    : `✅ 클리어! ${moveCount}번 이동 (최소: ${min}번)`;
+            }
+        }
+
+        function autoSolve() {
+            if (autoTimer) {
+                clearInterval(autoTimer);
+                autoTimer = null;
+                document.getElementById('hanoi-auto-btn').innerText = '▶ 자동 풀기';
+                return;
+            }
+            initGame();
+            const moves = [];
+            function solve(k, from, to, via) {
+                if (k === 0) return;
+                solve(k - 1, from, via, to);
+                moves.push([from, to]);
+                solve(k - 1, via, to, from);
+            }
+            solve(n, 0, 2, 1);
+
+            let idx = 0;
+            document.getElementById('hanoi-auto-btn').innerText = '⏹ 중지';
+            autoTimer = setInterval(() => {
+                if (idx >= moves.length) {
+                    clearInterval(autoTimer);
+                    autoTimer = null;
+                    document.getElementById('hanoi-auto-btn').innerText = '▶ 자동 풀기';
+                    checkWin();
+                    return;
+                }
+                const [from, to] = moves[idx++];
+                pegs[to].push(pegs[from].pop());
+                moveCount++;
+                updateUI();
+                drawHanoi();
+            }, Math.max(120, 600 - n * 60));
+        }
+
+        document.getElementById('hanoi-n-slider')?.addEventListener('input', function () {
+            if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+            n = parseInt(this.value);
+            document.getElementById('hanoi-n-val').innerText = n;
+            document.getElementById('hanoi-auto-btn').innerText = '▶ 자동 풀기';
+            initGame();
+        });
+
+        document.getElementById('hanoi-reset-btn')?.addEventListener('click', () => {
+            if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+            document.getElementById('hanoi-auto-btn').innerText = '▶ 자동 풀기';
+            initGame();
+        });
+
+        document.getElementById('hanoi-auto-btn')?.addEventListener('click', autoSolve);
+
+        initGame();
     };
 })();
