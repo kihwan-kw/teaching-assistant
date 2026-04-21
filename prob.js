@@ -389,6 +389,7 @@ window.initPascal = (function () {
             nValTxt.innerText = e.target.value;
             hoverNode = null;
             updateFormulaBox();
+            updateBinomialFormula(numRows - 1, -1);
             draw();
         });
 
@@ -425,6 +426,8 @@ window.initPascal = (function () {
                 if (!found || !hoverNode || found.n !== hoverNode.n || found.r !== hoverNode.r) {
                     hoverNode = found;
                     updateFormulaBox();
+                    let hlIndex = (hoverNode && hoverNode.n === numRows - 1) ? hoverNode.r : -1;
+                    updateBinomialFormula(numRows - 1, hlIndex);
                     draw();
                 }
             }
@@ -434,6 +437,7 @@ window.initPascal = (function () {
             hoverNode = null;
             if (mode !== 'sierpinski') {
                 updateFormulaBox();
+                updateBinomialFormula(numRows - 1, -1);
                 draw();
             }
         });
@@ -471,6 +475,37 @@ window.initPascal = (function () {
             ctx.closePath();
             if (fillStyle) { ctx.fillStyle = fillStyle; ctx.fill(); }
             if (strokeStyle) { ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidth; ctx.stroke(); }
+        }
+        function updateBinomialFormula(n, highlightIndex = -1) {
+            const formulaBox = document.getElementById('binomial-formula-box'); // index.html에 추가한 상자 ID
+            if (!formulaBox || n < 0) return;
+
+            if (n === 0) {
+                katex.render("(a+b)^0 = 1", formulaBox, { throwOnError: false });
+                return;
+            }
+
+            let latexStr = `(a+b)^{${n}} = `;
+
+            for (let k = 0; k <= n; k++) {
+                let coeff = getComb(n, k); // math.js 대신 prob.js 내장 함수 사용
+                let aPower = n - k;
+                let bPower = k;
+
+                let term = "";
+                if (coeff !== 1 || (aPower === 0 && bPower === 0)) term += coeff;
+                if (aPower > 0) term += `a^{${aPower > 1 ? aPower : ''}}`;
+                if (bPower > 0) term += `b^{${bPower > 1 ? bPower : ''}}`;
+
+                if (k === highlightIndex) {
+                    term = `\\textcolor{#e53e3e}{\\mathbf{${term}}}`; // 하이라이트 (빨간색)
+                }
+
+                latexStr += term;
+                if (k < n) latexStr += " + ";
+            }
+
+            katex.render(latexStr, formulaBox, { throwOnError: false });
         }
 
         function updateFormulaBox() {
@@ -762,7 +797,7 @@ window.initPascal = (function () {
                 }
             }
         }
-
+        updateBinomialFormula(numRows - 1, -1);
         draw(); // 초기 렌더링
     };
 })();
