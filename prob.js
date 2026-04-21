@@ -747,8 +747,10 @@ window.initPascal = (function () {
 
         // 메인 렌더링 함수
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             const layout = getLayoutInfo();
+            const neededHeight = layout.startY + (numRows - 1) * layout.gapY + layout.hexRadius * 2 + 20;
+            canvas.height = Math.max(300, neededHeight);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 하이라이트 계산
             let hlNodes = {};
@@ -1389,11 +1391,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     function showTab(targetTab) {
-        /* 모든 패널 숨기기 */
         Object.values(panels).forEach(p => { if (p) p.style.display = 'none'; });
         Object.values(canvasWraps).forEach(c => { if (c) c.style.display = 'none'; });
 
-        /* index-tab(텍스트) + tab-btn(도트) 모두 active 동기화 */
         probTabs.forEach(t =>
             t.classList.toggle('active', t.dataset.probtab === targetTab)
         );
@@ -1401,25 +1401,27 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.toggle('active', btn.dataset.probtab === targetTab)
         );
 
-        /* 해당 패널 보이기 */
         if (panels[targetTab]) panels[targetTab].style.display = 'block';
         if (canvasWraps[targetTab]) canvasWraps[targetTab].style.display = 'block';
 
         const formulaBox = document.getElementById('binomial-formula-box');
         if (formulaBox) formulaBox.style.display = targetTab === 'pascal' ? 'block' : 'none';
 
-        /* 초기화 */
         if (targetTab === 'pascal' && window.initPascal) window.initPascal();
         if (targetTab === 'monty' && window.initProb) window.initProb();
         if (targetTab === 'galton' && window.initGalton) window.initGalton();
         if (targetTab === 'normal' && window.initNormal) window.initNormal();
+
+        window.probCurrentTab = targetTab;
     }
 
-    /* 탭 클릭 이벤트 */
+    /* 전역 노출 — main.js에서 호출 가능 */
+    window.probShowTab = showTab;
+    window.probCurrentTab = 'pascal';
+
     probTabs.forEach(tab => {
         tab.addEventListener('click', e => showTab(e.target.dataset.probtab));
     });
 
-    /* ★ 첫 진입 시 파스칼 탭을 기본으로 활성화 */
     showTab('pascal');
 });

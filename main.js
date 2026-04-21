@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '함수의 극한과 연속', ready: false, colorClass: 'card-limit', init: null },
         { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => window.initDeriv() },
         { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => window.initInteg() },
-        { id: 'prob', icon: '🎲', title: '확률과 통계', subtitle: '직관을 깨는 몬티홀 딜레마 시뮬레이션', ready: true, colorClass: 'card-limit', init: () => window.initProb() },
+        { id: 'prob', icon: '🎲', title: '확률과 통계', subtitle: '직관을 깨는 몬티홀 딜레마 시뮬레이션', ready: true, colorClass: 'card-limit', init: () => window.probShowTab ? window.probShowTab('pascal') : null },
         { id: 'geom', icon: '🌀', title: '기하', subtitle: '이차곡선과 벡터', ready: false, colorClass: 'card-trig', init: null },
     ];
 
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
             // prob 단원은 여기서 initProb 대신 showTab('pascal')이 내부에서 처리
-            setTimeout(unit.init, 50);
+            setTimeout(unit.init, 300);
         } else {
             if (unit.id === 'poly') setTimeout(() => window.initPoly(), 50);
             if (unit.id === 'exp') setTimeout(() => window.renderAllExpGraphs(), 50);
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // prob 재진입: 현재 활성 탭 다시 렌더링
             if (unit.id === 'prob') setTimeout(() => {
                 if (window.probShowTab) window.probShowTab(window.probCurrentTab || 'pascal');
-            }, 50);
+            }, 300);
         }
         // 🌟 이 부분을 추가해 주세요! (해당 단원에 진입할 때 팝업 띄우기) 🌟
         showTutorial(unit.id);

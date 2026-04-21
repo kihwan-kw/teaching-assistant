@@ -796,27 +796,32 @@
                         </div>
                     </div>
                 </div>
-
-
             </div>
+        </div>
 
-            <!-- ===== 극한과 연속 (준비 중) ===== -->
-            <div id="unit-limit" class="unit-content">
-                <h2 class="unit-title">함수의 극한과 연속 (준비 중)</h2>
-                <div
-                    style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
-                    함수의 극한과 연속 시각화 기능을 갖출 단위 공간입니다.
-                </div>
+        <!-- ===== 극한과 연속 (준비 중) ===== -->
+        <div id="unit-limit" class="unit-content">
+            <h2 class="unit-title">함수의 극한과 연속 (준비 중)</h2>
+            <div
+                style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
+                함수의 극한과 연속 시각화 기능을 갖출 단위 공간입니다.
             </div>
+        </div>
 
-            <!-- ===== 확률과 통계 (Probability) ===== -->
-            <div id="unit-prob" class="unit-content">
-                <h2 class="unit-title">확률과 통계</h2>
+        <!-- ===== 확률과 통계 (Probability) ===== -->
+        <div id="unit-prob" class="unit-content">
+            <h2 class="unit-title">확률과 통계</h2>
 
-                <div class="exp-main-content" style="max-width: 1400px; align-items: stretch;">
+            <!-- 수정 전 -->
+            <div class="exp-main-content"
+                style="max-width: 1400px; align-items: flex-start; flex-direction:row; width:100%;">
+
+                <!-- 수정 후 -->
+                <div class="exp-main-content"
+                    style="max-width: 1400px; align-items: flex-start; flex-direction:row; width:100%; flex-wrap:nowrap; overflow-x:auto;">
 
                     <!-- 좌측 컨트롤 패널 -->
-                    <div class="matrix-control-panel" style="flex: 0 0 420px; min-width: 420px;">
+                    <div class="matrix-control-panel" style="flex: 0 0 330px;">
 
                         <!-- 내부 탭 (숨김 처리, 인덱스와 동기화됨) -->
                         <div style="display:none;">
@@ -846,9 +851,11 @@
                                     <button class="t-btn pascal-mode-btn" data-mode="hockey"
                                         style="padding:10px 4px; font-weight:800; font-size:13px;">④ 하키스틱</button>
                                     <button class="t-btn pascal-mode-btn" data-mode="sierpinski"
-                                        style="padding:10px 4px; font-weight:800; font-size:13px;">⑤ 프랙탈 (홀/짝)</button>
+                                        style="padding:10px 4px; font-weight:800; font-size:13px;">⑤ 프랙탈
+                                        (홀/짝)</button>
                                     <button class="t-btn pascal-mode-btn" data-mode="fibonacci"
-                                        style="padding:10px 4px; font-weight:800; font-size:13px;">⑥ 피보나치 수열</button>
+                                        style="padding:10px 4px; font-weight:800; font-size:13px;">⑥ 피보나치
+                                        수열</button>
                                 </div>
                             </div>
                             <!-- 표시 모드 토글 버튼 -->
@@ -1135,7 +1142,8 @@
                 </div><!-- /.matrix-control-panel (좌측 컨트롤) -->
 
                 <!-- 우측 캔버스 영역 -->
-                <div class="exp-right-panel" style="align-items:stretch; flex:1; flex-direction:column;">
+                <div class="exp-right-panel"
+                    style="align-items:stretch; flex:1; min-width: 1000px; flex-direction:column;">
 
                     <!-- 파스칼 -->
                     <div id="canvas-wrap-pascal" style="display:block; width:100%;">
