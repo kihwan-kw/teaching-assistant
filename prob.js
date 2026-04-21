@@ -1189,17 +1189,201 @@ window.initGalton = (function () {
     };
 })();
 
+/* ========================================================= */
+/* --- 정규분포 (Normal Distribution) Logic --- */
+/* ========================================================= */
+window.initNormal = (function () {
+    let _initialized = false;
+
+    return function () {
+        if (_initialized) {
+            drawNormal(); // 재진입 시 재렌더링
+            return;
+        }
+        _initialized = true;
+
+        const canvas = document.getElementById('normalCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        let mu = 0, sigma = 1, rangeA = -1, rangeB = 1;
+
+        // 정규분포 PDF
+        function pdf(x) {
+            return (1 / (sigma * Math.sqrt(2 * Math.PI))) *
+                Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+        }
+
+        // 수치 적분 (사다리꼴)
+        function integrate(a, b) {
+            const steps = 1000;
+            const dx = (b - a) / steps;
+            let sum = 0;
+            for (let i = 0; i <= steps; i++) {
+                const x = a + i * dx;
+                const w = (i === 0 || i === steps) ? 0.5 : 1;
+                sum += w * pdf(x);
+            }
+            return sum * dx;
+        }
+
+        // x좌표 ↔ 캔버스 픽셀 변환
+        const PAD = { l: 60, r: 30, t: 60, b: 70 };
+        const xMin = -5, xMax = 5;
+
+        function toCanvasX(x) {
+            return PAD.l + ((x - xMin) / (xMax - xMin)) * (W - PAD.l - PAD.r);
+        }
+        function toCanvasY(y) {
+            const maxY = 0.85; // y축 최대값
+            return (H - PAD.b) - (y / maxY) * (H - PAD.t - PAD.b);
+        }
+
+        function drawNormal() {
+            ctx.clearRect(0, 0, W, H);
+
+            // ── 배경 그라데이션
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#f8faff');
+            bg.addColorStop(1, '#ffffff');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            const baseY = H - PAD.b;
+
+            // ── 격자선
+            ctx.strokeStyle = '#edf2f7';
+            ctx.lineWidth = 1;
+            for (let x = Math.ceil(xMin); x <= xMax; x++) {
+                const cx = toCanvasX(x);
+                ctx.beginPath(); ctx.moveTo(cx, PAD.t); ctx.lineTo(cx, baseY); ctx.stroke();
+            }
+
+            // ── 색칠 영역 (a~b 구간)
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(rangeA), baseY);
+            for (let px = toCanvasX(rangeA); px <= toCanvasX(rangeB); px++) {
+                const x = xMin + (px - PAD.l) / (W - PAD.l - PAD.r) * (xMax - xMin);
+                ctx.lineTo(px, toCanvasY(pdf(x)));
+            }
+            ctx.lineTo(toCanvasX(rangeB), baseY);
+            ctx.closePath();
+            const fillGrad = ctx.createLinearGradient(0, PAD.t, 0, baseY);
+            fillGrad.addColorStop(0, 'rgba(49,130,206,0.75)');
+            fillGrad.addColorStop(1, 'rgba(49,130,206,0.25)');
+            ctx.fillStyle = fillGrad;
+            ctx.fill();
+
+            // ── 곡선
+            ctx.beginPath();
+            ctx.strokeStyle = '#3182ce';
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'round';
+            for (let px = PAD.l; px <= W - PAD.r; px++) {
+                const x = xMin + (px - PAD.l) / (W - PAD.l - PAD.r) * (xMax - xMin);
+                const y = toCanvasY(pdf(x));
+                px === PAD.l ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+            }
+            ctx.stroke();
+
+            // ── μ 수직선
+            const mux = toCanvasX(mu);
+            ctx.beginPath();
+            ctx.strokeStyle = '#e53e3e';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.moveTo(mux, PAD.t); ctx.lineTo(mux, baseY);
+            ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = '#e53e3e'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
+            ctx.fillText('μ=' + mu, mux, PAD.t - 10);
+
+            // ── σ 범위 표시 (μ±σ 화살표)
+            ctx.strokeStyle = '#805ad5'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+            [mu - sigma, mu + sigma].forEach(sx => {
+                const cx = toCanvasX(sx);
+                ctx.beginPath(); ctx.moveTo(cx, PAD.t + 10); ctx.lineTo(cx, baseY); ctx.stroke();
+            });
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#805ad5'; ctx.font = 'bold 12px Outfit';
+            ctx.fillText('σ', toCanvasX(mu + sigma) + 10, PAD.t + 25);
+
+            // ── x축
+            ctx.strokeStyle = '#cbd5e0'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(PAD.l, baseY); ctx.lineTo(W - PAD.r, baseY); ctx.stroke();
+
+            // ── x축 눈금 및 레이블
+            ctx.fillStyle = '#718096'; ctx.font = '12px Outfit'; ctx.textAlign = 'center';
+            for (let x = Math.ceil(xMin); x <= xMax; x++) {
+                const cx = toCanvasX(x);
+                ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY + 5); ctx.stroke();
+                ctx.fillText(x, cx, baseY + 18);
+            }
+
+            // ── 확률 텍스트 (구간 중앙 위)
+            const prob = integrate(rangeA, rangeB);
+            const midX = toCanvasX((rangeA + rangeB) / 2);
+            const midY = toCanvasY(pdf((rangeA + rangeB) / 2) / 2);
+            ctx.fillStyle = '#2b6cb0'; ctx.font = 'bold 16px Outfit'; ctx.textAlign = 'center';
+            ctx.fillText((prob * 100).toFixed(1) + '%', midX, midY);
+
+            // ── 제목
+            ctx.fillStyle = '#2d3748'; ctx.font = 'bold 15px Outfit'; ctx.textAlign = 'center';
+            ctx.fillText(`N(${mu}, ${sigma}²)  —  정규분포`, W / 2, 30);
+
+            // UI 수치 업데이트
+            document.getElementById('normal-prob-val').innerText = (prob * 100).toFixed(1) + '%';
+        }
+
+        // 슬라이더 이벤트
+        document.getElementById('normal-mu')?.addEventListener('input', function () {
+            mu = parseFloat(this.value);
+            document.getElementById('normal-mu-val').innerText = mu;
+            drawNormal();
+        });
+        document.getElementById('normal-sigma')?.addEventListener('input', function () {
+            sigma = parseFloat(this.value);
+            document.getElementById('normal-sigma-val').innerText = sigma;
+            drawNormal();
+        });
+        document.getElementById('normal-a')?.addEventListener('input', function () {
+            rangeA = parseFloat(this.value);
+            drawNormal();
+        });
+        document.getElementById('normal-b')?.addEventListener('input', function () {
+            rangeB = parseFloat(this.value);
+            drawNormal();
+        });
+
+        // 경험칙 버튼
+        document.querySelectorAll('.normal-rule-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const k = parseInt(this.dataset.rule);
+                document.getElementById('normal-a').value = mu - k * sigma;
+                document.getElementById('normal-b').value = mu + k * sigma;
+                rangeA = mu - k * sigma;
+                rangeB = mu + k * sigma;
+                drawNormal();
+            });
+        });
+
+        drawNormal();
+    };
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
     const probTabs = document.querySelectorAll('#idx-prob .index-tab');
     const panels = {
         monty: document.getElementById('prob-panel-monty'),
         pascal: document.getElementById('prob-panel-pascal'),
         galton: document.getElementById('prob-panel-galton'),
+        normal: document.getElementById('prob-panel-normal'),
     };
     const canvasWraps = {
         monty: document.getElementById('canvas-wrap-monty'),
         pascal: document.getElementById('canvas-wrap-pascal'),
         galton: document.getElementById('canvas-wrap-galton'),
+        normal: document.getElementById('canvas-wrap-normal'),
     };
 
     function showTab(targetTab) {
@@ -1223,6 +1407,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (targetTab === 'pascal' && window.initPascal) window.initPascal();
         if (targetTab === 'monty' && window.initProb) window.initProb();
         if (targetTab === 'galton' && window.initGalton) window.initGalton();
+        if (targetTab === 'normal' && window.initNormal) window.initNormal();
     }
 
     /* 탭 클릭 이벤트 */

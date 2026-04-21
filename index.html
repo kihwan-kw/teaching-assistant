@@ -164,6 +164,7 @@
             <div class="index-tab active" data-probtab="pascal">파스칼</div>
             <div class="index-tab" data-probtab="monty">몬티홀</div>
             <div class="index-tab" data-probtab="galton">갈톤보드</div>
+            <div class="index-tab" data-probtab="normal">정규분포</div>
         </div>
 
         <!-- ===== 그래프 그리기 (인덱스 없음) ===== -->
@@ -976,6 +977,71 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 정규분포 컨트롤 패널 -->
+                    <div id="prob-panel-normal" class="quad-panel" style="display:none;">
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🔔 정규분포 N(μ, σ²)</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.6; margin-bottom:8px;">
+                                슬라이더로 평균과 표준편차를 바꾸며<br>곡선의 변화를 관찰해 보세요.
+                            </div>
+                        </div>
+
+                        <!-- 평균 μ -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">평균 μ (종의 위치)</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-size:14px; font-weight:700; color:#4a5568;">μ = <span
+                                        id="normal-mu-val" style="color:#3182ce; font-size:18px;">0</span></span>
+                            </div>
+                            <input type="range" id="normal-mu" min="-4" max="4" step="0.5" value="0"
+                                style="width:100%;">
+                        </div>
+
+                        <!-- 표준편차 σ -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">표준편차 σ (종의 너비)</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-size:14px; font-weight:700; color:#4a5568;">σ = <span
+                                        id="normal-sigma-val" style="color:#805ad5; font-size:18px;">1</span></span>
+                            </div>
+                            <input type="range" id="normal-sigma" min="0.5" max="3" step="0.5" value="1"
+                                style="width:100%;">
+                        </div>
+
+                        <!-- 구간 확률 -->
+                        <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
+                            <h3 class="matrix-section-title" style="color:#276749;">📐 구간 확률 P(a ≤ X ≤ b)</h3>
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                <span style="font-size:13px; font-weight:700;">a =</span>
+                                <input type="number" id="normal-a" value="-1" step="0.5"
+                                    style="width:65px; padding:6px; border:1px solid #c6f6d5; border-radius:8px; font-weight:800; color:#3182ce; text-align:center;">
+                                <span style="font-size:13px; font-weight:700;">b =</span>
+                                <input type="number" id="normal-b" value="1" step="0.5"
+                                    style="width:65px; padding:6px; border:1px solid #c6f6d5; border-radius:8px; font-weight:800; color:#805ad5; text-align:center;">
+                            </div>
+                            <div style="text-align:center; font-size:22px; font-weight:800; color:#276749;">
+                                P = <span id="normal-prob-val" style="color:#e53e3e; font-size:28px;">68.3%</span>
+                            </div>
+                        </div>
+
+                        <!-- 경험칙 버튼 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">✨ 경험칙 (68-95-99.7)</h3>
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                                <button class="t-btn normal-rule-btn" data-rule="1"
+                                    style="padding:8px 4px; font-weight:800; font-size:13px;">μ±σ<br><span
+                                        style="color:#e53e3e;">68%</span></button>
+                                <button class="t-btn normal-rule-btn" data-rule="2"
+                                    style="padding:8px 4px; font-weight:800; font-size:13px;">μ±2σ<br><span
+                                        style="color:#e53e3e;">95%</span></button>
+                                <button class="t-btn normal-rule-btn" data-rule="3"
+                                    style="padding:8px 4px; font-weight:800; font-size:13px;">μ±3σ<br><span
+                                        style="color:#e53e3e;">99.7%</span></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 우측 캔버스 영역 -->
@@ -1034,6 +1100,14 @@
                     <div id="canvas-wrap-galton" style="display:none; width:100%; height:100%;">
                         <div class="canvas-wrapper" style="width:100%; height:100%; padding:20px; background:#fff;">
                             <canvas id="galtonCanvas" width="760" height="560"
+                                style="width:100%; height:auto; display:block;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 정규분포 캔버스 -->
+                    <div id="canvas-wrap-normal" style="display:none; width:100%; height:100%;">
+                        <div class="canvas-wrapper" style="width:100%; height:100%; padding:20px; background:#fff;">
+                            <canvas id="normalCanvas" width="760" height="500"
                                 style="width:100%; height:auto; display:block;"></canvas>
                         </div>
                     </div>
