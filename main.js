@@ -196,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
+            // prob 단원은 여기서 initProb 대신 showTab('pascal')이 내부에서 처리
             setTimeout(unit.init, 50);
         } else {
             if (unit.id === 'poly') setTimeout(() => window.initPoly(), 50);
@@ -206,7 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unit.id === 'deriv') setTimeout(() => { window.renderDerivMain(); window.renderDerivF(); }, 50);
             if (unit.id === 'seq') setTimeout(() => window.seqRedraw && window.seqRedraw(), 50);
             if (unit.id === 'quad') setTimeout(() => window.initQuad(), 50);
-            if (unit.id === 'prob') setTimeout(() => window.initProb(), 50);
+            // prob 재진입: 현재 활성 탭 다시 렌더링
+            if (unit.id === 'prob') setTimeout(() => {
+                if (window.probShowTab) window.probShowTab(window.probCurrentTab || 'pascal');
+            }, 50);
         }
         // 🌟 이 부분을 추가해 주세요! (해당 단원에 진입할 때 팝업 띄우기) 🌟
         showTutorial(unit.id);
@@ -269,7 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('#idx-prob .index-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-            if (window.probSwitchPanel) window.probSwitchPanel(tab.dataset.probtab);
+            // probShowTab: prob.js의 실제 탭 전환 함수 (showTab의 공개 래퍼)
+            if (window.probShowTab) window.probShowTab(tab.dataset.probtab);
         });
     });
 
