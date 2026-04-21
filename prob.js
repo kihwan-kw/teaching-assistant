@@ -333,7 +333,7 @@ window.initProb = (function () {
                 }
 
                 // 누적 반영 (청크 단위로)
-                stats.total += (actualRuns * 2);
+                stats.total += actualRuns;
                 stats.stayWins += stayW; stats.stayLosses += stayL;
                 stats.switchWins += switchW; stats.switchLosses += switchL;
 
@@ -1194,10 +1194,11 @@ window.initGalton = (function () {
 /* ========================================================= */
 window.initNormal = (function () {
     let _initialized = false;
+    let _drawNormal = null; // 외부 스코프에서 drawNormal 참조 보관
 
     return function () {
         if (_initialized) {
-            drawNormal(); // 재진입 시 재렌더링
+            if (_drawNormal) _drawNormal(); // 재진입 시 재렌더링
             return;
         }
         _initialized = true;
@@ -1367,6 +1368,7 @@ window.initNormal = (function () {
             });
         });
 
+        _drawNormal = drawNormal; // 외부 참조에 등록
         drawNormal();
     };
 })();
@@ -1391,9 +1393,12 @@ document.addEventListener("DOMContentLoaded", () => {
         Object.values(panels).forEach(p => { if (p) p.style.display = 'none'; });
         Object.values(canvasWraps).forEach(c => { if (c) c.style.display = 'none'; });
 
-        /* 탭 버튼 active 처리 */
+        /* index-tab(텍스트) + tab-btn(도트) 모두 active 동기화 */
         probTabs.forEach(t =>
             t.classList.toggle('active', t.dataset.probtab === targetTab)
+        );
+        document.querySelectorAll('.tab-btn[data-probtab]').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.probtab === targetTab)
         );
 
         /* 해당 패널 보이기 */
