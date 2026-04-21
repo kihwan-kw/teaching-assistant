@@ -132,7 +132,7 @@ body {
     cursor: pointer;
     font-weight: 800;
     font-size: 16px;
-    color: var(--text-muted);
+    color: #4a5568;
     transition: all 0.3s ease;
     letter-spacing: 2px;
     user-select: none;
@@ -3359,6 +3359,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* idx-prob 갈톤 탭 활성화 색상 */
 #idx-prob .index-tab[data-probtab="galton"].active {
     background: linear-gradient(135deg, #68d391 0%, #4fd1c5 100%);
+}
+
+/* 정규분포 탭 활성화 색상 */
+#idx-prob .index-tab[data-probtab="normal"].active {
+    background: linear-gradient(135deg, #63b3ed 0%, #3182ce 100%);
 }
 
 /* 반응형 */
