@@ -30,6 +30,7 @@ window.initProb = (function () {
             switchWins: 0,
             switchLosses: 0
         };
+        let chartHistory = [];
 
         const msgBox = document.getElementById('monty-status-msg');
         const choiceOverlay = document.getElementById('monty-choice-overlay');
@@ -224,11 +225,84 @@ window.initProb = (function () {
             let stayRate = stayTotal === 0 ? 0 : (stats.stayWins / stayTotal * 100);
             let switchRate = switchTotal === 0 ? 0 : (stats.switchWins / switchTotal * 100);
 
+            // 텍스트
             stayRateTxt.innerText = stayRate.toFixed(1) + '%';
             switchRateTxt.innerText = switchRate.toFixed(1) + '%';
             totalSimTxt.innerText = stats.total.toLocaleString();
+
+            // 막대 레이스
+            document.getElementById('monty-bar-stay').style.width = stayRate.toFixed(1) + '%';
+            document.getElementById('monty-bar-switch').style.width = switchRate.toFixed(1) + '%';
+
+            // 꺾은선 히스토리 기록 (최대 200개 포인트)
+            if (stayTotal + switchTotal > 0) {
+                chartHistory.push({ stay: stayRate, sw: switchRate, n: stats.total });
+                if (chartHistory.length > 200) chartHistory.shift();
+            }
+
+            drawMontyChart();
         }
 
+        function drawMontyChart() {
+            const canvas = document.getElementById('monty-chart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            const padL = 30, padR = 10, padT = 10, padB = 24;
+            const w = W - padL - padR, h = H - padT - padB;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // 배경
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(padL, padT, w, h);
+
+            // 기준선 (33%, 50%, 67%)
+            [[33.3, '#3182ce', '33%'], [50, '#cbd5e0', '50%'], [66.7, '#e53e3e', '67%']].forEach(([pct, color, label]) => {
+                const y = padT + h - (pct / 100) * h;
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 3]);
+                ctx.moveTo(padL, y); ctx.lineTo(padL + w, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = color;
+                ctx.font = 'bold 9px Outfit, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(label, padL - 2, y + 3);
+            });
+
+            // 축
+            ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+            ctx.strokeRect(padL, padT, w, h);
+
+            if (chartHistory.length < 2) {
+                ctx.fillStyle = '#a0aec0'; ctx.font = '11px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('시뮬레이션을 실행하면 그래프가 나타납니다', padL + w / 2, padT + h / 2);
+                return;
+            }
+
+            // 꺾은선 그리기
+            [['stay', '#3182ce'], ['sw', '#e53e3e']].forEach(([key, color]) => {
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                chartHistory.forEach((pt, i) => {
+                    const x = padL + (i / (chartHistory.length - 1)) * w;
+                    const y = padT + h - (pt[key] / 100) * h;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            });
+
+            // x축 레이블 (총 시도 횟수)
+            const last = chartHistory[chartHistory.length - 1];
+            ctx.fillStyle = '#a0aec0'; ctx.font = '9px Outfit, sans-serif'; ctx.textAlign = 'right';
+            ctx.fillText(`n=${last.n.toLocaleString()}`, padL + w, padT + h + 14);
+        }
         // 고속 자동 시뮬레이션 함수 (애니메이션 효과 추가)
         function runSimulation(times) {
             // 버튼 연타 방지 (진행 중일 땐 막기)
@@ -241,8 +315,6 @@ window.initProb = (function () {
             let currentChunk = 0;
 
             const statBox = stayRateTxt.parentElement.parentElement;
-            statBox.style.background = '#e9d8fd';
-            statBox.style.borderColor = '#b794f4';
             updateMessage(`🤖 <strong>${times.toLocaleString()}번</strong> 자동 시뮬레이션 진행 중...`, '#805ad5');
 
             let timer = setInterval(() => {
@@ -284,6 +356,7 @@ window.initProb = (function () {
 
         document.getElementById('monty-reset-btn').addEventListener('click', () => {
             stats = { total: 0, stayWins: 0, stayLosses: 0, switchWins: 0, switchLosses: 0 };
+            chartHistory = [];
             updateStatsUI();
             initGame();
         });
@@ -377,6 +450,9 @@ window.initPascal = (function () {
                 target.style.color = '#3182ce';
                 target.style.borderColor = '#bee3f8';
                 mode = target.dataset.mode;
+
+                const binomialBox = document.getElementById('binomial-formula-box');
+                if (binomialBox) binomialBox.style.display = mode === 'binomial' ? 'block' : 'none';
                 hoverNode = null;
                 updateFormulaBox();
                 draw();
@@ -804,8 +880,10 @@ window.initPascal = (function () {
                 }
             }
         }
+        const binomialBox = document.getElementById('binomial-formula-box');
+        if (binomialBox) binomialBox.style.display = 'none'; // ★ 초기엔 숨김
         updateBinomialFormula(numRows - 1, -1);
-        draw(); // 초기 렌더링
+        draw();
     };
 })();
 
@@ -1137,6 +1215,9 @@ document.addEventListener("DOMContentLoaded", () => {
         /* 해당 패널 보이기 */
         if (panels[targetTab]) panels[targetTab].style.display = 'block';
         if (canvasWraps[targetTab]) canvasWraps[targetTab].style.display = 'block';
+
+        const formulaBox = document.getElementById('binomial-formula-box');
+        if (formulaBox) formulaBox.style.display = targetTab === 'pascal' ? 'block' : 'none';
 
         /* 초기화 */
         if (targetTab === 'pascal' && window.initPascal) window.initPascal();

@@ -854,25 +854,54 @@
                                     🔥</button>
                             </div>
 
-                            <!-- 통계 결과 -->
+                            <!-- ★ 막대 레이스 -->
                             <div
-                                style="background:#fff5f5; border:1px solid #fed7d7; border-radius:12px; padding:15px;">
+                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin-bottom:12px;">
                                 <div
-                                    style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; font-weight:700;">
-                                    <span style="color:#4a5568;">선택 유지 승률:</span>
-                                    <span id="monty-stay-rate" style="color:#3182ce; font-size:18px;">0.0%</span>
+                                    style="font-size:12px; font-weight:700; color:#718096; margin-bottom:8px; text-align:center;">
+                                    현재 승률 비교
                                 </div>
-                                <div
-                                    style="display:flex; justify-content:space-between; font-size:14px; font-weight:700;">
-                                    <span style="color:#4a5568;">선택 변경 승률:</span>
-                                    <span id="monty-switch-rate" style="color:#e53e3e; font-size:18px;">0.0%</span>
+                                <!-- 유지 -->
+                                <div style="margin-bottom:8px;">
+                                    <div
+                                        style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; margin-bottom:3px;">
+                                        <span style="color:#3182ce;">🙅 선택 유지</span>
+                                        <span id="monty-stay-rate" style="color:#3182ce;">0.0%</span>
+                                    </div>
+                                    <div style="background:#e2e8f0; border-radius:999px; height:14px; overflow:hidden;">
+                                        <div id="monty-bar-stay"
+                                            style="height:100%; width:0%; background:linear-gradient(90deg,#73a5ff,#3182ce); border-radius:999px; transition:width 0.3s;">
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style="text-align:right; font-size:11px; color:#a0aec0; margin-top:5px;">
+                                <!-- 바꾸기 -->
+                                <div>
+                                    <div
+                                        style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; margin-bottom:3px;">
+                                        <span style="color:#e53e3e;">🔄 선택 변경</span>
+                                        <span id="monty-switch-rate" style="color:#e53e3e;">0.0%</span>
+                                    </div>
+                                    <div style="background:#e2e8f0; border-radius:999px; height:14px; overflow:hidden;">
+                                        <div id="monty-bar-switch"
+                                            style="height:100%; width:0%; background:linear-gradient(90deg,#fc8181,#e53e3e); border-radius:999px; transition:width 0.3s;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right; font-size:11px; color:#a0aec0; margin-top:6px;">
                                     총 <span id="monty-total-sim">0</span>회 시도
                                 </div>
                             </div>
-                        </div>
 
+                            <!-- ★ 꺾은선 그래프 캔버스 -->
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px;">
+                                <div
+                                    style="font-size:12px; font-weight:700; color:#718096; margin-bottom:6px; text-align:center;">
+                                    누적 승률 수렴 과정
+                                </div>
+                                <canvas id="monty-chart" width="360" height="160"
+                                    style="width:100%; height:auto; display:block;"></canvas>
+                            </div>
+                        </div>
                         <div class="matrix-section" style="text-align:center;">
                             <button class="t-btn" id="monty-reset-btn"
                                 style="padding:10px 30px; font-weight:800; color:#718096;">↺ 게임 완전 초기화</button>
@@ -960,7 +989,7 @@
                         </div>
                     </div>
 
-                    <div id="binomial-formula-box" style="
+                    <div id="binomial-formula-box" style="display:none;
                     margin: 20px auto;
                     padding: 15px;
                     background: #ffffff;
