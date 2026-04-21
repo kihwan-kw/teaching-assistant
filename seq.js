@@ -727,9 +727,18 @@ window.initHanoi = (function () {
             const diskH = Math.min(28, (pegH - 20) / (n + 1));
 
             // 바닥
-            ctx.fillStyle = '#cbd5e0';
+            const baseGrad = ctx.createLinearGradient(0, baseY, 0, baseY + 14);
+            baseGrad.addColorStop(0, '#e2e8f0');
+            baseGrad.addColorStop(0.5, '#f7fafc');
+            baseGrad.addColorStop(1, '#a0aec0');
+            ctx.fillStyle = baseGrad;
             ctx.beginPath();
-            ctx.roundRect(40, baseY, W - 80, 12, 6);
+            ctx.roundRect(40, baseY, W - 80, 14, 7);
+            ctx.fill();
+            // 바닥 상단 타원 하이라이트
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.ellipse(W / 2, baseY + 3, (W - 80) / 2 - 10, 4, 0, 0, Math.PI * 2);
             ctx.fill();
 
             // 기둥 레이블
@@ -744,45 +753,91 @@ window.initHanoi = (function () {
             pegs.forEach((peg, i) => {
                 const isSelected = selected !== null && selected.pegIdx === i;
 
-                // 기둥
-                ctx.fillStyle = isSelected ? '#73a5ff' : '#e2e8f0';
+                // ── 기둥 (원통 느낌)
+                const pegGrad = ctx.createLinearGradient(pegX[i] - 8, 0, pegX[i] + 8, 0);
+                pegGrad.addColorStop(0, isSelected ? '#4299e1' : '#cbd5e0');
+                pegGrad.addColorStop(0.4, isSelected ? '#90cdf4' : '#f7fafc');
+                pegGrad.addColorStop(1, isSelected ? '#2b6cb0' : '#a0aec0');
+                ctx.fillStyle = pegGrad;
                 ctx.beginPath();
-                ctx.roundRect(pegX[i] - 6, baseY - pegH, 12, pegH, 6);
+                ctx.roundRect(pegX[i] - 8, baseY - pegH, 16, pegH, 8);
                 ctx.fill();
 
-                // 원판
+                // ✅ 교체 — 3D 원기둥 원판
                 peg.forEach((disk, j) => {
                     const diskW = (disk / n) * maxDiskW;
-                    const dy = baseY - (j + 1) * (diskH + 3);
                     const isTop = j === peg.length - 1;
-                    const liftOffset = (selected && selected.pegIdx === i && isTop) ? -30 : 0;
+                    const baseColor = COLORS[(disk - 1) % COLORS.length];
+                    const ry = diskH * 0.30;        // 타원 두께 (납작하게)
+                    const bodyH = diskH * 0.65;     // 원기둥 몸통 높이
+                    const cy = baseY - (j + 1) * (diskH + 4); // 원판 y 기준
+                    const liftY = (selected && selected.pegIdx === i && isTop) ? cy - 35 : cy;
+                    const rx = diskW / 2;
 
-                    // 그림자
-                    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+                    // 색상 헬퍼
+                    function darken(hex, amt) {
+                        const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amt);
+                        const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amt);
+                        const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amt);
+                        return `rgb(${r},${g},${b})`;
+                    }
+                    function lighten(hex, amt) {
+                        const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amt);
+                        const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amt);
+                        const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amt);
+                        return `rgb(${r},${g},${b})`;
+                    }
+
+                    // 1. 바닥 그림자
+                    ctx.save();
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 8;
+                    ctx.shadowOffsetY = 4;
+
+                    // 2. 원기둥 측면 (좌우 그라데이션)
+                    const sideGrad = ctx.createLinearGradient(pegX[i] - rx, 0, pegX[i] + rx, 0);
+                    sideGrad.addColorStop(0, darken(baseColor, 50));
+                    sideGrad.addColorStop(0.25, darken(baseColor, 20));
+                    sideGrad.addColorStop(0.6, lighten(baseColor, 30));
+                    sideGrad.addColorStop(1, darken(baseColor, 60));
+                    ctx.fillStyle = sideGrad;
                     ctx.beginPath();
-                    ctx.roundRect(pegX[i] - diskW / 2 + 3, dy + liftOffset + 4, diskW, diskH - 2, 8);
+                    ctx.moveTo(pegX[i] - rx, liftY + ry);
+                    ctx.lineTo(pegX[i] - rx, liftY + ry + bodyH);
+                    ctx.ellipse(pegX[i], liftY + ry + bodyH, rx, ry, 0, Math.PI, 0, true);
+                    ctx.lineTo(pegX[i] + rx, liftY + ry);
+                    ctx.ellipse(pegX[i], liftY + ry, rx, ry, 0, 0, Math.PI, true);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+
+                    // 3. 상단 타원 (밝은 면)
+                    const topGrad = ctx.createRadialGradient(
+                        pegX[i] - rx * 0.3, liftY + ry * 0.4, 0,
+                        pegX[i], liftY + ry, rx
+                    );
+                    topGrad.addColorStop(0, lighten(baseColor, 80));
+                    topGrad.addColorStop(1, lighten(baseColor, 15));
+                    ctx.fillStyle = topGrad;
+                    ctx.beginPath();
+                    ctx.ellipse(pegX[i], liftY + ry, rx, ry, 0, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // 원판 본체
-                    const grad = ctx.createLinearGradient(0, dy + liftOffset, 0, dy + liftOffset + diskH);
-                    grad.addColorStop(0, COLORS[(disk - 1) % COLORS.length]);
-                    grad.addColorStop(1, COLORS[(disk - 1) % COLORS.length] + 'bb');
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.roundRect(pegX[i] - diskW / 2, dy + liftOffset, diskW, diskH - 2, 8);
-                    ctx.fill();
+                    // 4. 선택된 원판 테두리 강조
+                    if (isTop) {
+                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.ellipse(pegX[i], liftY + ry, rx, ry, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
 
-                    // 테두리
-                    ctx.strokeStyle = isTop ? '#2d3748' : 'rgba(255,255,255,0.4)';
-                    ctx.lineWidth = isTop ? 2 : 1;
-                    ctx.stroke();
-
-                    // 번호
-                    ctx.fillStyle = 'white';
-                    ctx.font = `bold ${Math.max(10, diskH * 0.55)}px Outfit`;
+                    // 5. 번호 텍스트
+                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                    ctx.font = `bold ${Math.max(10, diskH * 0.5)}px Outfit`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(disk, pegX[i], dy + liftOffset + (diskH - 2) / 2);
+                    ctx.fillText(disk, pegX[i], liftY + ry + bodyH * 0.45);
                     ctx.textBaseline = 'alphabetic';
                 });
             });
