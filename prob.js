@@ -1375,6 +1375,466 @@ window.initNormal = (function () {
     };
 })();
 
+/* ========================================================= */
+/* ========================================================= */
+/* --- 큰수의 법칙 (Law of Large Numbers) Logic --- */
+/* ========================================================= */
+window.initLLN = (function () {
+    let _initialized = false;
+
+    return function () {
+        if (_initialized) return;
+        _initialized = true;
+
+        const canvas = document.getElementById('llnCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        // 실험 설정
+        let expType = 'coin'; // coin, dice, biased
+        let history = []; // {n, xbar} 기록
+        let runningSum = 0;
+        let runningN = 0;
+
+        let isAnimating = false;
+        let animRaf = null;
+        let lastSingleResult = null;
+        let animObj = {
+            type: 'coin',
+            progress: 0,
+            result: null,
+            startTime: 0,
+            duration: 600,
+            targetTimes: 1
+        };
+
+        function getMu() {
+            if (expType === 'coin') return 0.5;
+            if (expType === 'dice') return 3.5;
+            if (expType === 'biased') return 0.3;
+        }
+
+        function sampleOnce() {
+            if (expType === 'coin') return Math.random() < 0.5 ? 1 : 0;
+            if (expType === 'dice') return Math.floor(Math.random() * 6) + 1;
+            if (expType === 'biased') return Math.random() < 0.3 ? 1 : 0;
+        }
+
+        function runExperiment(times) {
+            if (isAnimating) return; // ignore if already running
+            isAnimating = true;
+            animObj.type = expType;
+            animObj.progress = 0;
+            animObj.startTime = performance.now();
+            animObj.duration = times === 1 ? 600 : 1000;
+            animObj.targetTimes = times;
+            
+            if (times === 1) {
+                animObj.result = sampleOnce();
+                lastSingleResult = animObj.result;
+            } else {
+                animObj.result = null;
+            }
+
+            cancelAnimationFrame(animRaf);
+            animRaf = requestAnimationFrame(animLoop);
+        }
+
+        function animLoop(timestamp) {
+            if (!isAnimating) return;
+            const elapsed = timestamp - animObj.startTime;
+            animObj.progress = Math.min(elapsed / animObj.duration, 1);
+            
+            draw();
+            
+            if (animObj.progress < 1) {
+                animRaf = requestAnimationFrame(animLoop);
+            } else {
+                isAnimating = false;
+                if (animObj.targetTimes === 1) {
+                    runningSum += animObj.result;
+                    runningN++;
+                    history.push({ n: runningN, xbar: runningSum / runningN });
+                } else {
+                    for (let i = 0; i < animObj.targetTimes; i++) {
+                        runningSum += sampleOnce();
+                        runningN++;
+                        if (runningN <= 200 || runningN % Math.max(1, Math.floor(animObj.targetTimes / 100)) === 0) {
+                            history.push({ n: runningN, xbar: runningSum / runningN });
+                        }
+                    }
+                    if (history.length === 0 || history[history.length - 1].n !== runningN) {
+                        history.push({ n: runningN, xbar: runningSum / runningN });
+                    }
+                }
+                updateUI();
+                draw();
+            }
+        }
+
+        function updateUI() {
+            const mu = getMu();
+            const xbar = runningN > 0 ? runningSum / runningN : null;
+            document.getElementById('lln-mu-val').innerText = mu.toFixed(3);
+            document.getElementById('lln-n-val').innerText = runningN.toLocaleString();
+            document.getElementById('lln-xbar-val').innerText = xbar !== null ? xbar.toFixed(4) : '-';
+            document.getElementById('lln-error-val').innerText = xbar !== null
+                ? '|' + Math.abs(xbar - mu).toFixed(5) + '|'
+                : '-';
+        }
+
+        function resetAll() {
+            history = [];
+            runningSum = 0;
+            runningN = 0;
+            lastSingleResult = null;
+            isAnimating = false;
+            cancelAnimationFrame(animRaf);
+            updateUI();
+            draw();
+        }
+
+        function drawCoin(x, y, scaleY, value, isBiased, sizeScale = 1) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(sizeScale, sizeScale * Math.abs(scaleY));
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, 35, 0, Math.PI * 2);
+            ctx.fillStyle = isBiased ? '#fbd38d' : '#e2e8f0';
+            ctx.fill();
+            ctx.strokeStyle = isBiased ? '#dd6b20' : '#a0aec0';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 28, 0, Math.PI * 2);
+            ctx.strokeStyle = isBiased ? '#f6ad55' : '#cbd5e0';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            if (value !== null) {
+                ctx.fillStyle = isBiased ? '#c05621' : '#4a5568';
+                ctx.font = 'bold 24px Outfit';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (Math.abs(scaleY) > 0.1) {
+                     const text = value === 1 ? '앞(1)' : '뒤(0)';
+                     ctx.fillText(text, 0, 0);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawDice(x, y, rot, value, sizeScale = 1) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(sizeScale, sizeScale);
+            ctx.rotate(rot);
+
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#cbd5e0';
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            ctx.roundRect(-30, -30, 60, 60, 10);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#e53e3e';
+            if (value !== null) {
+                const dot = (dx, dy) => {
+                    ctx.beginPath();
+                    ctx.arc(dx, dy, 5, 0, Math.PI*2);
+                    ctx.fill();
+                };
+                if ([1,3,5].includes(value)) dot(0, 0);
+                if ([2,3,4,5,6].includes(value)) { dot(-15, -15); dot(15, 15); }
+                if ([4,5,6].includes(value)) { dot(15, -15); dot(-15, 15); }
+                if (value === 6) { dot(-15, 0); dot(15, 0); }
+            }
+            
+            ctx.restore();
+        }
+
+        /* ── 그래프 그리기 ── */
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            const PAD = { l: 70, r: 60, t: 180, b: 60 };
+            const mu = getMu();
+
+            // 배경
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#f8faff');
+            bg.addColorStop(1, '#ffffff');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // --- 상단 애니메이션 및 시각화 영역 ---
+            const cx = W / 2;
+            const cy = 75;
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0,0,0,0.05)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 4;
+            ctx.fillRect(cx - 160, cy - 60, 320, 120);
+            ctx.shadowColor = 'transparent';
+            
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx - 160, cy - 60, 320, 120);
+            
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '12px Outfit';
+            ctx.textAlign = 'center';
+            ctx.fillText('물리적 시행 결과', cx, cy - 45);
+
+            let renderProgress = isAnimating ? animObj.progress : 1;
+            let currentTimes = isAnimating ? animObj.targetTimes : 1;
+            let finalResult = null;
+
+            if (isAnimating && currentTimes === 1) {
+                finalResult = animObj.result;
+            } else if (!isAnimating) {
+                finalResult = lastSingleResult !== null ? lastSingleResult : ((expType === 'dice') ? 6 : 1);
+            }
+
+            if (currentTimes === 1) {
+                let cy_anim = cy;
+                let scaleY = 1;
+                let rot = 0;
+                let valToDraw = finalResult;
+
+                if (isAnimating && renderProgress < 1) {
+                    cy_anim -= Math.sin(renderProgress * Math.PI) * 40; 
+                    if (expType === 'coin' || expType === 'biased') {
+                        scaleY = Math.cos(renderProgress * Math.PI * 10);
+                        valToDraw = null;
+                    } else if (expType === 'dice') {
+                        rot = renderProgress * Math.PI * 4;
+                        valToDraw = null;
+                    }
+                }
+
+                if (expType === 'coin') {
+                    drawCoin(cx, cy_anim + 5, scaleY, valToDraw, false);
+                } else if (expType === 'biased') {
+                    drawCoin(cx, cy_anim + 5, scaleY, valToDraw, true);
+                } else if (expType === 'dice') {
+                    drawDice(cx, cy_anim + 5, rot, valToDraw);
+                }
+            } else {
+                if (isAnimating && renderProgress < 1) {
+                     ctx.save();
+                     ctx.beginPath();
+                     ctx.rect(cx - 160, cy - 60, 320, 120);
+                     ctx.clip();
+                     for(let i=0; i<18; i++) {
+                         let rx = cx - 140 + Math.random() * 280;
+                         let ry = cy - 40 + Math.random() * 80;
+                         let r_scale = Math.cos(Math.random() * Math.PI * 2 + renderProgress * 20);
+                         let r_rot = Math.random() * Math.PI * 2 + renderProgress * 10;
+                         ctx.globalAlpha = 0.5;
+                         if (expType === 'coin') drawCoin(rx, ry, r_scale, null, false, 0.4);
+                         else if (expType === 'biased') drawCoin(rx, ry, r_scale, null, true, 0.4);
+                         else drawDice(rx, ry, r_rot, null, 0.4);
+                     }
+                     ctx.restore();
+                     
+                     ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                     ctx.fillRect(cx - 160, cy - 60, 320, 120);
+                     ctx.fillStyle = '#2b6cb0';
+                     ctx.font = 'bold 18px Outfit';
+                     ctx.fillText(`${currentTimes.toLocaleString()}번 연속 시행 중...`, cx, cy + 10);
+                } else {
+                    ctx.fillStyle = '#4a5568';
+                    ctx.font = 'bold 16px Outfit';
+                    ctx.fillText(runningN > 0 ? `다중 시행 대기 중` : `시행 대기 중`, cx, cy + 10);
+                }
+            }
+
+            // 타이틀
+            const expLabel = expType === 'coin' ? '동전 앞면 비율' : expType === 'dice' ? '주사위 눈 평균' : '편향 동전 앞면 비율';
+            ctx.fillStyle = '#2d3748'; ctx.font = 'bold 15px Outfit, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(`큰수의 법칙 — ${expLabel}`, W / 2, PAD.t - 20);
+
+            // --- 하단 차트 영역 ---
+            let band = expType === 'dice' ? 3 : 0.5;
+            let yMin = mu - band;
+            let yMax = mu + band;
+
+            const gW = W - PAD.l - PAD.r;
+            const gH = H - PAD.t - PAD.b;
+
+            function toX(n) {
+                if (history.length < 2) return PAD.l + gW * 0.5;
+                return PAD.l + (Math.log(n + 1) / Math.log(runningN + 1)) * gW;
+            }
+            function toY(v) {
+                return PAD.t + gH - ((v - yMin) / (yMax - yMin)) * gH;
+            }
+
+            const getSigma = () => expType === 'dice' ? Math.sqrt(35 / 12) : (expType === 'coin' ? 0.5 : Math.sqrt(0.3 * 0.7));
+
+            if (history.length >= 2) {
+                const sigma = getSigma();
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(72, 187, 120, 0.35)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 3]);
+                history.forEach((pt, i) => {
+                    const band_n = sigma / Math.sqrt(pt.n);
+                    const x = toX(pt.n);
+                    const y = toY(mu + band_n);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+
+                ctx.beginPath();
+                history.forEach((pt, i) => {
+                    const band_n = getSigma() / Math.sqrt(pt.n);
+                    const x = toX(pt.n);
+                    const y = toY(mu - band_n);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // y축 격자선 및 레이블
+            ctx.strokeStyle = '#edf2f7';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#718096';
+            ctx.font = '12px Outfit, sans-serif';
+            ctx.textAlign = 'right';
+            const ySteps = 6;
+            for (let i = 0; i <= ySteps; i++) {
+                const v = yMin + (i / ySteps) * (yMax - yMin);
+                const y = toY(v);
+                ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+                ctx.fillText(v.toFixed(expType === 'dice' ? 1 : 2), PAD.l - 6, y + 4);
+            }
+
+            // μ 기준선
+            const muY = toY(mu);
+            ctx.beginPath();
+            ctx.strokeStyle = '#e53e3e';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([8, 4]);
+            ctx.moveTo(PAD.l, muY); ctx.lineTo(W - PAD.r, muY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // μ 레이블
+            ctx.fillStyle = '#e53e3e';
+            ctx.font = 'bold 13px Outfit, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('μ = ' + mu, W - PAD.r + 2, muY + 4);
+
+            // 표본평균 꺾은선
+            if (history.length >= 2) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#3182ce';
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+                history.forEach((pt, i) => {
+                    const x = toX(pt.n);
+                    const y = toY(Math.min(Math.max(pt.xbar, yMin), yMax));
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+
+                const last = history[history.length - 1];
+                const lx = toX(last.n);
+                const ly = toY(Math.min(Math.max(last.xbar, yMin), yMax));
+                ctx.beginPath();
+                ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#3182ce';
+                ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            } else {
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = '16px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('좌측 버튼을 눌러 실험을 시작하세요!', W / 2, PAD.t + gH / 2);
+            }
+
+            // x축
+            ctx.strokeStyle = '#cbd5e0'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(PAD.l, H - PAD.b); ctx.lineTo(W - PAD.r, H - PAD.b); ctx.stroke();
+
+            // x축 레이블
+            ctx.fillStyle = '#718096'; ctx.font = '12px Outfit, sans-serif'; ctx.textAlign = 'center';
+            if (runningN > 0) {
+                [1, 10, 100, 1000].filter(v => v <= runningN).forEach(v => {
+                    const x = toX(v);
+                    ctx.beginPath(); ctx.moveTo(x, H - PAD.b); ctx.lineTo(x, H - PAD.b + 5); ctx.stroke();
+                    ctx.fillText(v, x, H - PAD.b + 18);
+                });
+                const x = toX(runningN);
+                ctx.beginPath(); ctx.moveTo(x, H - PAD.b); ctx.lineTo(x, H - PAD.b + 5); ctx.stroke();
+                ctx.fillText(runningN.toLocaleString(), x, H - PAD.b + 18);
+            }
+
+            // x축 제목
+            ctx.fillStyle = '#4a5568'; ctx.font = 'bold 13px Outfit, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('시행 횟수 n (로그 스케일)', W / 2, H - 10);
+
+            // y축 제목
+            ctx.save();
+            ctx.translate(25, PAD.t + gH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('표본평균 X̄ₙ', 0, 0);
+            ctx.restore();
+
+            // 범례
+            ctx.fillStyle = '#3182ce'; ctx.font = 'bold 12px Outfit';
+            ctx.textAlign = 'left';
+            const lx2 = PAD.l + 10, ly2 = PAD.t + 10;
+            ctx.beginPath(); ctx.moveTo(lx2, ly2); ctx.lineTo(lx2 + 30, ly2);
+            ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.fillText('표본평균 X̄ₙ', lx2 + 35, ly2 + 4);
+            ctx.fillStyle = '#e53e3e';
+            ctx.beginPath(); ctx.setLineDash([8, 4]); ctx.moveTo(lx2, ly2 + 20); ctx.lineTo(lx2 + 30, ly2 + 20);
+            ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillText('모평균 μ', lx2 + 35, ly2 + 24);
+            ctx.fillStyle = '#48bb78';
+            ctx.beginPath(); ctx.setLineDash([4, 3]); ctx.moveTo(lx2, ly2 + 40); ctx.lineTo(lx2 + 30, ly2 + 40);
+            ctx.strokeStyle = 'rgba(72,187,120,0.7)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = '#276749';
+            ctx.fillText('μ ± σ/√n', lx2 + 35, ly2 + 44);
+        }
+
+        // 실험 타입 버튼
+        document.querySelectorAll('.lln-exp-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.lln-exp-btn').forEach(b => {
+                    b.style.background = '';
+                    b.style.color = '';
+                    b.style.borderColor = '';
+                });
+                this.style.background = '#ebf8ff';
+                this.style.color = '#3182ce';
+                this.style.borderColor = '#bee3f8';
+                expType = this.dataset.exp;
+                resetAll();
+            });
+        });
+
+        document.getElementById('lln-run-1')?.addEventListener('click', () => runExperiment(1));
+        document.getElementById('lln-run-10')?.addEventListener('click', () => runExperiment(10));
+        document.getElementById('lln-run-100')?.addEventListener('click', () => runExperiment(100));
+        document.getElementById('lln-run-1000')?.addEventListener('click', () => runExperiment(1000));
+        document.getElementById('lln-reset-btn')?.addEventListener('click', resetAll);
+
+        updateUI();
+        draw();
+    };
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
     const probTabs = document.querySelectorAll('#idx-prob .index-tab');
     const panels = {
@@ -1382,12 +1842,14 @@ document.addEventListener("DOMContentLoaded", () => {
         pascal: document.getElementById('prob-panel-pascal'),
         galton: document.getElementById('prob-panel-galton'),
         normal: document.getElementById('prob-panel-normal'),
+        lln: document.getElementById('prob-panel-lln'),
     };
     const canvasWraps = {
         monty: document.getElementById('canvas-wrap-monty'),
         pascal: document.getElementById('canvas-wrap-pascal'),
         galton: document.getElementById('canvas-wrap-galton'),
         normal: document.getElementById('canvas-wrap-normal'),
+        lln: document.getElementById('canvas-wrap-lln'),
     };
 
     function showTab(targetTab) {
@@ -1411,6 +1873,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (targetTab === 'monty' && window.initProb) window.initProb();
         if (targetTab === 'galton' && window.initGalton) window.initGalton();
         if (targetTab === 'normal' && window.initNormal) window.initNormal();
+        if (targetTab === 'lln' && window.initLLN) window.initLLN();
 
         window.probCurrentTab = targetTab;
     }

@@ -3404,6 +3404,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
     width: 100%;
 }
 
+/* 파스칼 탭 활성화 색상 */
+#idx-prob .index-tab[data-probtab="pascal"].active {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+/* 몬티홀 탭 활성화 색상 */
+#idx-prob .index-tab[data-probtab="monty"].active {
+    background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+}
+
 /* idx-prob 갈톤 탭 활성화 색상 */
 #idx-prob .index-tab[data-probtab="galton"].active {
     background: linear-gradient(135deg, #68d391 0%, #4fd1c5 100%);
@@ -3412,6 +3422,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* 정규분포 탭 활성화 색상 */
 #idx-prob .index-tab[data-probtab="normal"].active {
     background: linear-gradient(135deg, #63b3ed 0%, #3182ce 100%);
+}
+
+/* 큰수의 법칙 탭 활성화 색상 */
+#idx-prob .index-tab[data-probtab="lln"].active {
+    background: linear-gradient(135deg, #b794f4 0%, #805ad5 100%);
 }
 
 /* 반응형 */
