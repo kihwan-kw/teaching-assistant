@@ -60,6 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<strong>갈톤보드</strong> 탭에서 공을 많이 떨어뜨릴수록 막대그래프가 정규분포 곡선에 가까워지는 것을 관찰하세요.',
                 '<strong>정규분포</strong> 탭에서 μ와 σ 슬라이더로 종 모양 곡선이 어떻게 변하는지 확인하세요.'
             ]
+        },
+        'geom': {
+            icon: '🌀', title: '기하', desc: '이차곡선, 벡터, 공간도형을 시각적으로 탐구합니다.',
+            items: [
+                '<strong>이차곡선</strong> 탭에서 포물선, 타원, 쌍곡선의 정의와 성질을 확인하세요.',
+                '<strong>벡터</strong> 탭에서 벡터의 덧셈, 뺄셈, 내적을 시각적으로 이해하세요.',
+                '<strong>공간도형</strong> 탭에서 3차원 공간에서의 직선과 평면의 관계를 살펴보세요.'
+            ]
         }
     };
 
@@ -113,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => window.initDeriv() },
         { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => window.initInteg() },
         { id: 'prob', icon: '🎲', title: '확률과 통계', subtitle: '직관을 깨는 몬티홀 딜레마 시뮬레이션', ready: true, colorClass: 'card-limit', init: () => window.probShowTab ? window.probShowTab('pascal') : null },
-        { id: 'geom', icon: '🌀', title: '기하', subtitle: '이차곡선과 벡터', ready: false, colorClass: 'card-trig', init: null },
+        { id: 'geom', icon: '🌀', title: '기하', subtitle: '이차곡선 · 벡터 · 공간도형', ready: true, colorClass: 'card-trig', init: () => window.initGeom && window.initGeom() },
     ];
 
 
@@ -127,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         quad: 'idx-quad',
         deriv: 'idx-deriv',
         prob: 'idx-prob',
+        geom: 'idx-geom',
     };
 
     const initialized = new Set();
@@ -278,6 +287,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    /* 기하 인덱스 탭 → geom.js 탭 연동 */
+    document.querySelectorAll('#idx-geom .index-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#idx-geom .index-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            if (window.geomSwitchPanel) window.geomSwitchPanel(tab.dataset.geomtab);
+        });
+    });
+
     renderCards();
 });
-

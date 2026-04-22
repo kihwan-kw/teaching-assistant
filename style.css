@@ -205,6 +205,10 @@ body {
     background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
 }
 
+.index-tab[data-unit="geom"].active {
+    background: linear-gradient(135deg, #9f7aea 0%, #6b46c1 100%);
+}
+
 /* ========================================================= */
 /* --- Unit Content --- */
 /* ========================================================= */
@@ -300,6 +304,38 @@ body {
 .tab-btn.active[data-factortab] {
     background: linear-gradient(135deg, #ffb86c 0%, #ff9a9e 100%);
     box-shadow: 0 6px 15px rgba(255, 184, 108, 0.4);
+}
+
+/* 기하 단원 상위 탭 */
+.tab-btn.active[data-geom="conic"] {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    box-shadow: 0 6px 15px rgba(237, 137, 54, 0.4);
+}
+
+.tab-btn.active[data-geom="vector"] {
+    background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
+    box-shadow: 0 6px 15px rgba(56, 161, 105, 0.4);
+}
+
+.tab-btn.active[data-geom="solid"] {
+    background: linear-gradient(135deg, #63b3ed 0%, #3182ce 100%);
+    box-shadow: 0 6px 15px rgba(49, 130, 206, 0.4);
+}
+
+/* 기하 단원 하위 탭 */
+.tab-btn.active[data-conic] {
+    background: linear-gradient(135deg, #fbd38d 0%, #f6ad55 100%);
+    box-shadow: 0 6px 15px rgba(246, 173, 85, 0.4);
+}
+
+.tab-btn.active[data-vec] {
+    background: linear-gradient(135deg, #9ae6b4 0%, #68d391 100%);
+    box-shadow: 0 6px 15px rgba(104, 211, 145, 0.4);
+}
+
+.tab-btn.active[data-solid] {
+    background: linear-gradient(135deg, #90cdf4 0%, #63b3ed 100%);
+    box-shadow: 0 6px 15px rgba(99, 179, 237, 0.4);
 }
 
 /* ========================================================= */
@@ -3496,4 +3532,66 @@ input[type="range"]::-webkit-slider-thumb:hover {
         min-width: 0 !important;
         width: 100%;
     }
-}
+}
+
+/* ========================================================= */
+/* --- 기하 (Geometry) 단원 인덱스 & 버튼 활성화 색상 --- */
+/* ========================================================= */
+
+/* 기하 단원 상위 인덱스 탭 활성화 색상 */
+#idx-geom .index-tab[data-geomtab="conic"].active {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+#idx-geom .index-tab[data-geomtab="vector"].active {
+    background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
+}
+
+#idx-geom .index-tab[data-geomtab="solid"].active {
+    background: linear-gradient(135deg, #63b3ed 0%, #3182ce 100%);
+}
+
+/* 기하 단원 하위 선택 버튼 활성화 색상 */
+.geom-conic-btn.active {
+    background: linear-gradient(135deg, #fbd38d 0%, #f6ad55 100%) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(246, 173, 85, 0.4) !important;
+}
+
+.geom-vec-btn.active {
+    background: linear-gradient(135deg, #9ae6b4 0%, #68d391 100%) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(104, 211, 145, 0.4) !important;
+}
+
+.geom-solid-btn.active {
+    background: linear-gradient(135deg, #90cdf4 0%, #63b3ed 100%) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(99, 179, 237, 0.4) !important;
+}
+
+/* 벡터 기호 (머리 위에 화살표) */
+.vec-text {
+    position: relative;
+    display: inline-block;
+    font-style: normal;
+    font-weight: 800;
+    margin-right: 2px;
+}
+.vec-text::after {
+    content: "→";
+    position: absolute;
+    top: -0.8em;
+    left: 50%;
+    transform: translateX(-50%) scale(0.9, 0.7);
+    font-size: 0.8em;
+    font-style: normal;
+    font-weight: 600;
+}
+.vec-abs {
+    font-style: normal;
+    font-weight: 600;
+}
