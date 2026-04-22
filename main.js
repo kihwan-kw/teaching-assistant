@@ -290,6 +290,10 @@ document.addEventListener('DOMContentLoaded', () => {
     /* 기하 인덱스 탭 → geom.js 탭 연동 */
     document.querySelectorAll('#idx-geom .index-tab').forEach(tab => {
         tab.addEventListener('click', () => {
+            if (tab.dataset.geomtab === 'solid') {
+                alert('해당 단원은 현재 준비 중입니다.');
+                return;
+            }
             document.querySelectorAll('#idx-geom .index-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             if (window.geomSwitchPanel) window.geomSwitchPanel(tab.dataset.geomtab);
