@@ -3477,3 +3477,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
     flex-direction: row;
     align-items: flex-start;
 }
+
+/* ========================================================= */
+/* --- 확률과 통계 태블릿 반응형 --- */
+/* ========================================================= */
+@media screen and (max-width: 768px) {
+    #unit-prob .exp-main-content {
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+    }
+
+    #unit-prob .matrix-control-panel {
+        flex: 1 1 100% !important;
+        max-width: 100%;
+    }
+
+    #unit-prob .exp-right-panel {
+        min-width: 0 !important;
+        width: 100%;
+    }
+}
