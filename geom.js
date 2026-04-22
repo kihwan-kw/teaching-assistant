@@ -731,12 +731,12 @@
             /* ── 뺄셈 ── */
         } else if (vecOp === 'sub') {
             ctx.setLineDash([5, 4]);
-            arrow(cx(ax), cy(ay), cx(ax - bx), cy(ay - by), 'rgba(229,62,62,0.85)', '−b', 2.0);
-            arrow(ox, oy, cx(-bx), cy(-by), 'rgba(229,62,62,0.3)', '', 1.8);
-            arrow(cx(-bx), cy(-by), cx(ax - bx), cy(ay - by), 'rgba(49,130,206,0.3)', '', 1.8);
+            arrow(cx(ax), cy(ay), cx(ax - bx), cy(ay - by), 'rgba(229,62,62,0.45)', '', 1.8);
+            arrow(cx(-bx), cy(-by), cx(ax - bx), cy(ay - by), 'rgba(49,130,206,0.45)', '', 1.8);
             ctx.setLineDash([]);
             arrow(ox, oy, cx(ax), cy(ay), '#3182ce', 'a', 2.8);
             arrow(ox, oy, cx(bx), cy(by), '#e53e3e', 'b', 2.8);
+            arrow(ox, oy, cx(-bx), cy(-by), '#e53e3e', '−b', 2.8);
             arrow(ox, oy, cx(ax - bx), cy(ay - by), '#9f7aea', 'a−b', 3.2);
             document.getElementById('geom-vec-result').innerHTML =
                 `<span style="color:#3182ce"><span class="vec-text">a</span></span> = (${ax.toFixed(1)}, ${ay.toFixed(1)})<br>
