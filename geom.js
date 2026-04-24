@@ -120,12 +120,29 @@
         }, { passive: false });
 
         let lastT = null;
-        canvas.addEventListener('touchstart', e => { lastT = e.touches; }, { passive: true });
+        let touchDraggingPoint = false;
+        canvas.addEventListener('touchstart', e => { 
+            lastT = e.touches;
+            if (e.touches.length === 1) {
+                const { px, py } = toCanvas(e.touches[0]);
+                const vp = getVP();
+                if (onDragPoint && onDragPoint(toMx(vp, px), toMy(vp, py), true, false, false)) {
+                    touchDraggingPoint = true;
+                }
+            }
+        }, { passive: false });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const r = CW / rect.width;
             const vp = getVP();
+
+            if (touchDraggingPoint && e.touches.length === 1) {
+                const { px, py } = toCanvas(e.touches[0]);
+                if (onDragPoint) onDragPoint(toMx(vp, px), toMy(vp, py), false, true, false);
+                return;
+            }
+
             if (e.touches.length === 1 && lastT?.length === 1) {
                 setVP({ ...vp, cx: vp.cx + (e.touches[0].clientX - lastT[0].clientX) * r, cy: vp.cy + (e.touches[0].clientY - lastT[0].clientY) * r });
             } else if (e.touches.length === 2 && lastT?.length === 2) {
@@ -138,7 +155,16 @@
             lastT = e.touches;
             redraw();
         }, { passive: false });
-        canvas.addEventListener('touchend', () => { lastT = null; });
+        canvas.addEventListener('touchend', e => { 
+            if (touchDraggingPoint) {
+                if (e.changedTouches.length > 0) {
+                    const { px, py } = toCanvas(e.changedTouches[0]);
+                    if (onDragPoint) onDragPoint(toMx(getVP(), px), toMy(getVP(), py), false, false, true);
+                }
+                touchDraggingPoint = false;
+            }
+            lastT = null; 
+        });
         canvas.style.cursor = 'crosshair';
     }
 
@@ -180,6 +206,8 @@
     let conicDragActive = false;
     let conicDragPt = { tx: 3, ty: 2 };
     let lastProjectedPt = { x: 3, y: 2 };
+    let conicTanMode = 'point';
+    let conicTanSlope = 1.0;
 
     const CONIC_PARAMS = {
         parabola: [{ id: 'cp-p', label: 'p (초점 거리)', min: 0.3, max: 5, step: 0.1, value: 1.5 }],
@@ -367,21 +395,18 @@
             ctx.stroke(); ctx.restore();
         };
 
-        const updateTanEq = (px, py, m) => {
+        const updateTanEq = (eqs) => {
             const eqDiv = document.getElementById('geom-conic-tangent-eq');
             if (!eqDiv) return;
             if (!showTanNorm) {
                 eqDiv.innerHTML = '';
                 return;
             }
-            let text = `점 P(${px.toFixed(1)}, ${py.toFixed(1)})에서의 접선:<br>`;
-            if (!isFinite(m)) {
-                text += `x = ${px.toFixed(2)}`;
-            } else {
-                const n = py - m * px;
-                const sign = n >= 0 ? '+' : '−';
-                text += `y = ${m.toFixed(2)}x ${sign} ${Math.abs(n).toFixed(2)}`;
+            if (conicTanMode === 'slope' && eqs.length === 0) {
+                eqDiv.innerHTML = '<span style="color:#e53e3e;">해당 기울기를 가진 접선이 존재하지 않습니다.</span>';
+                return;
             }
+            let text = `접선의 방정식:<br>` + eqs.join('<br>');
             eqDiv.innerHTML = text;
         };
 
@@ -406,38 +431,64 @@
             ctx.font = 'bold 13px Outfit'; ctx.fillStyle = '#3182ce'; ctx.textAlign = 'left';
             ctx.fillText(`F(${p.toFixed(1)}, 0)`, cx(p) + 10, cy(0) - 6);
 
-            /* 점 P 투영 */
-            const P = projParabola(conicDragPt.tx, conicDragPt.ty, p);
-            lastProjectedPt = P;
-            
-            /* 접선 및 법선 표시 */
-            const mParabola = Math.abs(P.y) > 1e-5 ? (2 * p) / P.y : Infinity;
-            drawTanNorm(P.x, P.y, mParabola);
-            updateTanEq(P.x, P.y, mParabola);
-            
-            const sx = cx(P.x), sy = cy(P.y);
-            const Hx = -p, sHx = cx(Hx), sHy = cy(P.y);
-            const dPF = Math.sqrt((P.x - p) ** 2 + P.y ** 2);
-            const dPH = Math.abs(P.x - Hx);
+            let pts = [];
+            let mVals = [];
+            let eqs = [];
+            if (conicTanMode === 'slope') {
+                const m = conicTanSlope;
+                if (Math.abs(m) < 0.05) {
+                    // m이 0에 가까우면 접선 표시 안함 (포물선의 기울기 0 접선은 무한대)
+                } else {
+                    const px = p / (m * m);
+                    const py = 2 * p / m;
+                    pts.push({x: px, y: py});
+                    mVals.push(m);
+                    const n = py - m * px;
+                    const sign = n >= 0 ? '+' : '−';
+                    eqs.push(`y = ${m.toFixed(2)}x ${sign} ${Math.abs(n).toFixed(2)}`);
+                }
+            } else {
+                const P = projParabola(conicDragPt.tx, conicDragPt.ty, p);
+                lastProjectedPt = P;
+                pts.push(P);
+                const mParabola = Math.abs(P.y) > 1e-5 ? (2 * p) / P.y : Infinity;
+                mVals.push(mParabola);
+                if (!isFinite(mParabola)) {
+                    eqs.push(`x = ${P.x.toFixed(2)}`);
+                } else {
+                    const n = P.y - mParabola * P.x;
+                    const sign = n >= 0 ? '+' : '−';
+                    eqs.push(`y = ${mParabola.toFixed(2)}x ${sign} ${Math.abs(n).toFixed(2)}`);
+                }
+            }
 
-            /* 선분 */
-            drawSegWithLabel(ctx, sx, sy, cx(p), cy(0), '#2d3748', 2.2, `PF=${dPF.toFixed(2)}`);
-            drawSegWithLabel(ctx, sx, sy, sHx, sHy, '#dd6b20', 2.5, `PH=${dPH.toFixed(2)}`);
-            /* 직각 기호 */
-            const sq = 9; ctx.strokeStyle = '#dd6b20'; ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(sHx, sHy - sq); ctx.lineTo(sHx + sq, sHy - sq); ctx.lineTo(sHx + sq, sHy);
-            ctx.stroke();
-            /* H점 */
-            dot(ctx, sHx, sHy, 5, '#dd6b20', '#fff');
-            ctx.font = 'bold 12px Outfit'; ctx.fillStyle = '#dd6b20'; ctx.textAlign = 'left';
-            ctx.fillText('H', sHx + 6, sHy - 6);
-            /* 배지 */
-            drawInfoBadge(ctx, W, H, dPF, dPH, 'PF', 'PH', 'equal');
-            /* P점 */
-            dot(ctx, sx, sy, 10, '#e53e3e', '#fff');
-            ctx.font = 'bold 14px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'left';
-            ctx.fillText('P', sx + 10, sy - 6);
+            pts.forEach((P, idx) => {
+                const m = mVals[idx];
+                drawTanNorm(P.x, P.y, m);
+                
+                const sx = cx(P.x), sy = cy(P.y);
+                const Hx = -p, sHx = cx(Hx), sHy = cy(P.y);
+                const dPF = Math.sqrt((P.x - p) ** 2 + P.y ** 2);
+                const dPH = Math.abs(P.x - Hx);
+
+                drawSegWithLabel(ctx, sx, sy, cx(p), cy(0), '#2d3748', 2.2, idx === 0 ? `PF=${dPF.toFixed(2)}` : '');
+                drawSegWithLabel(ctx, sx, sy, sHx, sHy, '#dd6b20', 2.5, idx === 0 ? `PH=${dPH.toFixed(2)}` : '');
+                const sq = 9; ctx.strokeStyle = '#dd6b20'; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(sHx, sHy - sq); ctx.lineTo(sHx + sq, sHy - sq); ctx.lineTo(sHx + sq, sHy);
+                ctx.stroke();
+                dot(ctx, sHx, sHy, 5, '#dd6b20', '#fff');
+                if (idx === 0) {
+                    ctx.font = 'bold 12px Outfit'; ctx.fillStyle = '#dd6b20'; ctx.textAlign = 'left';
+                    ctx.fillText('H', sHx + 6, sHy - 6);
+                    drawInfoBadge(ctx, W, H, dPF, dPH, 'PF', 'PH', 'equal');
+                }
+                
+                dot(ctx, sx, sy, 10, '#e53e3e', '#fff');
+                ctx.font = 'bold 14px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'left';
+                ctx.fillText(pts.length > 1 ? `P${idx+1}` : 'P', sx + 10, sy - 6);
+            });
+            updateTanEq(eqs);
 
         } else if (conicType === 'ellipse') {
             let c = getCp('cp-c'), sum = getCp('cp-sum');
@@ -475,22 +526,50 @@
             ctx.textAlign = 'right'; ctx.fillText(`x = −${dx.toFixed(2)}`, cx(-dx) - 8, 25);
             ctx.textAlign = 'left'; ctx.fillText(`x = ${dx.toFixed(2)}`, cx(dx) + 8, 25);
 
-            const P = projEllipse(conicDragPt.tx, conicDragPt.ty, a, b);
-            lastProjectedPt = P;
+            let pts = [];
+            let mVals = [];
+            let eqs = [];
+            if (conicTanMode === 'slope') {
+                const m = conicTanSlope;
+                const D = Math.sqrt(a * a * m * m + b * b);
+                for (const sign of [1, -1]) {
+                    const px = -sign * (a * a * m) / D;
+                    const py = sign * (b * b) / D;
+                    pts.push({x: px, y: py});
+                    mVals.push(m);
+                    const n = py - m * px;
+                    const signN = n >= 0 ? '+' : '−';
+                    eqs.push(`y = ${m.toFixed(2)}x ${signN} ${Math.abs(n).toFixed(2)}`);
+                }
+            } else {
+                const P = projEllipse(conicDragPt.tx, conicDragPt.ty, a, b);
+                lastProjectedPt = P;
+                pts.push(P);
+                const mEllipse = Math.abs(P.y) > 1e-5 ? -(b * b * P.x) / (a * a * P.y) : Infinity;
+                mVals.push(mEllipse);
+                if (!isFinite(mEllipse)) {
+                    eqs.push(`x = ${P.x.toFixed(2)}`);
+                } else {
+                    const n = P.y - mEllipse * P.x;
+                    const sign = n >= 0 ? '+' : '−';
+                    eqs.push(`y = ${mEllipse.toFixed(2)}x ${sign} ${Math.abs(n).toFixed(2)}`);
+                }
+            }
 
-            /* 접선 및 법선 표시 */
-            const mEllipse = Math.abs(P.y) > 1e-5 ? -(b * b * P.x) / (a * a * P.y) : Infinity;
-            drawTanNorm(P.x, P.y, mEllipse);
-            updateTanEq(P.x, P.y, mEllipse);
+            pts.forEach((P, idx) => {
+                const m = mVals[idx];
+                drawTanNorm(P.x, P.y, m);
 
-            const sx = cx(P.x), sy = cy(P.y);
-            const dF1 = Math.sqrt((P.x + c) ** 2 + P.y ** 2), dF2 = Math.sqrt((P.x - c) ** 2 + P.y ** 2);
-            drawSegWithLabel(ctx, sx, sy, cx(-c), cy(0), '#2d3748', 2.2, `PF₁=${dF1.toFixed(2)}`);
-            drawSegWithLabel(ctx, sx, sy, cx(c), cy(0), '#dd6b20', 2.2, `PF₂=${dF2.toFixed(2)}`);
-            drawInfoBadge(ctx, W, H, dF1, dF2, 'PF₁', 'PF₂', 'sum', 2 * a, '2a');
-            dot(ctx, sx, sy, 10, '#e53e3e', '#fff');
-            ctx.font = 'bold 14px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'left';
-            ctx.fillText('P', sx + 10, sy - 6);
+                const sx = cx(P.x), sy = cy(P.y);
+                const dF1 = Math.sqrt((P.x + c) ** 2 + P.y ** 2), dF2 = Math.sqrt((P.x - c) ** 2 + P.y ** 2);
+                drawSegWithLabel(ctx, sx, sy, cx(-c), cy(0), '#2d3748', 2.2, idx === 0 ? `PF₁=${dF1.toFixed(2)}` : '');
+                drawSegWithLabel(ctx, sx, sy, cx(c), cy(0), '#dd6b20', 2.2, idx === 0 ? `PF₂=${dF2.toFixed(2)}` : '');
+                if (idx === 0) drawInfoBadge(ctx, W, H, dF1, dF2, 'PF₁', 'PF₂', 'sum', 2 * a, '2a');
+                dot(ctx, sx, sy, 10, '#e53e3e', '#fff');
+                ctx.font = 'bold 14px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'left';
+                ctx.fillText(pts.length > 1 ? `P${idx+1}` : 'P', sx + 10, sy - 6);
+            });
+            updateTanEq(eqs);
 
         } else if (conicType === 'hyperbola') {
             let c = getCp('cp-c'), diff = getCp('cp-diff');
@@ -554,29 +633,61 @@
             ctx.textAlign = 'right'; ctx.fillText(`x = −${hdx.toFixed(2)}`, cx(-hdx) - 8, 25);
             ctx.textAlign = 'left'; ctx.fillText(`x = ${hdx.toFixed(2)}`, cx(hdx) + 8, 25);
 
-            const P = projHyperbola(conicDragPt.tx, conicDragPt.ty, a, b);
-            lastProjectedPt = P;
-            conicDragPt = { tx: P.x, ty: P.y };
-            
-            /* 접선 및 법선 표시 */
-            const mHyperbola = Math.abs(P.y) > 1e-5 ? (b * b * P.x) / (a * a * P.y) : Infinity;
-            drawTanNorm(P.x, P.y, mHyperbola);
-            updateTanEq(P.x, P.y, mHyperbola);
+            let pts = [];
+            let mVals = [];
+            let eqs = [];
+            if (conicTanMode === 'slope') {
+                const m = conicTanSlope;
+                const D2 = a * a * m * m - b * b;
+                if (D2 > 0) {
+                    const D = Math.sqrt(D2);
+                    for (const sign of [1, -1]) {
+                        const px = -sign * (a * a * m) / D;
+                        const py = -sign * (b * b) / D;
+                        pts.push({x: px, y: py});
+                        mVals.push(m);
+                        const n = py - m * px;
+                        const signN = n >= 0 ? '+' : '−';
+                        eqs.push(`y = ${m.toFixed(2)}x ${signN} ${Math.abs(n).toFixed(2)}`);
+                    }
+                }
+            } else {
+                const P = projHyperbola(conicDragPt.tx, conicDragPt.ty, a, b);
+                lastProjectedPt = P;
+                conicDragPt = { tx: P.x, ty: P.y };
+                pts.push(P);
+                const mHyperbola = Math.abs(P.y) > 1e-5 ? (b * b * P.x) / (a * a * P.y) : Infinity;
+                mVals.push(mHyperbola);
+                if (!isFinite(mHyperbola)) {
+                    eqs.push(`x = ${P.x.toFixed(2)}`);
+                } else {
+                    const n = P.y - mHyperbola * P.x;
+                    const sign = n >= 0 ? '+' : '−';
+                    eqs.push(`y = ${mHyperbola.toFixed(2)}x ${sign} ${Math.abs(n).toFixed(2)}`);
+                }
+            }
 
-            const sx = cx(P.x), sy = cy(P.y);
-            const dF1 = Math.sqrt((P.x + c) ** 2 + P.y ** 2), dF2 = Math.sqrt((P.x - c) ** 2 + P.y ** 2);
-            drawSegWithLabel(ctx, sx, sy, cx(-c), cy(0), '#2d3748', 2.2, `PF₁=${dF1.toFixed(2)}`);
-            drawSegWithLabel(ctx, sx, sy, cx(c), cy(0), '#dd6b20', 2.2, `PF₂=${dF2.toFixed(2)}`);
-            drawInfoBadge(ctx, W, H, dF1, dF2, 'PF₁', 'PF₂', 'diff', 2 * a, '2a');
-            dot(ctx, sx, sy, 10, '#e53e3e', '#fff');
-            ctx.font = 'bold 14px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'left';
-            ctx.fillText('P', sx + 10, sy - 6);
+            pts.forEach((P, idx) => {
+                const m = mVals[idx];
+                drawTanNorm(P.x, P.y, m);
+
+                const sx = cx(P.x), sy = cy(P.y);
+                const dF1 = Math.sqrt((P.x + c) ** 2 + P.y ** 2), dF2 = Math.sqrt((P.x - c) ** 2 + P.y ** 2);
+                drawSegWithLabel(ctx, sx, sy, cx(-c), cy(0), '#2d3748', 2.2, idx === 0 ? `PF₁=${dF1.toFixed(2)}` : '');
+                drawSegWithLabel(ctx, sx, sy, cx(c), cy(0), '#dd6b20', 2.2, idx === 0 ? `PF₂=${dF2.toFixed(2)}` : '');
+                if (idx === 0) drawInfoBadge(ctx, W, H, dF1, dF2, 'PF₁', 'PF₂', 'diff', 2 * a, '2a');
+                dot(ctx, sx, sy, 10, '#e53e3e', '#fff');
+                ctx.font = 'bold 14px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'left';
+                ctx.fillText(pts.length > 1 ? `P${idx+1}` : 'P', sx + 10, sy - 6);
+            });
+            updateTanEq(eqs);
         }
 
         ctx.restore();
     }
 
     function conicDragHandler(mx, my, isDown, isMove, isUp) {
+        if (conicTanMode === 'slope') return false;
         if (isDown) {
             const P = lastProjectedPt;
             const dist = Math.sqrt((mx - P.x) ** 2 + (my - P.y) ** 2);
@@ -615,6 +726,25 @@
 
         const tanCheck = document.getElementById('geom-conic-tangent');
         if (tanCheck) tanCheck.addEventListener('change', redrawConic);
+
+        document.querySelectorAll('input[name="geom-conic-tan-mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                conicTanMode = e.target.value;
+                const slopeControls = document.getElementById('geom-conic-slope-controls');
+                if (slopeControls) slopeControls.style.display = conicTanMode === 'slope' ? 'block' : 'none';
+                redrawConic();
+            });
+        });
+
+        const mSlider = document.getElementById('geom-conic-m-slider');
+        const mVal = document.getElementById('geom-conic-m-val');
+        if (mSlider) {
+            mSlider.addEventListener('input', (e) => {
+                conicTanSlope = parseFloat(e.target.value);
+                if (mVal) mVal.textContent = conicTanSlope.toFixed(1);
+                redrawConic();
+            });
+        }
 
         attachViewport(canvas, () => conicVP, vp => { conicVP = vp; }, redrawConic, conicDragHandler);
 
