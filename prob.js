@@ -1835,6 +1835,267 @@ window.initLLN = (function () {
     };
 })();
 
+/* ========================================================= */
+/* --- 중심극한 정리 (Central Limit Theorem) Logic --- */
+/* ========================================================= */
+window.initCLT = (function () {
+    let _initialized = false;
+
+    return function () {
+        if (_initialized) return;
+        _initialized = true;
+
+        const popCanvas = document.getElementById('cltPopCanvas');
+        const sampleCanvas = document.getElementById('cltSampleCanvas');
+        if (!popCanvas || !sampleCanvas) return;
+        const popCtx = popCanvas.getContext('2d');
+        const sampleCtx = sampleCanvas.getContext('2d');
+
+        // State
+        let popType = 'normal'; // normal, uniform, exponential, ushape
+        let sampleSize = 30;
+        let sampleMeans = [];
+        let totalRuns = 0;
+        let isAnimating = false;
+
+        // UI Elements
+        const distBtns = document.querySelectorAll('.clt-dist-btn');
+        const nSlider = document.getElementById('clt-n-slider');
+        const nValTxt = document.getElementById('clt-n-val');
+        const totalValTxt = document.getElementById('clt-total-val');
+        const theoMuTxt = document.getElementById('clt-theo-mu');
+        const actualMuTxt = document.getElementById('clt-actual-mu');
+
+        // Distributions parameters (Domain: X in [0, 100])
+        const distParams = {
+            normal: { mu: 50, sigma: 12, pdf: (x) => Math.exp(-0.5 * Math.pow((x - 50) / 12, 2)) / (12 * Math.sqrt(2 * Math.PI)), gen: () => { let u1 = Math.random(), u2 = Math.random(); return 50 + 12 * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2); } },
+            uniform: { mu: 50, sigma: Math.sqrt(10000 / 12), pdf: (x) => (x >= 0 && x <= 100) ? 0.01 : 0, gen: () => Math.random() * 100 },
+            exponential: { mu: 20, sigma: 20, pdf: (x) => (x >= 0) ? 0.05 * Math.exp(-0.05 * x) : 0, gen: () => -Math.log(1 - Math.random()) / 0.05 },
+            ushape: { mu: 50, sigma: Math.sqrt(10000 / 8), pdf: (x) => (x > 0 && x < 100) ? 1 / (Math.PI * Math.sqrt(x * (100 - x))) : 0, gen: () => 100 * Math.pow(Math.sin(Math.random() * Math.PI / 2), 2) }
+        };
+
+        // Bins for histogram
+        const numBins = 50;
+        const binWidth = 100 / numBins;
+        let histogram = new Array(numBins).fill(0);
+
+        function resetAll() {
+            sampleMeans = [];
+            histogram.fill(0);
+            totalRuns = 0;
+            isAnimating = false;
+            updateUI();
+            draw();
+        }
+
+        // UI Event Listeners
+        distBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                distBtns.forEach(b => { b.style.background = ''; b.style.color = ''; b.style.borderColor = ''; });
+                this.style.background = '#ebf8ff'; this.style.color = '#3182ce'; this.style.borderColor = '#bee3f8';
+                popType = this.dataset.dist;
+                resetAll();
+            });
+        });
+
+        nSlider.addEventListener('input', (e) => {
+            sampleSize = parseInt(e.target.value);
+            nValTxt.innerText = sampleSize;
+            resetAll();
+        });
+
+        document.getElementById('clt-reset-btn').addEventListener('click', resetAll);
+
+        document.getElementById('clt-run-1').addEventListener('click', () => {
+            if (isAnimating) return;
+            isAnimating = true;
+            // Animation for drawing 1 sample
+            let samples = [];
+            for (let i = 0; i < sampleSize; i++) samples.push(distParams[popType].gen());
+            let mean = samples.reduce((a, b) => a + b) / sampleSize;
+
+            // Draw animation frames
+            let startTime = performance.now();
+            let duration = 800; // ms
+            function animFrame(time) {
+                let progress = (time - startTime) / duration;
+                if (progress > 1) progress = 1;
+                draw(samples, progress);
+                if (progress < 1) {
+                    requestAnimationFrame(animFrame);
+                } else {
+                    addMean(mean);
+                    isAnimating = false;
+                    updateUI();
+                    draw();
+                }
+            }
+            requestAnimationFrame(animFrame);
+        });
+
+        document.getElementById('clt-run-100').addEventListener('click', () => runBatch(100));
+        document.getElementById('clt-run-10000').addEventListener('click', () => runBatch(10000));
+
+        function runBatch(times) {
+            if (isAnimating) return;
+            const batchSize = Math.max(10, Math.floor(times / 20));
+            let current = 0;
+            isAnimating = true;
+
+            function step() {
+                let runs = Math.min(batchSize, times - current);
+                for (let i = 0; i < runs; i++) {
+                    let sum = 0;
+                    for (let j = 0; j < sampleSize; j++) sum += distParams[popType].gen();
+                    addMean(sum / sampleSize);
+                }
+                current += runs;
+                updateUI();
+                draw();
+                if (current < times) {
+                    requestAnimationFrame(step);
+                } else {
+                    isAnimating = false;
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function addMean(mean) {
+            sampleMeans.push(mean);
+            totalRuns++;
+            let binIdx = Math.floor(mean / binWidth);
+            if (binIdx < 0) binIdx = 0;
+            if (binIdx >= numBins) binIdx = numBins - 1;
+            histogram[binIdx]++;
+        }
+
+        function updateUI() {
+            totalValTxt.innerText = totalRuns.toLocaleString();
+            let p = distParams[popType];
+            theoMuTxt.innerText = p.mu.toFixed(2);
+            if (totalRuns > 0) {
+                let actualMu = sampleMeans.reduce((a, b) => a + b) / totalRuns;
+                actualMuTxt.innerText = actualMu.toFixed(2);
+            } else {
+                actualMuTxt.innerText = "-";
+            }
+        }
+
+        function draw(animSamples = null, animProgress = 0) {
+            popCtx.clearRect(0, 0, popCanvas.width, popCanvas.height);
+            sampleCtx.clearRect(0, 0, sampleCanvas.width, sampleCanvas.height);
+
+            const W = popCanvas.width;
+            const H = popCanvas.height;
+            const padL = 30, padR = 30, padB = 30, padT = 20;
+            const gW = W - padL - padR;
+            const gH = H - padB - padT;
+
+            function toX(x) { return padL + (x / 100) * gW; }
+            function toY(y, maxH, canvasH) { return canvasH - padB - (y / maxH) * gH; }
+
+            // 1. Draw Population Distribution
+            let p = distParams[popType];
+            let maxPdf = popType === 'uniform' ? 0.02 : (popType === 'normal' ? 0.04 : (popType === 'exponential' ? 0.06 : 0.05));
+            if (popType === 'ushape') maxPdf = 0.05;
+
+            popCtx.beginPath();
+            popCtx.moveTo(toX(0), toY(0, maxPdf, H));
+            for (let x = 0.1; x <= 99.9; x += 0.5) {
+                let y = p.pdf(x);
+                if (popType === 'ushape' && (x < 1 || x > 99)) y = Math.min(y, 0.05); // cap at 0.05 for visual
+                popCtx.lineTo(toX(x), toY(y, maxPdf, H));
+            }
+            popCtx.lineTo(toX(100), toY(0, maxPdf, H));
+            popCtx.fillStyle = 'rgba(115, 165, 255, 0.2)';
+            popCtx.fill();
+            popCtx.strokeStyle = '#3182ce';
+            popCtx.lineWidth = 2;
+            popCtx.stroke();
+
+            // Draw x-axis
+            popCtx.beginPath(); popCtx.moveTo(padL, H - padB); popCtx.lineTo(W - padR, H - padB);
+            popCtx.strokeStyle = '#cbd5e0'; popCtx.lineWidth = 2; popCtx.stroke();
+            popCtx.fillStyle = '#718096'; popCtx.font = '12px Outfit'; popCtx.textAlign = 'center';
+            for (let i = 0; i <= 100; i += 20) {
+                popCtx.fillText(i, toX(i), H - padB + 15);
+            }
+
+            // Draw animSamples if any
+            if (animSamples && animProgress <= 0.5) {
+                popCtx.fillStyle = '#e53e3e';
+                animSamples.forEach(val => {
+                    popCtx.beginPath();
+                    popCtx.arc(toX(val), H - padB, 4, 0, Math.PI * 2);
+                    popCtx.fill();
+                });
+            } else if (animSamples && animProgress > 0.5) {
+                // Collect them to the mean in the sample canvas
+                let mean = animSamples.reduce((a, b) => a + b) / sampleSize;
+                let dropProgress = (animProgress - 0.5) * 2; // 0 to 1
+                sampleCtx.fillStyle = '#e53e3e';
+                animSamples.forEach(val => {
+                    let curX = toX(val) + (toX(mean) - toX(val)) * dropProgress;
+                    let curY = padT + (sampleCanvas.height - padB - padT) * dropProgress;
+                    sampleCtx.beginPath();
+                    sampleCtx.arc(curX, curY, 4, 0, Math.PI * 2);
+                    sampleCtx.fill();
+                });
+            }
+
+            // 2. Draw Sample Means Histogram
+            let maxCount = Math.max(...histogram, 10);
+            if (totalRuns > 0) {
+                maxCount = Math.max(...histogram) * 1.2;
+            }
+
+            sampleCtx.fillStyle = '#68d391';
+            sampleCtx.strokeStyle = '#fff';
+            sampleCtx.lineWidth = 1;
+            for (let i = 0; i < numBins; i++) {
+                if (histogram[i] > 0) {
+                    let barX = toX(i * binWidth);
+                    let barW = toX((i + 1) * binWidth) - barX;
+                    let barH = (histogram[i] / maxCount) * gH;
+                    sampleCtx.fillRect(barX, sampleCanvas.height - padB - barH, barW, barH);
+                    sampleCtx.strokeRect(barX, sampleCanvas.height - padB - barH, barW, barH);
+                }
+            }
+
+            // Draw x-axis
+            sampleCtx.beginPath(); sampleCtx.moveTo(padL, sampleCanvas.height - padB); sampleCtx.lineTo(W - padR, sampleCanvas.height - padB);
+            sampleCtx.strokeStyle = '#cbd5e0'; sampleCtx.lineWidth = 2; sampleCtx.stroke();
+            sampleCtx.fillStyle = '#718096'; sampleCtx.font = '12px Outfit'; sampleCtx.textAlign = 'center';
+            for (let i = 0; i <= 100; i += 20) {
+                sampleCtx.fillText(i, toX(i), sampleCanvas.height - padB + 15);
+            }
+
+            // Draw theoretical Normal Distribution
+            if (totalRuns > 0) {
+                let cltSigma = p.sigma / Math.sqrt(sampleSize);
+                let cltMu = p.mu;
+                let area = totalRuns * binWidth;
+                
+                sampleCtx.beginPath();
+                for (let x = 0; x <= 100; x += 0.5) {
+                    let pdf = Math.exp(-0.5 * Math.pow((x - cltMu) / cltSigma, 2)) / (cltSigma * Math.sqrt(2 * Math.PI));
+                    let count = pdf * area;
+                    let y = sampleCanvas.height - padB - (count / maxCount) * gH;
+                    if (x === 0) sampleCtx.moveTo(toX(x), y);
+                    else sampleCtx.lineTo(toX(x), y);
+                }
+                sampleCtx.strokeStyle = '#e53e3e';
+                sampleCtx.lineWidth = 2;
+                sampleCtx.stroke();
+            }
+        }
+
+        updateUI();
+        draw();
+    };
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
     const probTabs = document.querySelectorAll('#idx-prob .index-tab');
     const panels = {
@@ -1843,6 +2104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         galton: document.getElementById('prob-panel-galton'),
         normal: document.getElementById('prob-panel-normal'),
         lln: document.getElementById('prob-panel-lln'),
+        clt: document.getElementById('prob-panel-clt'),
     };
     const canvasWraps = {
         monty: document.getElementById('canvas-wrap-monty'),
@@ -1850,6 +2112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         galton: document.getElementById('canvas-wrap-galton'),
         normal: document.getElementById('canvas-wrap-normal'),
         lln: document.getElementById('canvas-wrap-lln'),
+        clt: document.getElementById('canvas-wrap-clt'),
     };
 
     function showTab(targetTab) {
@@ -1874,6 +2137,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (targetTab === 'galton' && window.initGalton) window.initGalton();
         if (targetTab === 'normal' && window.initNormal) window.initNormal();
         if (targetTab === 'lln' && window.initLLN) window.initLLN();
+        if (targetTab === 'clt' && window.initCLT) window.initCLT();
 
         window.probCurrentTab = targetTab;
     }

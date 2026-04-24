@@ -3429,6 +3429,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: linear-gradient(135deg, #b794f4 0%, #805ad5 100%);
 }
 
+/* 중심극한 정리 탭 활성화 색상 */
+#idx-prob .index-tab[data-probtab="clt"].active {
+    background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+}
+
 /* 반응형 */
 @media screen and (max-width: 900px) {
     .galton-control-bar {
