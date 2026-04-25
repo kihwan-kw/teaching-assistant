@@ -1192,7 +1192,13 @@
         'dihedral': `<b>이면각(二面角)의 정의</b><br>
         두 반평면이 공유하는 교선(능선) 위의 한 점에서<br>각 반평면에 수선을 그었을 때 이루는 각<br><br>
         · 범위: 0° ≤ θ ≤ 180°<br>
-        <span style="color:#718096;font-size:12px;">수평 슬라이더로 이면각을 조절하세요</span>`
+        <span style="color:#718096;font-size:12px;">수평 슬라이더로 이면각을 조절하세요</span>`,
+        'three-perp': `<b>삼수선의 정리 (제1수선)</b><br>
+        평면 밖의 점 P에서 평면 α에 내린 수선의 발을 H라 하고,<br>
+        점 H에서 평면 위의 직선 ℓ에 내린 수선의 발을 K라 할 때,<br>
+        선분 PK는 직선 ℓ과 수직이다.<br><br>
+        <span style="color:#e53e3e;">Step 1: PH ⊥ α</span>, <span style="color:#3182ce;">Step 2: HK ⊥ ℓ</span> 이면<br>
+        자동으로 <span style="color:#38a169;">PK ⊥ ℓ</span> 이 성립합니다.`
     };
 
     function proj3D(x, y, z, cx, cy) {
@@ -1204,15 +1210,30 @@
     }
 
     function redrawSolid() {
-        const canvas = document.getElementById('geomSolidCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-        ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
-        const cx = W / 2, cy = H / 2 + 40;
-        if (solidTopic === 'line-plane') drawLinePlane(ctx, cx, cy);
-        else drawDihedral(ctx, cx, cy);
+        const c2d = document.getElementById('geomSolidCanvas');
+        const c3d = document.getElementById('threePerpCanvas');
+        const cCtrl = document.getElementById('geom-three-perp-controls');
+        if (!c2d || !c3d) return;
+
+        if (solidTopic === 'three-perp') {
+            c2d.style.display = 'none';
+            c3d.style.display = 'block';
+            if (cCtrl) cCtrl.style.display = 'block';
+            initThreePerp();
+            buildThreePerpScene();
+        } else {
+            c2d.style.display = 'block';
+            c3d.style.display = 'none';
+            if (cCtrl) cCtrl.style.display = 'none';
+            
+            const ctx = c2d.getContext('2d');
+            const W = c2d.width, H = c2d.height;
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
+            const cx = W / 2, cy = H / 2 + 40;
+            if (solidTopic === 'line-plane') drawLinePlane(ctx, cx, cy);
+            else drawDihedral(ctx, cx, cy);
+        }
     }
 
     function drawLinePlane(ctx, cx, cy) {
@@ -1293,6 +1314,169 @@
         ctx.font = '13px Outfit'; ctx.fillStyle = '#718096'; ctx.fillText('수평 슬라이더로 이면각을 조절하세요', 18, 44);
     }
 
+    // ==========================================
+    // 삼수선의 정리 (Three.js 3D 로직)
+    // ==========================================
+    let tpScene, tpCamera, tpRenderer, tpControls;
+    let tpInitDone = false;
+    let tpGroup = new THREE.Group();
+    let tpStep1 = false, tpStep2 = false;
+
+    function initThreePerp() {
+        if (tpInitDone) return;
+        const canvas = document.getElementById('threePerpCanvas');
+        if (!canvas || typeof THREE === 'undefined') return;
+
+        tpScene = new THREE.Scene();
+        tpScene.background = new THREE.Color(0xf8fafc);
+
+        tpCamera = new THREE.PerspectiveCamera(45, 800 / 520, 0.1, 1000);
+        tpCamera.position.set(16, 12, 18);
+
+        tpRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        tpRenderer.setSize(800, 520, false);
+        tpRenderer.setPixelRatio(window.devicePixelRatio);
+
+        if (typeof THREE.OrbitControls !== 'undefined') {
+            tpControls = new THREE.OrbitControls(tpCamera, tpRenderer.domElement);
+            tpControls.enableDamping = true;
+            tpControls.dampingFactor = 0.05;
+            tpControls.target.set(0, 2, 0);
+        }
+
+        tpScene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const dl1 = new THREE.DirectionalLight(0xffffff, 0.5);
+        dl1.position.set(10, 20, 10);
+        tpScene.add(dl1);
+
+        tpScene.add(tpGroup);
+
+        tpInitDone = true;
+        animateThreePerp();
+    }
+
+    function createThickLine(p1, p2, color, thickness=0.06) {
+        const dist = p1.distanceTo(p2);
+        const geo = new THREE.CylinderGeometry(thickness, thickness, dist, 8);
+        const mat = new THREE.MeshPhongMaterial({ color: color });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(p1).lerp(p2, 0.5);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize());
+        return mesh;
+    }
+
+    function createLabelSprite(text, colorStr) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.font = 'bold 36px Outfit';
+        ctx.fillStyle = colorStr;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 64, 32);
+        const tex = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(2.5, 1.25, 1);
+        sprite.renderOrder = 999;
+        return sprite;
+    }
+
+    function buildThreePerpScene() {
+        tpGroup.clear();
+
+        // 1. 평면 α
+        const grid = new THREE.GridHelper(20, 20, 0xa0aec0, 0xe2e8f0);
+        tpGroup.add(grid);
+
+        const planeGeo = new THREE.PlaneGeometry(20, 20);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 0x90cdf4, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
+        const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+        planeMesh.rotation.x = -Math.PI / 2;
+        tpGroup.add(planeMesh);
+
+        const alphaLabel = createLabelSprite('α', '#3182ce');
+        alphaLabel.position.set(8, 0, 8);
+        tpGroup.add(alphaLabel);
+
+        // 점 좌표 설정
+        const P = new THREE.Vector3(0, 6, 0);
+        const H = new THREE.Vector3(0, 0, 0);
+        const K = new THREE.Vector3(0, 0, 5); // y축(높이)=0, x축=0, z축=5 -> l선상
+
+        // 2. 직선 l (평면 위, z=5, x축과 평행)
+        const L_START = new THREE.Vector3(-10, 0, 5);
+        const L_END = new THREE.Vector3(10, 0, 5);
+        tpGroup.add(createThickLine(L_START, L_END, 0x2d3748, 0.05));
+        
+        const lLabel = createLabelSprite('ℓ', '#2d3748');
+        lLabel.position.set(9, 0.5, 5);
+        tpGroup.add(lLabel);
+
+        // 3. 점 렌더링
+        const ptGeo = new THREE.SphereGeometry(0.15, 16, 16);
+        const pMesh = new THREE.Mesh(ptGeo, new THREE.MeshPhongMaterial({color: 0x1a202c})); pMesh.position.copy(P); tpGroup.add(pMesh);
+        const hMesh = new THREE.Mesh(ptGeo, new THREE.MeshPhongMaterial({color: 0x1a202c})); hMesh.position.copy(H); tpGroup.add(hMesh);
+        const kMesh = new THREE.Mesh(ptGeo, new THREE.MeshPhongMaterial({color: 0x1a202c})); kMesh.position.copy(K); tpGroup.add(kMesh);
+
+        const labelP = createLabelSprite('P', '#1a202c'); labelP.position.copy(P).add(new THREE.Vector3(0, 0.6, 0)); tpGroup.add(labelP);
+        const labelH = createLabelSprite('H', '#1a202c'); labelH.position.copy(H).add(new THREE.Vector3(-0.4, 0, -0.4)); tpGroup.add(labelH);
+        const labelK = createLabelSprite('K', '#1a202c'); labelK.position.copy(K).add(new THREE.Vector3(-0.4, 0, 0.4)); tpGroup.add(labelK);
+
+        // 직각 기호 그리기 헬퍼
+        function drawRightAngle(origin, dir1, dir2, color) {
+            const size = 0.6;
+            const d1 = dir1.clone().normalize().multiplyScalar(size);
+            const d2 = dir2.clone().normalize().multiplyScalar(size);
+            const pt1 = origin.clone().add(d1);
+            const pt2 = pt1.clone().add(d2);
+            const pt3 = origin.clone().add(d2);
+            
+            const arr = [pt1, pt2, pt2, pt3];
+            const g = new THREE.BufferGeometry().setFromPoints(arr);
+            const m = new THREE.LineBasicMaterial({color: color});
+            tpGroup.add(new THREE.LineSegments(g, m));
+
+            // 채우기
+            const gFill = new THREE.BufferGeometry().setFromPoints([origin, pt1, pt2, pt3]);
+            gFill.setIndex([0, 1, 2, 0, 2, 3]);
+            const mFill = new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.3, side: THREE.DoubleSide});
+            tpGroup.add(new THREE.Mesh(gFill, mFill));
+        }
+
+        // Step 1: PH ⊥ α
+        if (tpStep1) {
+            tpGroup.add(createThickLine(P, H, 0xe53e3e, 0.04));
+            // H에서 직각 기호 (x축, z축 방향)
+            drawRightAngle(H, new THREE.Vector3(0,1,0), new THREE.Vector3(1,0,0), 0xe53e3e);
+            drawRightAngle(H, new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,1), 0xe53e3e);
+        }
+
+        // Step 2: HK ⊥ l
+        if (tpStep2) {
+            tpGroup.add(createThickLine(H, K, 0x3182ce, 0.04));
+            // K에서 직각 기호 (HK 방향과 l방향)
+            drawRightAngle(K, new THREE.Vector3(0,0,-1), new THREE.Vector3(1,0,0), 0x3182ce);
+        }
+
+        // Auto Complete: PK ⊥ l
+        if (tpStep1 && tpStep2) {
+            tpGroup.add(createThickLine(P, K, 0x38a169, 0.05));
+            // K에서 PK 방향과 l방향 직각
+            const dirPK = new THREE.Vector3().subVectors(P, K);
+            drawRightAngle(K, dirPK, new THREE.Vector3(1,0,0), 0x38a169);
+        }
+    }
+
+    function animateThreePerp() {
+        requestAnimationFrame(animateThreePerp);
+        if (solidTopic !== 'three-perp') return;
+        if (tpControls) tpControls.update();
+        if (tpRenderer && tpScene && tpCamera) {
+            tpRenderer.render(tpScene, tpCamera);
+        }
+    }
+
     function initSolidSection() {
         const canvas = document.getElementById('geomSolidCanvas');
         if (!canvas) return;
@@ -1316,6 +1500,12 @@
 
         const el = document.getElementById('geom-solid-info');
         if (el) el.innerHTML = SOLID_INFO[solidTopic] || '';
+
+        // 삼수선 Step 버튼 이벤트 리스너 연결
+        const step1Btn = document.getElementById('three-perp-step1');
+        const step2Btn = document.getElementById('three-perp-step2');
+        if(step1Btn) step1Btn.addEventListener('change', (e) => { tpStep1 = e.target.checked; buildThreePerpScene(); });
+        if(step2Btn) step2Btn.addEventListener('change', (e) => { tpStep2 = e.target.checked; buildThreePerpScene(); });
     }
 
     /* ============================================================

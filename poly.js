@@ -21,25 +21,35 @@ window.initPoly = (function () {
                 const a = R / Math.sqrt(3);
                 const P = [V3(a, a, a), V3(a, -a, -a), V3(-a, a, -a), V3(-a, -a, a)];
                 return [
-                    [P[0], P[2], P[1]],
-                    [P[0], P[1], P[3]],
-                    [P[0], P[3], P[2]],
-                    [P[1], P[2], P[3]],
+                    [P[0], P[1], P[2]], // 0: 중앙 (정방향 UP)
+                    [P[3], P[2], P[1]], // 1: 아래쪽 (역방향 DOWN)
+                    [P[1], P[0], P[3]], // 2: 왼쪽 (역방향 DOWN)
+                    [P[2], P[3], P[0]], // 3: 오른쪽 (역방향 DOWN)
                 ];
             }
             case 'hexa': {
                 const s = R / Math.sqrt(3);
                 const P = [
-                    V3(-s, -s, -s), V3(s, -s, -s), V3(s, s, -s), V3(-s, s, -s),
-                    V3(-s, -s, s), V3(s, -s, s), V3(s, s, s), V3(-s, s, s),
+                    V3(-s, -s, -s), // 0: 왼쪽 아래 뒤
+                    V3(s, -s, -s),  // 1: 오른쪽 아래 뒤
+                    V3(s, s, -s),   // 2: 오른쪽 위 뒤
+                    V3(-s, s, -s),  // 3: 왼쪽 위 뒤
+                    V3(-s, -s, s),  // 4: 왼쪽 아래 앞
+                    V3(s, -s, s),   // 5: 오른쪽 아래 앞
+                    V3(s, s, s),    // 6: 오른쪽 위 앞
+                    V3(-s, s, s),   // 7: 왼쪽 위 앞
                 ];
+
+                // 🌟 전개도의 NET_LAYOUTS 순서(0:위, 1:앞(중앙), 2:아래, 3:왼, 4:오른, 5:뒤)와 
+                // 🌟 3D 면의 생성 순서를 완벽하게 1:1로 맞춥니다.
+                // 주의: 꼭짓점은 겉에서 봤을 때 '반시계 방향'으로 적어야 면의 앞/뒤가 뒤집히지 않습니다.
                 return [
-                    [P[0], P[1], P[2], P[3]],
-                    [P[4], P[7], P[6], P[5]],
-                    [P[0], P[4], P[5], P[1]],
-                    [P[2], P[6], P[7], P[3]],
-                    [P[0], P[3], P[7], P[4]],
-                    [P[1], P[5], P[6], P[2]],
+                    [P[3], P[2], P[6], P[7]], // 0번: 위쪽 면 (Top) -> 전개도의 위쪽
+                    [P[4], P[5], P[6], P[7]], // 1번: 앞쪽 면 (Front) -> 전개도의 중앙 (기준점)
+                    [P[0], P[1], P[5], P[4]], // 2번: 아래쪽 면 (Bottom) -> 전개도의 아래쪽
+                    [P[0], P[4], P[7], P[3]], // 3번: 왼쪽 면 (Left) -> 전개도의 왼쪽
+                    [P[1], P[2], P[6], P[5]], // 4번: 오른쪽 면 (Right) -> 전개도의 오른쪽
+                    [P[0], P[3], P[2], P[1]], // 5번: 뒤쪽 면 (Back) -> 전개도의 맨 아래 꼬리
                 ];
             }
             case 'octa': {
@@ -48,11 +58,16 @@ window.initPoly = (function () {
                     V3(0, R, 0), V3(0, -R, 0),
                     V3(0, 0, R), V3(0, 0, -R),
                 ];
+                // 8개의 면이 일렬 지그재그로 펼쳐지도록 순서와 기준점(localV[0])을 재배치했습니다.
                 return [
-                    [P[4], P[0], P[2]], [P[4], P[2], P[1]],
-                    [P[4], P[1], P[3]], [P[4], P[3], P[0]],
-                    [P[5], P[2], P[0]], [P[5], P[1], P[2]],
-                    [P[5], P[3], P[1]], [P[5], P[0], P[3]],
+                    [P[2], P[1], P[4]], // 0: UP (앞-위-왼쪽)
+                    [P[3], P[4], P[1]], // 1: DOWN (앞-아래-왼쪽)
+                    [P[2], P[4], P[0]], // 2: UP (앞-위-오른쪽)
+                    [P[3], P[0], P[4]], // 3: DOWN (앞-아래-오른쪽)
+                    [P[2], P[0], P[5]], // 4: UP (뒤-위-오른쪽)
+                    [P[3], P[5], P[0]], // 5: DOWN (뒤-아래-오른쪽)
+                    [P[2], P[5], P[1]], // 6: UP (뒤-위-왼쪽)
+                    [P[3], P[1], P[5]], // 7: DOWN (뒤-아래-왼쪽)
                 ];
             }
             case 'dodeca': {
@@ -116,36 +131,39 @@ window.initPoly = (function () {
         tetra: (S) => {
             const h = S * Math.sqrt(3) / 2;
             return [
-                { x: 0, y: 0, rz: 0 },              // 중앙 (위 꼭짓점)
-                { x: -S, y: -h, rz: Math.PI },         // 왼쪽 아래
-                { x: 0, y: -h * 2, rz: 0 },           // 아래
-                { x: S, y: -h, rz: Math.PI },         // 오른쪽 아래
+                { x: 0, y: 0, rz: 0 },                  // 0: 중앙 (UP)
+                { x: 0, y: -h / 3 * 2, rz: Math.PI },       // 1: 아래쪽 (DOWN)
+                { x: -S / 2, y: h / 3, rz: Math.PI },       // 2: 왼쪽 (DOWN)
+                { x: S / 2, y: h / 3, rz: Math.PI },        // 3: 오른쪽 (DOWN)
             ];
         },
 
         /* 정육면체: 십자 전개도 */
         hexa: (S) => [
-            { x: 0, y: S, rz: 0 },   // 위
-            { x: 0, y: 0, rz: 0 },   // 앞 (중앙)
-            { x: 0, y: -S, rz: 0 },   // 아래
-            { x: -S, y: 0, rz: 0 },   // 왼쪽
-            { x: S, y: 0, rz: 0 },   // 오른쪽
-            { x: 0, y: -2 * S, rz: 0 },   // 맨 아래
+            { x: 0, y: S, rz: 0 },          // 0: 위
+            { x: 0, y: 0, rz: 0 },          // 1: 앞 (중앙)
+            { x: 0, y: -S, rz: Math.PI },   // 2: 아래 (180도 뒤집힘 보정)
+            { x: -S, y: 0, rz: -Math.PI / 2 },// 3: 왼쪽 (-90도 보정)
+            { x: S, y: 0, rz: Math.PI / 2 },  // 4: 오른쪽 (90도 보정)
+            { x: 0, y: -2 * S, rz: 0 },     // 5: 뒤 (맨 아래 꼬리)
         ],
 
         /* 정팔면체: 지그재그 띠 */
         octa: (S) => {
             const h = S * Math.sqrt(3) / 2;
-            return [
-                { x: -1.5 * S, y: h / 3, rz: 0 },
-                { x: -S, y: -h / 3 * 2, rz: Math.PI },
-                { x: -0.5 * S, y: h / 3, rz: 0 },
-                { x: 0, y: -h / 3 * 2, rz: Math.PI },
-                { x: 0.5 * S, y: h / 3, rz: 0 },
-                { x: S, y: -h / 3 * 2, rz: Math.PI },
-                { x: 1.5 * S, y: h / 3, rz: 0 },
-                { x: 2 * S, y: -h / 3 * 2, rz: Math.PI },
-            ];
+            const res = [];
+            // 8개가 캔버스 중앙에 오도록 시작 X좌표 정렬
+            const startX = - (7 * S / 2) / 2;
+            for (let i = 0; i < 8; i++) {
+                if (i % 2 === 0) {
+                    // 짝수 번호: 위를 보는 삼각형 (UP)
+                    res.push({ x: startX + i * S / 2, y: -h / 6, rz: 0 });
+                } else {
+                    // 홀수 번호: 아래를 보는 삼각형 (DOWN - 180도 뒤집힘)
+                    res.push({ x: startX + i * S / 2, y: h / 6, rz: Math.PI });
+                }
+            }
+            return res;
         },
 
         /* 정십이면체: 꽃 모양 (중앙 오각형 + 주변 5개 + 반대쪽 6개) */
@@ -354,13 +372,28 @@ window.initPoly = (function () {
             mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat.clone()));
 
             // 3D 배치 세팅
+            // 3D 배치 세팅
             const origQuat = new THREE.Quaternion().setFromUnitVectors(localNormal, worldOutward);
             mesh.position.copy(center);
             mesh.quaternion.copy(origQuat);
 
             // 2D 전개도 배치 세팅 (qRoll * qFlat)
             const qFlat = new THREE.Quaternion().setFromUnitVectors(localNormal, zAxis);
-            const qRoll = new THREE.Quaternion().setFromAxisAngle(zAxis, netPos[i].rz || 0);
+
+            // 🌟 [추가된 2D 회전 보정 코드] 🌟
+            const v0_flat = localV[0].clone().applyQuaternion(qFlat);
+            const currentAngle = Math.atan2(v0_flat.y, v0_flat.x);
+
+            // 기본적으로 다각형의 첫 꼭짓점이 12시(90도) 방향을 보도록 기준을 잡음
+            let baseAngle = Math.PI / 2;
+            // 정육면체(사각형)일 경우에만 대각선(45도) 방향으로 기준 변경
+            if (typeKey === 'hexa') baseAngle = Math.PI / 4;
+
+            const correctionAngle = baseAngle - currentAngle;
+            const finalRz = (netPos[i].rz || 0) + correctionAngle;
+
+            // 수정된 finalRz 각도를 적용
+            const qRoll = new THREE.Quaternion().setFromAxisAngle(zAxis, finalRz);
             const targetQuat = new THREE.Quaternion().multiplyQuaternions(qRoll, qFlat);
 
             polyMeshGroup.add(mesh);

@@ -143,16 +143,29 @@ window.initProb = (function () {
 
         /* ==================== 2. 사용자 상호작용 (마우스 클릭) ==================== */
         pCanvas.addEventListener('click', (e) => {
+            // 💡 추가된 기능: 게임이 끝난 상태(2)에서 클릭하면 새 게임 시작
+            if (gameState === 2) {
+                initGame();
+                return;
+            }
+
             if (gameState !== 0) return; // 문을 고르는 상태가 아니면 무시
 
             const rect = pCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+
+            // 🌟 핵심 버그 수정: 캔버스 실제 크기와 화면 표시 크기의 비율 보정
+            const scaleX = pCanvas.width / rect.width;
+            const scaleY = pCanvas.height / rect.height;
+
+            // 보정된 비율을 곱해서 정확한 캔버스 내부 좌표를 구합니다.
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
 
             // 어떤 문을 클릭했는지 판별
             for (let i = 0; i < 3; i++) {
                 let dx = startX + i * (doorW + gap);
                 let dy = startY;
+                // 정확해진 x, y 좌표로 문(hitbox) 클릭 여부 확인
                 if (x >= dx && x <= dx + doorW && y >= dy && y <= dy + doorH) {
                     selectedDoor = i;
                     openGoatDoor();
@@ -209,11 +222,12 @@ window.initProb = (function () {
             drawDoors();
             updateStatsUI();
 
-            if (isWin) {
-                updateMessage(`🎉 <strong>자동차 당첨!</strong> (선택 ${actionStr} 성공)`, '#38a169');
-            } else {
-                updateMessage(`😭 <strong>염소 당첨...</strong> (선택 ${actionStr} 실패)`, '#e53e3e');
-            }
+            const resultMsg = isWin
+                ? `🎉 <strong>자동차 당첨!</strong> (선택 ${actionStr} 성공)`
+                : `😭 <strong>염소 당첨...</strong> (선택 ${actionStr} 실패)`;
+
+            // 안내 문구 추가: 다음 게임을 유도합니다.
+            updateMessage(`${resultMsg}<br><span style="font-size:14px; color:#718096; font-weight:normal;">화면을 클릭하면 다음 게임이 시작됩니다.</span>`, isWin ? '#38a169' : '#e53e3e');
         }
 
         /* ==================== 3. 통계 시뮬레이션 로직 ==================== */
@@ -1429,7 +1443,7 @@ window.initLLN = (function () {
             animObj.startTime = performance.now();
             animObj.duration = times === 1 ? 600 : 1000;
             animObj.targetTimes = times;
-            
+
             if (times === 1) {
                 animObj.result = sampleOnce();
                 lastSingleResult = animObj.result;
@@ -1445,9 +1459,9 @@ window.initLLN = (function () {
             if (!isAnimating) return;
             const elapsed = timestamp - animObj.startTime;
             animObj.progress = Math.min(elapsed / animObj.duration, 1);
-            
+
             draw();
-            
+
             if (animObj.progress < 1) {
                 animRaf = requestAnimationFrame(animLoop);
             } else {
@@ -1499,7 +1513,7 @@ window.initLLN = (function () {
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(sizeScale, sizeScale * Math.abs(scaleY));
-            
+
             ctx.beginPath();
             ctx.arc(0, 0, 35, 0, Math.PI * 2);
             ctx.fillStyle = isBiased ? '#fbd38d' : '#e2e8f0';
@@ -1520,8 +1534,8 @@ window.initLLN = (function () {
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 if (Math.abs(scaleY) > 0.1) {
-                     const text = value === 1 ? '앞(1)' : '뒤(0)';
-                     ctx.fillText(text, 0, 0);
+                    const text = value === 1 ? '앞(1)' : '뒤(0)';
+                    ctx.fillText(text, 0, 0);
                 }
             }
             ctx.restore();
@@ -1536,7 +1550,7 @@ window.initLLN = (function () {
             ctx.fillStyle = '#fff';
             ctx.strokeStyle = '#cbd5e0';
             ctx.lineWidth = 3;
-            
+
             ctx.beginPath();
             ctx.roundRect(-30, -30, 60, 60, 10);
             ctx.fill();
@@ -1546,15 +1560,15 @@ window.initLLN = (function () {
             if (value !== null) {
                 const dot = (dx, dy) => {
                     ctx.beginPath();
-                    ctx.arc(dx, dy, 5, 0, Math.PI*2);
+                    ctx.arc(dx, dy, 5, 0, Math.PI * 2);
                     ctx.fill();
                 };
-                if ([1,3,5].includes(value)) dot(0, 0);
-                if ([2,3,4,5,6].includes(value)) { dot(-15, -15); dot(15, 15); }
-                if ([4,5,6].includes(value)) { dot(15, -15); dot(-15, 15); }
+                if ([1, 3, 5].includes(value)) dot(0, 0);
+                if ([2, 3, 4, 5, 6].includes(value)) { dot(-15, -15); dot(15, 15); }
+                if ([4, 5, 6].includes(value)) { dot(15, -15); dot(-15, 15); }
                 if (value === 6) { dot(-15, 0); dot(15, 0); }
             }
-            
+
             ctx.restore();
         }
 
@@ -1575,18 +1589,18 @@ window.initLLN = (function () {
             // --- 상단 애니메이션 및 시각화 영역 ---
             const cx = W / 2;
             const cy = 75;
-            
+
             ctx.fillStyle = '#ffffff';
             ctx.shadowColor = 'rgba(0,0,0,0.05)';
             ctx.shadowBlur = 10;
             ctx.shadowOffsetY = 4;
             ctx.fillRect(cx - 160, cy - 60, 320, 120);
             ctx.shadowColor = 'transparent';
-            
+
             ctx.strokeStyle = '#e2e8f0';
             ctx.lineWidth = 1;
             ctx.strokeRect(cx - 160, cy - 60, 320, 120);
-            
+
             ctx.fillStyle = '#a0aec0';
             ctx.font = '12px Outfit';
             ctx.textAlign = 'center';
@@ -1609,7 +1623,7 @@ window.initLLN = (function () {
                 let valToDraw = finalResult;
 
                 if (isAnimating && renderProgress < 1) {
-                    cy_anim -= Math.sin(renderProgress * Math.PI) * 40; 
+                    cy_anim -= Math.sin(renderProgress * Math.PI) * 40;
                     if (expType === 'coin' || expType === 'biased') {
                         scaleY = Math.cos(renderProgress * Math.PI * 10);
                         valToDraw = null;
@@ -1628,27 +1642,27 @@ window.initLLN = (function () {
                 }
             } else {
                 if (isAnimating && renderProgress < 1) {
-                     ctx.save();
-                     ctx.beginPath();
-                     ctx.rect(cx - 160, cy - 60, 320, 120);
-                     ctx.clip();
-                     for(let i=0; i<18; i++) {
-                         let rx = cx - 140 + Math.random() * 280;
-                         let ry = cy - 40 + Math.random() * 80;
-                         let r_scale = Math.cos(Math.random() * Math.PI * 2 + renderProgress * 20);
-                         let r_rot = Math.random() * Math.PI * 2 + renderProgress * 10;
-                         ctx.globalAlpha = 0.5;
-                         if (expType === 'coin') drawCoin(rx, ry, r_scale, null, false, 0.4);
-                         else if (expType === 'biased') drawCoin(rx, ry, r_scale, null, true, 0.4);
-                         else drawDice(rx, ry, r_rot, null, 0.4);
-                     }
-                     ctx.restore();
-                     
-                     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                     ctx.fillRect(cx - 160, cy - 60, 320, 120);
-                     ctx.fillStyle = '#2b6cb0';
-                     ctx.font = 'bold 18px Outfit';
-                     ctx.fillText(`${currentTimes.toLocaleString()}번 연속 시행 중...`, cx, cy + 10);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(cx - 160, cy - 60, 320, 120);
+                    ctx.clip();
+                    for (let i = 0; i < 18; i++) {
+                        let rx = cx - 140 + Math.random() * 280;
+                        let ry = cy - 40 + Math.random() * 80;
+                        let r_scale = Math.cos(Math.random() * Math.PI * 2 + renderProgress * 20);
+                        let r_rot = Math.random() * Math.PI * 2 + renderProgress * 10;
+                        ctx.globalAlpha = 0.5;
+                        if (expType === 'coin') drawCoin(rx, ry, r_scale, null, false, 0.4);
+                        else if (expType === 'biased') drawCoin(rx, ry, r_scale, null, true, 0.4);
+                        else drawDice(rx, ry, r_rot, null, 0.4);
+                    }
+                    ctx.restore();
+
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.fillRect(cx - 160, cy - 60, 320, 120);
+                    ctx.fillStyle = '#2b6cb0';
+                    ctx.font = 'bold 18px Outfit';
+                    ctx.fillText(`${currentTimes.toLocaleString()}번 연속 시행 중...`, cx, cy + 10);
                 } else {
                     ctx.fillStyle = '#4a5568';
                     ctx.font = 'bold 16px Outfit';
@@ -2076,7 +2090,7 @@ window.initCLT = (function () {
                 let cltSigma = p.sigma / Math.sqrt(sampleSize);
                 let cltMu = p.mu;
                 let area = totalRuns * binWidth;
-                
+
                 sampleCtx.beginPath();
                 for (let x = 0; x <= 100; x += 0.5) {
                     let pdf = Math.exp(-0.5 * Math.pow((x - cltMu) / cltSigma, 2)) / (cltSigma * Math.sqrt(2 * Math.PI));
