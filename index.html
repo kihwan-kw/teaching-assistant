@@ -40,6 +40,7 @@
                 </button>
                 <div class="prob-nav-dropdown">
                     <button class="prob-nav-item active" data-probtab="pascal">파스칼의 삼각형</button>
+                    <button class="prob-nav-item" data-probtab="binom">이항분포</button>
                 </div>
             </div>
 
@@ -948,6 +949,75 @@
                         </div>
                     </div><!-- /.prob-panel-pascal -->
 
+                    <!-- 이항분포 컨트롤 패널 -->
+                    <div id="prob-panel-binom" class="quad-panel" style="display:none;">
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📊 이항분포 B(n, p)</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.6; margin-bottom:8px;">
+                                슬라이더로 n과 p를 바꾸며<br>분포의 형태 변화를 관찰해 보세요.
+                            </div>
+                        </div>
+
+                        <!-- n 슬라이더 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">시행 횟수 n</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-size:14px; font-weight:700; color:#4a5568;">n = <span id="binom-n-val"
+                                        style="color:#3182ce; font-size:18px;">10</span></span>
+                            </div>
+                            <input type="range" id="binom-n" min="1" max="30" step="1" value="10" style="width:100%;">
+                        </div>
+
+                        <!-- p 슬라이더 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">성공 확률 p</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-size:14px; font-weight:700; color:#4a5568;">p = <span id="binom-p-val"
+                                        style="color:#ed8936; font-size:18px;">0.50</span></span>
+                            </div>
+                            <input type="range" id="binom-p" min="0.01" max="0.99" step="0.01" value="0.5"
+                                style="width:100%;">
+                        </div>
+
+                        <!-- 통계량 -->
+                        <div class="matrix-section"
+                            style="background:linear-gradient(135deg,rgba(115,165,255,0.08),rgba(177,156,217,0.08)); border-color:#bee3f8;">
+                            <h3 class="matrix-section-title" style="color:#2b6cb0;">📐 이론 통계량</h3>
+                            <div style="font-size:14px; color:#4a5568; line-height:2.2; font-weight:600;">
+                                <div>기댓값 &nbsp;E(X) = np = <strong id="binom-ex" style="color:#3182ce;">5.00</strong>
+                                </div>
+                                <div>분산 &nbsp;&nbsp;&nbsp;V(X) = np(1−p) = <strong id="binom-vx"
+                                        style="color:#805ad5;">2.50</strong></div>
+                                <div>표준편차 σ = <strong id="binom-sx" style="color:#38a169;">1.58</strong></div>
+                            </div>
+                        </div>
+
+                        <!-- 클릭 정보 -->
+                        <div class="matrix-section" style="background:#fffaf0; border-color:#fbd38d;">
+                            <h3 class="matrix-section-title" style="color:#744210;">🎯 막대 클릭 시</h3>
+                            <div id="binom-click-info"
+                                style="font-size:14px; color:#718096; line-height:1.8; font-weight:600;">
+                                막대를 클릭하면<br>P(X = k) 값을 확인할 수 있어요.
+                            </div>
+                        </div>
+
+                        <!-- 모드 선택 -->
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📈 표시 옵션</h3>
+                            <label
+                                style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#4a5568; cursor:pointer; margin-bottom:8px;">
+                                <input type="checkbox" id="binom-show-curve" checked
+                                    style="width:16px; height:16px; cursor:pointer;">
+                                정규분포 근사 곡선 표시
+                            </label>
+                            <div style="font-size:12px; color:#718096; line-height:1.5;">
+                                n이 클수록 곡선이 막대와 가까워집니다.
+                            </div>
+                        </div>
+
+                    </div><!-- /.prob-panel-binom -->
+
                     <div id="prob-panel-venn" class="quad-panel" style="display:none;">
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">⭕ 사건 A와 B의 덧셈정리</h3>
@@ -1464,6 +1534,14 @@
                         <div class="canvas-wrapper" style="width:100%; height:100%; padding:20px; background:#fff;">
                             <canvas id="vennCanvas" width="760" height="500"
                                 style="width:100%; height:auto; display:block;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 이항분포 캔버스 -->
+                    <div id="canvas-wrap-binom" style="display:none; width:100%; height:100%;">
+                        <div class="canvas-wrapper" style="width:100%; padding:20px; background:#fff;">
+                            <canvas id="binom-canvas" width="760" height="500"
+                                style="width:100%; height:auto; display:block; cursor:pointer;"></canvas>
                         </div>
                     </div>
 

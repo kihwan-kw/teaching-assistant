@@ -903,6 +903,294 @@ window.initPascal = (function () {
     };
 })();
 
+/* =====================================================
+   이항분포 B(n, p) 시각화
+   ===================================================== */
+window.initBinom = (function () {
+    let initialized = false;
+    /* ---------- 클릭한 막대 식별 ---------- */
+    let barRects = [];  /* [{k, x, y, w, h}] */
+    let selectedK = null;
+
+    return function () {
+        const canvas = document.getElementById('binom-canvas');
+        const wrap = document.getElementById('canvas-wrap-binom');
+        if (!canvas || !wrap) return;
+
+        if (!initialized) {
+            initialized = true;
+
+            /* 슬라이더 이벤트 */
+            document.getElementById('binom-n').addEventListener('input', function () {
+                document.getElementById('binom-n-val').textContent = this.value;
+                updateStats();
+                draw();
+            });
+            document.getElementById('binom-p').addEventListener('input', function () {
+                document.getElementById('binom-p-val').textContent = parseFloat(this.value).toFixed(2);
+                updateStats();
+                draw();
+            });
+            document.getElementById('binom-show-curve').addEventListener('change', draw);
+
+            /* 막대 클릭 */
+            canvas.addEventListener('click', function (e) {
+                const rect = canvas.getBoundingClientRect();
+                const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+                const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+                handleClick(mx, my);
+            });
+
+        }
+
+        updateStats();
+        draw();
+    };
+
+    /* ---------- 통계량 업데이트 ---------- */
+    function updateStats() {
+        const n = parseInt(document.getElementById('binom-n').value);
+        const p = parseFloat(document.getElementById('binom-p').value);
+        const ex = (n * p).toFixed(2);
+        const vx = (n * p * (1 - p)).toFixed(2);
+        const sx = Math.sqrt(n * p * (1 - p)).toFixed(2);
+        document.getElementById('binom-ex').textContent = ex;
+        document.getElementById('binom-vx').textContent = vx;
+        document.getElementById('binom-sx').textContent = sx;
+    }
+
+    /* ---------- 이항계수 ---------- */
+    function comb(n, k) {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        k = Math.min(k, n - k);
+        let c = 1;
+        for (let i = 0; i < k; i++) c = c * (n - i) / (i + 1);
+        return Math.round(c);
+    }
+
+    /* ---------- P(X = k) ---------- */
+    function binomProb(n, k, p) {
+        return comb(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+    }
+
+    /* ---------- 정규분포 PDF ---------- */
+    function normalPDF(x, mu, sigma) {
+        return Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2)) / (sigma * Math.sqrt(2 * Math.PI));
+    }
+
+    function handleClick(mx, my) {
+        for (const b of barRects) {
+            if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+                selectedK = (selectedK === b.k) ? null : b.k;
+                const n = parseInt(document.getElementById('binom-n').value);
+                const p = parseFloat(document.getElementById('binom-p').value);
+                if (selectedK !== null) {
+                    const prob = binomProb(n, selectedK, p);
+                    document.getElementById('binom-click-info').innerHTML =
+                        `<span style="font-size:16px; color:#2b6cb0; font-weight:800;">k = ${selectedK}</span><br>` +
+                        `P(X = ${selectedK})<br>` +
+                        `<span style="font-size:22px; color:#e53e3e; font-weight:800;">= ${prob.toFixed(5)}</span><br>` +
+                        `<span style="font-size:12px; color:#718096;">(${(prob * 100).toFixed(3)}%)</span>`;
+                } else {
+                    document.getElementById('binom-click-info').innerHTML =
+                        '막대를 클릭하면<br>P(X = k) 값을 확인할 수 있어요.';
+                }
+                draw();
+                return;
+            }
+        }
+        /* 빈 공간 클릭 → 선택 해제 */
+        selectedK = null;
+        document.getElementById('binom-click-info').innerHTML =
+            '막대를 클릭하면<br>P(X = k) 값을 확인할 수 있어요.';
+        draw();
+    }
+
+    /* ---------- 그리기 ---------- */
+    function draw() {
+        const canvas = document.getElementById('binom-canvas');
+        const wrap = document.getElementById('canvas-wrap-binom');
+        if (!canvas || !wrap) return;
+
+        const n = parseInt(document.getElementById('binom-n').value);
+        const p = parseFloat(document.getElementById('binom-p').value);
+        const showCurve = document.getElementById('binom-show-curve').checked;
+
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        /* 여백 */
+        const PAD_L = 60, PAD_R = 30, PAD_T = 40, PAD_B = 60;
+        const chartW = W - PAD_L - PAD_R;
+        const chartH = H - PAD_T - PAD_B;
+
+        ctx.clearRect(0, 0, W, H);
+
+        /* 배경 */
+        ctx.fillStyle = 'rgba(255,255,255,0.0)';
+        ctx.fillRect(0, 0, W, H);
+
+        /* 확률값 배열 계산 */
+        const probs = [];
+        for (let k = 0; k <= n; k++) probs.push(binomProb(n, k, p));
+        const maxProb = Math.max(...probs, 0.001);
+
+        /* 막대 너비 계산 (n+1개) */
+        const totalBars = n + 1;
+        const barW = Math.max(2, Math.min(60, chartW / totalBars * 0.7));
+        const step = chartW / totalBars;
+
+        barRects = [];
+
+        /* 격자선 */
+        ctx.strokeStyle = 'rgba(160,160,160,0.2)';
+        ctx.lineWidth = 0.5;
+        const yTicks = 5;
+        for (let i = 0; i <= yTicks; i++) {
+            const yy = PAD_T + chartH - (chartH / yTicks) * i;
+            ctx.beginPath();
+            ctx.moveTo(PAD_L, yy);
+            ctx.lineTo(PAD_L + chartW, yy);
+            ctx.stroke();
+            /* y축 레이블 */
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText((maxProb / yTicks * i).toFixed(3), PAD_L - 6, yy + 4);
+        }
+
+        /* 막대 그리기 */
+        for (let k = 0; k <= n; k++) {
+            const prob = probs[k];
+            const barH = (prob / maxProb) * chartH;
+            const bx = PAD_L + step * k + (step - barW) / 2;
+            const by = PAD_T + chartH - barH;
+
+            barRects.push({ k, x: bx, y: by, w: barW, h: barH });
+
+            /* 선택된 막대 강조 */
+            if (selectedK === k) {
+                ctx.fillStyle = '#e53e3e';
+                ctx.globalAlpha = 0.9;
+            } else {
+                /* p 값에 따라 색조 변화 (파랑 계열) */
+                const hue = 210 + (p - 0.5) * 40;
+                ctx.fillStyle = `hsl(${hue}, 70%, 58%)`;
+                ctx.globalAlpha = 0.75;
+            }
+            ctx.fillRect(bx, by, barW, barH);
+            ctx.globalAlpha = 1;
+
+            /* 막대 테두리 */
+            ctx.strokeStyle = selectedK === k ? '#c53030' : 'rgba(49,130,206,0.4)';
+            ctx.lineWidth = selectedK === k ? 1.5 : 0.5;
+            ctx.strokeRect(bx, by, barW, barH);
+
+            /* x축 레이블 (n이 클 때는 간격 조절) */
+            const labelStep = n <= 15 ? 1 : n <= 25 ? 2 : 3;
+            if (k % labelStep === 0) {
+                ctx.fillStyle = selectedK === k ? '#c53030' : '#4a5568';
+                ctx.font = `${n > 20 ? 10 : 12}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(k, bx + barW / 2, PAD_T + chartH + 18);
+            }
+        }
+
+        /* 기댓값 수직선 */
+        const mu = n * p;
+        const muX = PAD_L + step * mu + step / 2;
+        ctx.save();
+        ctx.strokeStyle = '#ed8936';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 3]);
+        ctx.beginPath();
+        ctx.moveTo(muX, PAD_T);
+        ctx.lineTo(muX, PAD_T + chartH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        /* 기댓값 레이블 */
+        ctx.fillStyle = '#ed8936';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`E(X) = ${mu.toFixed(1)}`, muX, PAD_T - 8);
+
+        /* 정규분포 근사 곡선 */
+        if (showCurve && n >= 3) {
+            const sigma = Math.sqrt(n * p * (1 - p));
+            if (sigma > 0.01) {
+                ctx.save();
+                ctx.strokeStyle = '#9f7aea';
+                ctx.lineWidth = 2.5;
+                ctx.globalAlpha = 0.85;
+                ctx.beginPath();
+
+                let first = true;
+                const steps = 400;
+                for (let i = 0; i <= steps; i++) {
+                    const kx = (i / steps) * n;
+                    const pdf = normalPDF(kx, mu, sigma);
+                    /* 정규분포 PDF를 이항분포 스케일에 맞게 변환 */
+                    const pdfScaled = pdf * (maxProb / normalPDF(mu, mu, sigma));
+                    const cx = PAD_L + step * kx + step / 2;
+                    const cy = PAD_T + chartH - (pdfScaled / maxProb) * chartH;
+
+                    if (first) { ctx.moveTo(cx, cy); first = false; }
+                    else ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+                ctx.restore();
+
+                /* 곡선 범례 */
+                ctx.save();
+                ctx.strokeStyle = '#9f7aea';
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.85;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(W - PAD_R - 130, PAD_T + 10);
+                ctx.lineTo(W - PAD_R - 100, PAD_T + 10);
+                ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = '#9f7aea';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('정규분포 근사', W - PAD_R - 95, PAD_T + 14);
+            }
+        }
+
+        /* 축 */
+        ctx.strokeStyle = '#a0aec0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        /* y축 */
+        ctx.moveTo(PAD_L, PAD_T);
+        ctx.lineTo(PAD_L, PAD_T + chartH);
+        /* x축 */
+        ctx.lineTo(PAD_L + chartW, PAD_T + chartH);
+        ctx.stroke();
+
+        /* x축 제목 */
+        ctx.fillStyle = '#718096';
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('k (성공 횟수)', PAD_L + chartW / 2, H - 10);
+
+        /* y축 제목 */
+        ctx.save();
+        ctx.translate(14, PAD_T + chartH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('P(X = k)', 0, 0);
+        ctx.restore();
+    }
+
+})();
+
+
 /* ========================================================= */
 /* --- 갈톤 보드 (Galton Board) Logic --- */
 /* ========================================================= */
@@ -2386,8 +2674,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* ── 탭 키 → 그룹 키 매핑 ── */
     const TAB_GROUP = {
-        perm: 'count',
         pascal: 'count',
+        binom: 'count',
         venn: 'prob',
         monty: 'prob',
         galton: 'dist',
@@ -2400,6 +2688,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const panels = {
         monty: document.getElementById('prob-panel-monty'),
         pascal: document.getElementById('prob-panel-pascal'),
+        binom: document.getElementById('prob-panel-binom'),
         galton: document.getElementById('prob-panel-galton'),
         normal: document.getElementById('prob-panel-normal'),
         lln: document.getElementById('prob-panel-lln'),
@@ -2410,6 +2699,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvasWraps = {
         monty: document.getElementById('canvas-wrap-monty'),
         pascal: document.getElementById('canvas-wrap-pascal'),
+        binom: document.getElementById('canvas-wrap-binom'),
         galton: document.getElementById('canvas-wrap-galton'),
         normal: document.getElementById('canvas-wrap-normal'),
         lln: document.getElementById('canvas-wrap-lln'),
@@ -2471,6 +2761,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /* 각 탭 초기화 함수 호출 */
         if (targetTab === 'pascal' && window.initPascal) window.initPascal();
+        if (targetTab === 'comb' && window.initBinom) window.initBinom();
+        if (targetTab === 'binom' && window.initBinom) window.initBinom();
         if (targetTab === 'monty' && window.initProb) window.initProb();
         if (targetTab === 'galton' && window.initGalton) window.initGalton();
         if (targetTab === 'normal' && window.initNormal) window.initNormal();
