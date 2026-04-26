@@ -203,9 +203,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switchIndexPanel(unit.id);
 
+        /* 확률과 통계 드롭다운 네비 표시/숨김 */
+        const probNav = document.getElementById('prob-nav');
+        if (probNav) probNav.style.display = unit.id === 'prob' ? 'flex' : 'none';
+
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
-            // prob 단원은 여기서 initProb 대신 showTab('pascal')이 내부에서 처리
             setTimeout(unit.init, 300);
         } else {
             if (unit.id === 'poly') setTimeout(() => window.initPoly(), 50);
@@ -216,12 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unit.id === 'deriv') setTimeout(() => { window.renderDerivMain(); window.renderDerivF(); }, 50);
             if (unit.id === 'seq') setTimeout(() => window.seqRedraw && window.seqRedraw(), 50);
             if (unit.id === 'quad') setTimeout(() => window.initQuad(), 50);
-            // prob 재진입: 현재 활성 탭 다시 렌더링
             if (unit.id === 'prob') setTimeout(() => {
                 if (window.probShowTab) window.probShowTab(window.probCurrentTab || 'pascal');
             }, 300);
         }
-        // 🌟 이 부분을 추가해 주세요! (해당 단원에 진입할 때 팝업 띄우기) 🌟
         showTutorial(unit.id);
     }
 
@@ -235,6 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
         homeScreen.style.alignItems = 'center';
         unitContents.forEach(el => el.classList.remove('active'));
         allIndexPanels.forEach(p => p.style.display = 'none');
+
+        /* prob-nav 숨기기 */
+        const probNav = document.getElementById('prob-nav');
+        if (probNav) probNav.style.display = 'none';
     }
 
     if (backBtn) backBtn.addEventListener('click', navigateHome);
@@ -275,15 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#idx-deriv .index-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             if (window.derivSwitchPanel) window.derivSwitchPanel(tab.dataset.derivtab);
-        });
-    });
-
-    document.querySelectorAll('#idx-prob .index-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('#idx-prob .index-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            // probShowTab: prob.js의 실제 탭 전환 함수 (showTab의 공개 래퍼)
-            if (window.probShowTab) window.probShowTab(tab.dataset.probtab);
         });
     });
 

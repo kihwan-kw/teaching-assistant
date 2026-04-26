@@ -2111,7 +2111,17 @@ window.initCLT = (function () {
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
-    const probTabs = document.querySelectorAll('#idx-prob .index-tab');
+
+    /* ── 탭 키 → 그룹 키 매핑 ── */
+    const TAB_GROUP = {
+        pascal: 'count',
+        monty: 'prob',
+        galton: 'dist',
+        normal: 'dist',
+        lln: 'stat',
+        clt: 'stat',
+    };
+
     const panels = {
         monty: document.getElementById('prob-panel-monty'),
         pascal: document.getElementById('prob-panel-pascal'),
@@ -2129,23 +2139,58 @@ document.addEventListener("DOMContentLoaded", () => {
         clt: document.getElementById('canvas-wrap-clt'),
     };
 
+    /* ── 드롭다운 nav 아이템 클릭 → showTab ── */
+    document.querySelectorAll('.prob-nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showTab(item.dataset.probtab);
+            document.querySelectorAll('.prob-nav-group').forEach(g => g.classList.remove('open'));
+        });
+    });
+
+    /* ── 그룹 버튼 클릭: 드롭다운 토글 ── */
+    document.querySelectorAll('.prob-nav-group-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const group = btn.closest('.prob-nav-group');
+            const isOpen = group.classList.contains('open');
+            document.querySelectorAll('.prob-nav-group').forEach(g => g.classList.remove('open'));
+            if (!isOpen) group.classList.add('open');
+        });
+    });
+
+    /* 외부 클릭 시 닫기 — mousedown 사용: click보다 먼저 실행되지 않으면서 item click의 stopPropagation을 우회하지 않음 */
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('.prob-nav-group')) {
+            document.querySelectorAll('.prob-nav-group').forEach(g => g.classList.remove('open'));
+        }
+    });
+
+    /* ── 핵심 showTab 함수 ── */
     function showTab(targetTab) {
+        /* 패널·캔버스 숨기기 */
         Object.values(panels).forEach(p => { if (p) p.style.display = 'none'; });
         Object.values(canvasWraps).forEach(c => { if (c) c.style.display = 'none'; });
 
-        probTabs.forEach(t =>
-            t.classList.toggle('active', t.dataset.probtab === targetTab)
-        );
-        document.querySelectorAll('.tab-btn[data-probtab]').forEach(btn =>
-            btn.classList.toggle('active', btn.dataset.probtab === targetTab)
-        );
+        /* 드롭다운 nav 동기화 */
+        const activeGroup = TAB_GROUP[targetTab];
+        document.querySelectorAll('.prob-nav-group-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.navgroup === activeGroup);
+        });
+        document.querySelectorAll('.prob-nav-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.probtab === targetTab);
+        });
 
+        /* 패널·캔버스 보이기 */
         if (panels[targetTab]) panels[targetTab].style.display = 'block';
         if (canvasWraps[targetTab]) canvasWraps[targetTab].style.display = 'block';
 
+        /* 이항정리 공식박스 */
         const formulaBox = document.getElementById('binomial-formula-box');
-        if (formulaBox) formulaBox.style.display = (targetTab === 'pascal' && window.pascalCurrentMode === 'binomial') ? 'block' : 'none';
+        if (formulaBox) formulaBox.style.display =
+            (targetTab === 'pascal' && window.pascalCurrentMode === 'binomial') ? 'block' : 'none';
 
+        /* 각 탭 초기화 함수 호출 */
         if (targetTab === 'pascal' && window.initPascal) window.initPascal();
         if (targetTab === 'monty' && window.initProb) window.initProb();
         if (targetTab === 'galton' && window.initGalton) window.initGalton();
@@ -2156,13 +2201,9 @@ document.addEventListener("DOMContentLoaded", () => {
         window.probCurrentTab = targetTab;
     }
 
-    /* 전역 노출 — main.js에서 호출 가능 */
+    /* ── 전역 노출 ── */
     window.probShowTab = showTab;
     window.probCurrentTab = 'pascal';
-
-    probTabs.forEach(tab => {
-        tab.addEventListener('click', e => showTab(e.target.dataset.probtab));
-    });
 
     showTab('pascal');
 });

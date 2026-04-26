@@ -3511,9 +3511,156 @@ input[type="range"]::-webkit-slider-thumb:hover {
     align-items: center;
     gap: 16px;
     margin-bottom: 24px;
-    /* 추가 */
     width: 100%;
     max-width: 1600px;
+}
+
+/* ========================================================= */
+/* --- 확률과 통계 topbar 드롭다운 네비게이터 --- */
+/* ========================================================= */
+
+.prob-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.prob-nav-group {
+    position: relative;
+}
+
+.prob-nav-group-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    color: #718096;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.prob-nav-group-btn:hover {
+    background: white;
+    color: #2d3748;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.prob-nav-group-btn.active[data-navgroup="count"] {
+    background: linear-gradient(135deg, #f6ad55, #ed8936);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(237, 137, 54, 0.35);
+}
+
+.prob-nav-group-btn.active[data-navgroup="prob"] {
+    background: linear-gradient(135deg, #fc8181, #e53e3e);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.35);
+}
+
+.prob-nav-group-btn.active[data-navgroup="dist"] {
+    background: linear-gradient(135deg, #63b3ed, #3182ce);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(49, 130, 206, 0.35);
+}
+
+.prob-nav-group-btn.active[data-navgroup="stat"] {
+    background: linear-gradient(135deg, #b794f4, #805ad5);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(128, 90, 213, 0.35);
+}
+
+.prob-nav-arrow {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.prob-nav-group:hover .prob-nav-arrow,
+.prob-nav-group.open .prob-nav-arrow {
+    transform: rotate(180deg);
+}
+
+/* 드롭다운 패널 */
+.prob-nav-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+    z-index: 200;
+    min-width: 150px;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.prob-nav-group:hover .prob-nav-dropdown,
+.prob-nav-group.open .prob-nav-dropdown {
+    display: flex;
+}
+
+.prob-nav-item {
+    padding: 9px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.prob-nav-item:hover {
+    background: #f7fafc;
+    color: #2d3748;
+}
+
+.prob-nav-item.active {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    font-weight: 800;
+}
+
+/* 현재 선택된 그룹 버튼의 active 탭 색상 통일 */
+.prob-nav-group-btn.active[data-navgroup="count"]~.prob-nav-dropdown .prob-nav-item.active {
+    background: #fffaf0;
+    color: #c05621;
+}
+
+.prob-nav-group-btn.active[data-navgroup="prob"]~.prob-nav-dropdown .prob-nav-item.active {
+    background: #fff5f5;
+    color: #c53030;
+}
+
+.prob-nav-group-btn.active[data-navgroup="dist"]~.prob-nav-dropdown .prob-nav-item.active {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.prob-nav-group-btn.active[data-navgroup="stat"]~.prob-nav-dropdown .prob-nav-item.active {
+    background: #faf5ff;
+    color: #6b46c1;
 }
 
 /* 정다면체 선택 버튼이 눌렸을 때(active)의 색상 */
@@ -3601,6 +3748,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     font-weight: 800;
     margin-right: 2px;
 }
+
 .vec-text::after {
     content: "→";
     position: absolute;
@@ -3611,6 +3759,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     font-style: normal;
     font-weight: 600;
 }
+
 .vec-abs {
     font-style: normal;
     font-weight: 600;

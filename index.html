@@ -29,6 +29,53 @@
     <div id="unit-topbar" class="unit-topbar">
         <button id="back-btn" class="back-btn">← 홈으로</button>
         <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
+
+        <!-- 확률과 통계 전용 드롭다운 네비게이터 -->
+        <div id="prob-nav" class="prob-nav" style="display:none;">
+
+            <!-- 그룹 1: 경우의 수 -->
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn active" data-navgroup="count">
+                    경우의 수 <span class="prob-nav-arrow">▾</span>
+                </button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item active" data-probtab="pascal">파스칼의 삼각형</button>
+                </div>
+            </div>
+
+            <!-- 그룹 2: 확률 -->
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn" data-navgroup="prob">
+                    확률 <span class="prob-nav-arrow">▾</span>
+                </button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item" data-probtab="monty">몬티홀 딜레마</button>
+                </div>
+            </div>
+
+            <!-- 그룹 3: 확률분포 -->
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn" data-navgroup="dist">
+                    확률분포 <span class="prob-nav-arrow">▾</span>
+                </button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item" data-probtab="galton">갈톤보드</button>
+                    <button class="prob-nav-item" data-probtab="normal">정규분포</button>
+                </div>
+            </div>
+
+            <!-- 그룹 4: 통계적 추정 -->
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn" data-navgroup="stat">
+                    통계적 추정 <span class="prob-nav-arrow">▾</span>
+                </button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item" data-probtab="lln">큰수의 법칙</button>
+                    <button class="prob-nav-item" data-probtab="clt">중심극한 정리</button>
+                </div>
+            </div>
+
+        </div><!-- /#prob-nav -->
     </div>
 
     <!-- ★ 앱 컨테이너 -->
@@ -160,15 +207,8 @@
             <div class="index-tab active" data-derivtab="geometric">기하적 의미</div>
         </div>
 
-        <!-- 확률 전용 왼쪽 인덱스 -->
-        <div class="side-index-wrapper side-index-left" id="idx-prob" style="display:none;">
-            <div class="index-tab active" data-probtab="pascal">파스칼</div>
-            <div class="index-tab" data-probtab="monty">몬티홀</div>
-            <div class="index-tab" data-probtab="galton">갈톤보드</div>
-            <div class="index-tab" data-probtab="normal">정규분포</div>
-            <div class="index-tab" data-probtab="lln">큰수의 법칙</div>
-            <div class="index-tab" data-probtab="clt">중심극한 정리</div>
-        </div>
+        <!-- 확률 전용 인덱스: topbar 드롭다운으로 이전됨 (더미 - switchIndexPanel 호환용) -->
+        <div id="idx-prob" style="display:none;"></div>
 
         <!-- 기하 전용 왼쪽 인덱스 -->
         <div class="side-index-wrapper side-index-left" id="idx-geom" style="display:none;">
@@ -1140,127 +1180,137 @@
                         </div>
                     </div><!-- /.prob-panel-normal -->
 
-                <!-- 큰수의 법칙 컨트롤 패널 -->
-                <div id="prob-panel-lln" class="quad-panel" style="display:none;">
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">🎲 실험 설정</h3>
-                        <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
-                            동전 던지기나 주사위를 반복할수록<br>
-                            <strong>표본평균이 모평균에 가까워짐</strong>을 확인하세요.
-                        </div>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                            <button class="t-btn lln-exp-btn active" data-exp="coin"
-                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">🪙
-                                동전 (p=0.5)</button>
-                            <button class="t-btn lln-exp-btn" data-exp="dice"
-                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">🎲 주사위</button>
-                            <button class="t-btn lln-exp-btn" data-exp="biased"
-                                style="flex:1 1 100%; padding:10px; font-weight:800; font-size:14px;">⚖️ 편향 동전
-                                (p=0.3)</button>
-                        </div>
-                    </div>
-
-                    <div class="matrix-section" style="background:#fffaf0; border-color:#fbd38d;">
-                        <h3 class="matrix-section-title" style="color:#dd6b20;">📌 이론값 (모평균 μ)</h3>
-                        <div style="text-align:center; font-size:26px; font-weight:800; color:#dd6b20; padding:10px 0;">
-                            μ = <span id="lln-mu-val">0.500</span>
-                        </div>
-                        <div style="font-size:13px; color:#a0aec0; text-align:center;">현재 표본평균 수렴 오차:<br>
-                            <strong id="lln-error-val" style="font-size:18px; color:#e53e3e;">-</strong>
-                        </div>
-                    </div>
-
-                    <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
-                        <h3 class="matrix-section-title" style="color:#276749;">📊 현재 통계</h3>
-                        <div style="font-size:15px; line-height:2; color:#2d3748; font-weight:600;">
-                            <div>시행 횟수: <strong id="lln-n-val" style="color:#3182ce; font-size:18px;">0</strong></div>
-                            <div>표본평균: <strong id="lln-xbar-val" style="color:#805ad5; font-size:18px;">-</strong></div>
-                        </div>
-                    </div>
-
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">🚀 자동 실험</h3>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <button class="t-btn" id="lln-run-1"
-                                style="flex:1; padding:10px; font-weight:700;">1번</button>
-                            <button class="t-btn" id="lln-run-10"
-                                style="flex:1; padding:10px; font-weight:700;">10번</button>
-                            <button class="t-btn" id="lln-run-100"
-                                style="flex:1; padding:10px; font-weight:700;">100번</button>
-                            <button class="draw-btn" id="lln-run-1000"
-                                style="flex:1; padding:10px; font-size:14px; background:linear-gradient(135deg,#667eea,#764ba2);">1000번
-                                🔥</button>
-                        </div>
-                        <button class="t-btn" id="lln-reset-btn"
-                            style="width:100%; margin-top:10px; padding:10px; font-weight:700; background:#fff5f5; color:#e53e3e; border-color:#fed7d7;">🔄
-                            초기화</button>
-                    </div> <!-- closes matrix-section -->
-                </div><!-- /.prob-panel-lln -->
-
-                <!-- 중심극한 정리 컨트롤 패널 -->
-                <div id="prob-panel-clt" class="quad-panel" style="display:none;">
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">📊 모집단 분포 선택</h3>
-                        <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
-                            표본을 추출할 <strong>모집단의 형태</strong>를 고르세요.
-                        </div>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                            <button class="t-btn clt-dist-btn active" data-dist="normal"
-                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">🔔 정규 분포</button>
-                            <button class="t-btn clt-dist-btn" data-dist="uniform"
-                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">🟫 균등 분포</button>
-                            <button class="t-btn clt-dist-btn" data-dist="exponential"
-                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">📉 지수 분포</button>
-                            <button class="t-btn clt-dist-btn" data-dist="ushape"
-                                style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">🧲 U자형 분포</button>
-                        </div>
-                    </div>
-
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">⚙️ 표본 크기 (n) 설정</h3>
-                        <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:8px;">
-                            한 번에 뽑을 표본의 개수를 정합니다.<br>
-                            <span style="color:#e53e3e; font-weight:800;">n이 커질수록 정규분포에 가까워집니다!</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                            <span style="font-size:14px; font-weight:700; color:#4a5568;">n = <span
-                                    id="clt-n-val" style="color:#805ad5; font-size:18px;">30</span></span>
-                        </div>
-                        <input type="range" id="clt-n-slider" min="1" max="50" step="1" value="30"
-                            style="width:100%;">
-                        <div style="display:flex; justify-content:space-between; font-size:12px; color:#a0aec0; margin-top:4px;">
-                            <span>1</span>
-                            <span>50</span>
-                        </div>
-                    </div>
-
-                    <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
-                        <h3 class="matrix-section-title" style="color:#276749;">📉 표본평균 통계</h3>
-                        <div style="font-size:14px; line-height:2; color:#2d3748; font-weight:600;">
-                            <div>총 추출 횟수: <strong id="clt-total-val" style="color:#3182ce; font-size:18px;">0</strong>회</div>
-                            <div style="margin-top:5px; border-top:1px dashed #9ae6b4; padding-top:5px;">
-                                이론적 모평균 μ: <strong id="clt-theo-mu" style="color:#dd6b20;">-</strong><br>
-                                실제 표본평균의 평균: <strong id="clt-actual-mu" style="color:#e53e3e;">-</strong>
+                    <!-- 큰수의 법칙 컨트롤 패널 -->
+                    <div id="prob-panel-lln" class="quad-panel" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🎲 실험 설정</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                동전 던지기나 주사위를 반복할수록<br>
+                                <strong>표본평균이 모평균에 가까워짐</strong>을 확인하세요.
+                            </div>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                                <button class="t-btn lln-exp-btn active" data-exp="coin"
+                                    style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">🪙
+                                    동전 (p=0.5)</button>
+                                <button class="t-btn lln-exp-btn" data-exp="dice"
+                                    style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">🎲 주사위</button>
+                                <button class="t-btn lln-exp-btn" data-exp="biased"
+                                    style="flex:1 1 100%; padding:10px; font-weight:800; font-size:14px;">⚖️ 편향 동전
+                                    (p=0.3)</button>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="matrix-section">
-                        <h3 class="matrix-section-title">🚀 샘플링 시뮬레이션</h3>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <button class="t-btn" id="clt-run-1"
-                                style="flex:1; padding:10px; font-weight:700;">1번 추출</button>
-                            <button class="t-btn" id="clt-run-100"
-                                style="flex:1; padding:10px; font-weight:700;">100번</button>
-                            <button class="draw-btn" id="clt-run-10000"
-                                style="flex:1; padding:10px; font-size:14px; background:linear-gradient(135deg,#e53e3e,#fc8181);">10,000번 🔥</button>
+                        <div class="matrix-section" style="background:#fffaf0; border-color:#fbd38d;">
+                            <h3 class="matrix-section-title" style="color:#dd6b20;">📌 이론값 (모평균 μ)</h3>
+                            <div
+                                style="text-align:center; font-size:26px; font-weight:800; color:#dd6b20; padding:10px 0;">
+                                μ = <span id="lln-mu-val">0.500</span>
+                            </div>
+                            <div style="font-size:13px; color:#a0aec0; text-align:center;">현재 표본평균 수렴 오차:<br>
+                                <strong id="lln-error-val" style="font-size:18px; color:#e53e3e;">-</strong>
+                            </div>
                         </div>
-                        <button class="t-btn" id="clt-reset-btn"
-                            style="width:100%; margin-top:10px; padding:10px; font-weight:700; background:#fff5f5; color:#e53e3e; border-color:#fed7d7;">🔄
-                            그래프 초기화</button>
-                    </div>
-                </div><!-- /.prob-panel-clt -->
-            </div><!-- /.matrix-control-panel -->
+
+                        <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
+                            <h3 class="matrix-section-title" style="color:#276749;">📊 현재 통계</h3>
+                            <div style="font-size:15px; line-height:2; color:#2d3748; font-weight:600;">
+                                <div>시행 횟수: <strong id="lln-n-val" style="color:#3182ce; font-size:18px;">0</strong>
+                                </div>
+                                <div>표본평균: <strong id="lln-xbar-val" style="color:#805ad5; font-size:18px;">-</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🚀 자동 실험</h3>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="t-btn" id="lln-run-1"
+                                    style="flex:1; padding:10px; font-weight:700;">1번</button>
+                                <button class="t-btn" id="lln-run-10"
+                                    style="flex:1; padding:10px; font-weight:700;">10번</button>
+                                <button class="t-btn" id="lln-run-100"
+                                    style="flex:1; padding:10px; font-weight:700;">100번</button>
+                                <button class="draw-btn" id="lln-run-1000"
+                                    style="flex:1; padding:10px; font-size:14px; background:linear-gradient(135deg,#667eea,#764ba2);">1000번
+                                    🔥</button>
+                            </div>
+                            <button class="t-btn" id="lln-reset-btn"
+                                style="width:100%; margin-top:10px; padding:10px; font-weight:700; background:#fff5f5; color:#e53e3e; border-color:#fed7d7;">🔄
+                                초기화</button>
+                        </div> <!-- closes matrix-section -->
+                    </div><!-- /.prob-panel-lln -->
+
+                    <!-- 중심극한 정리 컨트롤 패널 -->
+                    <div id="prob-panel-clt" class="quad-panel" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📊 모집단 분포 선택</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                표본을 추출할 <strong>모집단의 형태</strong>를 고르세요.
+                            </div>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                                <button class="t-btn clt-dist-btn active" data-dist="normal"
+                                    style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px; background:#ebf8ff; color:#3182ce; border-color:#bee3f8;">🔔
+                                    정규 분포</button>
+                                <button class="t-btn clt-dist-btn" data-dist="uniform"
+                                    style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">🟫 균등
+                                    분포</button>
+                                <button class="t-btn clt-dist-btn" data-dist="exponential"
+                                    style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">📉 지수
+                                    분포</button>
+                                <button class="t-btn clt-dist-btn" data-dist="ushape"
+                                    style="flex:1 1 45%; padding:10px; font-weight:800; font-size:14px;">🧲 U자형
+                                    분포</button>
+                            </div>
+                        </div>
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">⚙️ 표본 크기 (n) 설정</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:8px;">
+                                한 번에 뽑을 표본의 개수를 정합니다.<br>
+                                <span style="color:#e53e3e; font-weight:800;">n이 커질수록 정규분포에 가까워집니다!</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-size:14px; font-weight:700; color:#4a5568;">n = <span id="clt-n-val"
+                                        style="color:#805ad5; font-size:18px;">30</span></span>
+                            </div>
+                            <input type="range" id="clt-n-slider" min="1" max="50" step="1" value="30"
+                                style="width:100%;">
+                            <div
+                                style="display:flex; justify-content:space-between; font-size:12px; color:#a0aec0; margin-top:4px;">
+                                <span>1</span>
+                                <span>50</span>
+                            </div>
+                        </div>
+
+                        <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
+                            <h3 class="matrix-section-title" style="color:#276749;">📉 표본평균 통계</h3>
+                            <div style="font-size:14px; line-height:2; color:#2d3748; font-weight:600;">
+                                <div>총 추출 횟수: <strong id="clt-total-val"
+                                        style="color:#3182ce; font-size:18px;">0</strong>회</div>
+                                <div style="margin-top:5px; border-top:1px dashed #9ae6b4; padding-top:5px;">
+                                    이론적 모평균 μ: <strong id="clt-theo-mu" style="color:#dd6b20;">-</strong><br>
+                                    실제 표본평균의 평균: <strong id="clt-actual-mu" style="color:#e53e3e;">-</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🚀 샘플링 시뮬레이션</h3>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="t-btn" id="clt-run-1" style="flex:1; padding:10px; font-weight:700;">1번
+                                    추출</button>
+                                <button class="t-btn" id="clt-run-100"
+                                    style="flex:1; padding:10px; font-weight:700;">100번</button>
+                                <button class="draw-btn" id="clt-run-10000"
+                                    style="flex:1; padding:10px; font-size:14px; background:linear-gradient(135deg,#e53e3e,#fc8181);">10,000번
+                                    🔥</button>
+                            </div>
+                            <button class="t-btn" id="clt-reset-btn"
+                                style="width:100%; margin-top:10px; padding:10px; font-weight:700; background:#fff5f5; color:#e53e3e; border-color:#fed7d7;">🔄
+                                그래프 초기화</button>
+                        </div>
+                    </div><!-- /.prob-panel-clt -->
+                </div><!-- /.matrix-control-panel -->
 
 
                 <!-- 우측 캔버스 영역 -->
@@ -1342,20 +1392,30 @@
 
                     <!-- 중심극한 정리 캔버스 -->
                     <div id="canvas-wrap-clt" style="display:none; width:100%; height:100%;">
-                        <div class="canvas-wrapper" style="width:100%; height:100%; padding:20px; background:#fff; display:flex; flex-direction:column; gap:10px;">
+                        <div class="canvas-wrapper"
+                            style="width:100%; height:100%; padding:20px; background:#fff; display:flex; flex-direction:column; gap:10px;">
                             <div style="flex:1; position:relative;">
-                                <div style="position:absolute; top:10px; left:10px; font-size:14px; font-weight:800; color:#4a5568;">모집단 분포 (Population)</div>
-                                <canvas id="cltPopCanvas" width="1000" height="300" style="width:100%; height:auto; display:block;"></canvas>
+                                <div
+                                    style="position:absolute; top:10px; left:10px; font-size:14px; font-weight:800; color:#4a5568;">
+                                    모집단 분포 (Population)</div>
+                                <canvas id="cltPopCanvas" width="1000" height="300"
+                                    style="width:100%; height:auto; display:block;"></canvas>
                             </div>
                             <div style="height:2px; background:#e2e8f0; margin:5px 0; position:relative;">
-                                <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:#fff; padding:0 10px; color:#a0aec0; font-size:16px;">↓ 표본 추출 ↓</div>
+                                <div
+                                    style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:#fff; padding:0 10px; color:#a0aec0; font-size:16px;">
+                                    ↓ 표본 추출 ↓</div>
                             </div>
                             <div style="flex:1; position:relative;">
-                                <div style="position:absolute; top:10px; left:10px; font-size:14px; font-weight:800; color:#4a5568;">표본평균의 분포 (Sample Means)</div>
-                                <div style="position:absolute; top:10px; right:10px; font-size:13px; color:#718096; display:flex; align-items:center; gap:5px;">
+                                <div
+                                    style="position:absolute; top:10px; left:10px; font-size:14px; font-weight:800; color:#4a5568;">
+                                    표본평균의 분포 (Sample Means)</div>
+                                <div
+                                    style="position:absolute; top:10px; right:10px; font-size:13px; color:#718096; display:flex; align-items:center; gap:5px;">
                                     <div style="width:12px; height:3px; background:#e53e3e;"></div> 이론적 정규분포 곡선
                                 </div>
-                                <canvas id="cltSampleCanvas" width="1000" height="300" style="width:100%; height:auto; display:block;"></canvas>
+                                <canvas id="cltSampleCanvas" width="1000" height="300"
+                                    style="width:100%; height:auto; display:block;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -1859,25 +1919,31 @@
                                     style="width:16px;height:16px;cursor:pointer;">
                                 접선 &amp; 법선 표시
                             </label>
-                            
-                            <div id="geom-conic-tangent-options" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:10px;">
+
+                            <div id="geom-conic-tangent-options"
+                                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:10px;">
                                 <div style="display:flex; gap:15px; margin-bottom:10px;">
                                     <label style="font-size:14px; font-weight:600; cursor:pointer; color:#4a5568;">
-                                        <input type="radio" name="geom-conic-tan-mode" value="point" checked style="margin-right:4px;"> 접점 지정
+                                        <input type="radio" name="geom-conic-tan-mode" value="point" checked
+                                            style="margin-right:4px;"> 접점 지정
                                     </label>
                                     <label style="font-size:14px; font-weight:600; cursor:pointer; color:#4a5568;">
-                                        <input type="radio" name="geom-conic-tan-mode" value="slope" style="margin-right:4px;"> 기울기 지정
+                                        <input type="radio" name="geom-conic-tan-mode" value="slope"
+                                            style="margin-right:4px;"> 기울기 지정
                                     </label>
                                 </div>
-                                <div id="geom-conic-slope-controls" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e0;">
+                                <div id="geom-conic-slope-controls"
+                                    style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e0;">
                                     <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                                         <span style="font-size:13px; font-weight:700; color:#4a5568;">기울기 m =</span>
-                                        <span id="geom-conic-m-val" style="color:#e53e3e; font-size:15px; font-weight:800;">1.0</span>
+                                        <span id="geom-conic-m-val"
+                                            style="color:#e53e3e; font-size:15px; font-weight:800;">1.0</span>
                                     </div>
-                                    <input type="range" id="geom-conic-m-slider" min="-5" max="5" step="0.1" value="1.0" style="width:100%;">
+                                    <input type="range" id="geom-conic-m-slider" min="-5" max="5" step="0.1" value="1.0"
+                                        style="width:100%;">
                                 </div>
                             </div>
-                            
+
                             <div id="geom-conic-tangent-eq"
                                 style="margin-top:10px; font-size:14px; color:#553c9a; font-weight:bold; line-height:1.6;">
                             </div>
@@ -2015,12 +2081,16 @@
                         <div class="matrix-section" id="geom-three-perp-controls" style="display:none;">
                             <h3 class="matrix-section-title">💡 단계별 이해</h3>
                             <div style="display:flex;flex-direction:column;gap:10px;">
-                                <label style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;cursor:pointer;">
-                                    <input type="checkbox" id="three-perp-step1" style="width:18px;height:18px;cursor:pointer;">
+                                <label
+                                    style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;cursor:pointer;">
+                                    <input type="checkbox" id="three-perp-step1"
+                                        style="width:18px;height:18px;cursor:pointer;">
                                     <span style="color:#e53e3e;">Step 1:</span> PH ⊥ α
                                 </label>
-                                <label style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;cursor:pointer;">
-                                    <input type="checkbox" id="three-perp-step2" style="width:18px;height:18px;cursor:pointer;">
+                                <label
+                                    style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;cursor:pointer;">
+                                    <input type="checkbox" id="three-perp-step2"
+                                        style="width:18px;height:18px;cursor:pointer;">
                                     <span style="color:#3182ce;">Step 2:</span> HK ⊥ ℓ
                                 </label>
                             </div>
