@@ -2110,16 +2110,291 @@ window.initCLT = (function () {
     };
 })();
 
+/* ========================================================= */
+/* --- 벤다이어그램 (Venn Diagram) Logic --- */
+/* ========================================================= */
+window.initVenn = (function () {
+    let _initialized = false;
+    return function () {
+        if (_initialized) return;
+        _initialized = true;
+
+        const canvas = document.getElementById('vennCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        let pa = 0.4, pb = 0.3, overlapRatio = 0.5;
+
+        function drawVenn() {
+            ctx.clearRect(0, 0, W, H);
+
+            // 전체 집합 S
+            ctx.strokeStyle = '#cbd5e0'; ctx.lineWidth = 2;
+            ctx.strokeRect(50, 50, W - 100, H - 100);
+            ctx.fillStyle = '#4a5568'; ctx.font = 'bold 20px Outfit';
+            ctx.fillText('S (표본공간)', 70, 80);
+
+            // 확률 크기에 비례하는 반지름 (시각적 스케일)
+            const maxR = 160;
+            const rA = Math.sqrt(pa) * maxR;
+            const rB = Math.sqrt(pb) * maxR;
+
+            // 중심 좌표 계산
+            const centerY = H / 2;
+            const minX = W / 2 - (rA + rB) / 2;
+            const maxX = W / 2 + Math.abs(rA - rB) / 2;
+
+            // overlapRatio (0: 배반사건, 1: 완전 포함)
+            const d = (rA + rB) - (overlapRatio * 2 * Math.min(rA, rB));
+            const cAx = W / 2 - d * (rB / (rA + rB));
+            const cBx = W / 2 + d * (rA / (rA + rB));
+
+            // 교집합 넓이 근사치 계산 (시각용)
+            const pIntersect = overlapRatio * Math.min(pa, pb);
+            const pUnion = pa + pb - pIntersect;
+
+            // 원 A 그리기
+            ctx.beginPath(); ctx.arc(cAx, centerY, rA, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(229, 62, 62, 0.4)'; // Red
+            ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#c53030'; ctx.stroke();
+
+            // 원 B 그리기
+            ctx.beginPath(); ctx.arc(cBx, centerY, rB, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(49, 130, 206, 0.4)'; // Blue
+            ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#2b6cb0'; ctx.stroke();
+
+            // 텍스트 라벨
+            ctx.fillStyle = '#c53030'; ctx.textAlign = 'center'; ctx.font = 'bold 22px Outfit';
+            ctx.fillText(`A (${pa.toFixed(2)})`, cAx - rA / 2, centerY);
+
+            ctx.fillStyle = '#2b6cb0';
+            ctx.fillText(`B (${pb.toFixed(2)})`, cBx + rB / 2, centerY);
+
+            if (pIntersect > 0.01) {
+                ctx.fillStyle = '#553c9a'; ctx.font = 'bold 16px Outfit';
+                ctx.fillText(`${pIntersect.toFixed(2)}`, (cAx + cBx) / 2, centerY);
+            }
+
+            // 하단 수식 업데이트
+            document.getElementById('venn-result-eq').innerHTML =
+                `${pUnion.toFixed(2)} <br> = ${pa.toFixed(2)} + ${pb.toFixed(2)} - ${pIntersect.toFixed(2)}`;
+        }
+
+        document.getElementById('venn-pa-slider').addEventListener('input', (e) => {
+            pa = parseFloat(e.target.value);
+            document.getElementById('venn-pa-val').innerText = pa.toFixed(2);
+            drawVenn();
+        });
+        document.getElementById('venn-pb-slider').addEventListener('input', (e) => {
+            pb = parseFloat(e.target.value);
+            document.getElementById('venn-pb-val').innerText = pb.toFixed(2);
+            drawVenn();
+        });
+        document.getElementById('venn-dist-slider').addEventListener('input', (e) => {
+            overlapRatio = parseFloat(e.target.value);
+            drawVenn();
+        });
+
+        drawVenn();
+    };
+})();
+
+/* ========================================================= */
+/* --- 모평균 추정 (Confidence Interval Simulator) --- */
+/* ========================================================= */
+window.initConf = (function () {
+    let _initialized = false;
+    return function () {
+        if (_initialized) return;
+        _initialized = true;
+
+        const canvas = document.getElementById('confCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        // 상태 관리 객체 (보내주신 구조 그대로 사용)
+        const state = {
+            mu: 100,
+            sigma: 20,
+            n: 30,
+            confidence: 0.95,
+            k: 1.96,
+            results: [],
+            total: 0,
+            success: 0,
+            isAuto: false,
+            maxDisplay: 40 // 화면 높이에 맞게 표시 개수 조정
+        };
+
+        let autoTimer = null;
+
+        // Box-Muller Transform 난수 생성
+        function randomNormal() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function takeSample() {
+            let sum = 0;
+            for (let i = 0; i < state.n; i++) {
+                sum += state.mu + randomNormal() * state.sigma;
+            }
+
+            const xBar = sum / state.n;
+            const se = state.sigma / Math.sqrt(state.n);
+            const marginOfError = state.k * se;
+
+            const lower = xBar - marginOfError;
+            const upper = xBar + marginOfError;
+            const isSuccess = lower <= state.mu && upper >= state.mu;
+
+            // 새 결과를 배열 맨 앞에 추가 (최신 데이터가 위로 오게)
+            state.results.unshift({ xBar, lower, upper, isSuccess });
+            if (state.results.length > state.maxDisplay) state.results.pop();
+
+            state.total++;
+            if (isSuccess) state.success++;
+
+            updateUI();
+            drawConf();
+        }
+
+        function drawConf() {
+            ctx.clearRect(0, 0, W, H);
+
+            // 배경 다크 처리
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, W, H);
+
+            // 유동적 스케일링: 시그마(산포도) 크기에 맞춰 캔버스 너비 동적 조절
+            const visibleRange = state.sigma * 4;
+            const scale = (W / 2) / visibleRange;
+            const centerX = W / 2;
+
+            // 1. 모평균 가이드라인 (점선)
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, H);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 2. 신뢰구간 막대 그리기
+            state.results.forEach((res, i) => {
+                const y = 50 + i * ((H - 80) / state.maxDisplay);
+                const xStart = centerX + (res.lower - state.mu) * scale;
+                const xEnd = centerX + (res.upper - state.mu) * scale;
+                const xBarPos = centerX + (res.xBar - state.mu) * scale;
+
+                // 성공(포함): 초록, 실패(미포함): 빨강
+                const color = res.isSuccess ? '#22c55e' : '#ef4444';
+                const opacity = 1 - (i / state.maxDisplay); // 페이드아웃 효과
+
+                ctx.strokeStyle = color;
+                ctx.globalAlpha = opacity;
+                ctx.lineWidth = 2.5;
+
+                // 수평선
+                ctx.beginPath();
+                ctx.moveTo(xStart, y);
+                ctx.lineTo(xEnd, y);
+                ctx.stroke();
+
+                // 수직 캡 (I 모양)
+                ctx.beginPath();
+                ctx.moveTo(xStart, y - 4); ctx.lineTo(xStart, y + 4);
+                ctx.moveTo(xEnd, y - 4); ctx.lineTo(xEnd, y + 4);
+                ctx.stroke();
+
+                // 표본평균 점
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(xBarPos, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        function updateUI() {
+            document.getElementById('conf-total-val').innerText = state.total.toLocaleString();
+            document.getElementById('conf-hit-val').innerText = state.success.toLocaleString();
+            const rate = state.total === 0 ? 0 : ((state.success / state.total) * 100);
+            document.getElementById('conf-ratio-val').innerText = rate.toFixed(1) + '%';
+        }
+
+        function resetAll() {
+            state.total = 0;
+            state.success = 0;
+            state.results = [];
+            if (state.isAuto) {
+                document.getElementById('conf-run-auto').click(); // 자동 추출 중지
+            }
+            updateUI();
+            drawConf();
+        }
+
+        // --- 이벤트 연결 ---
+        document.getElementById('conf-mu-slider').addEventListener('input', (e) => {
+            state.mu = parseInt(e.target.value);
+            document.getElementById('conf-mu-val').innerText = state.mu;
+            drawConf(); // 스케일이 달라지므로 즉시 다시 그림
+        });
+        document.getElementById('conf-sigma-slider').addEventListener('input', (e) => {
+            state.sigma = parseInt(e.target.value);
+            document.getElementById('conf-sigma-val').innerText = state.sigma;
+            drawConf();
+        });
+        document.getElementById('conf-n-slider').addEventListener('input', (e) => {
+            state.n = parseInt(e.target.value);
+            document.getElementById('conf-n-val').innerText = state.n;
+        });
+        document.getElementById('conf-level-select').addEventListener('change', (e) => {
+            state.confidence = parseInt(e.target.value) / 100;
+            state.k = state.confidence === 0.95 ? 1.96 : 2.58;
+        });
+
+        // 버튼 이벤트
+        document.getElementById('conf-run-1').addEventListener('click', takeSample);
+        document.getElementById('conf-reset').addEventListener('click', resetAll);
+
+        const btnAuto = document.getElementById('conf-run-auto');
+        btnAuto.addEventListener('click', () => {
+            state.isAuto = !state.isAuto;
+            if (state.isAuto) {
+                btnAuto.innerText = "자동 추출 중지 ⏸";
+                btnAuto.style.background = "linear-gradient(135deg, #ef4444, #b91c1c)"; // 빨간색 계열로 변경
+                autoTimer = setInterval(takeSample, 100); // 100ms 마다 추출
+            } else {
+                btnAuto.innerText = "자동 추출 시작 ▶";
+                btnAuto.style.background = "linear-gradient(135deg, #a78bfa, #8b5cf6)";
+                clearInterval(autoTimer);
+            }
+        });
+
+        // 초기 실행
+        drawConf();
+    };
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
 
     /* ── 탭 키 → 그룹 키 매핑 ── */
     const TAB_GROUP = {
+        perm: 'count',
         pascal: 'count',
+        venn: 'prob',
         monty: 'prob',
         galton: 'dist',
         normal: 'dist',
         lln: 'stat',
         clt: 'stat',
+        conf: 'stat'
     };
 
     const panels = {
@@ -2129,6 +2404,8 @@ document.addEventListener("DOMContentLoaded", () => {
         normal: document.getElementById('prob-panel-normal'),
         lln: document.getElementById('prob-panel-lln'),
         clt: document.getElementById('prob-panel-clt'),
+        venn: document.getElementById('prob-panel-venn'),
+        conf: document.getElementById('prob-panel-conf')
     };
     const canvasWraps = {
         monty: document.getElementById('canvas-wrap-monty'),
@@ -2137,6 +2414,8 @@ document.addEventListener("DOMContentLoaded", () => {
         normal: document.getElementById('canvas-wrap-normal'),
         lln: document.getElementById('canvas-wrap-lln'),
         clt: document.getElementById('canvas-wrap-clt'),
+        venn: document.getElementById('canvas-wrap-venn'),
+        conf: document.getElementById('canvas-wrap-conf')
     };
 
     /* ── 드롭다운 nav 아이템 클릭 → showTab ── */
@@ -2197,6 +2476,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (targetTab === 'normal' && window.initNormal) window.initNormal();
         if (targetTab === 'lln' && window.initLLN) window.initLLN();
         if (targetTab === 'clt' && window.initCLT) window.initCLT();
+        if (targetTab === 'venn' && window.initVenn) window.initVenn();
+        if (targetTab === 'conf' && window.initConf) window.initConf();
 
         window.probCurrentTab = targetTab;
     }

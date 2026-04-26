@@ -30,7 +30,7 @@
         <button id="back-btn" class="back-btn">← 홈으로</button>
         <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
 
-        <!-- 확률과 통계 전용 드롭다운 네비게이터 -->
+        <!-- 확률과 통계 전용 드롭다운 네비게이<야터 -->
         <div id="prob-nav" class="prob-nav" style="display:none;">
 
             <!-- 그룹 1: 경우의 수 -->
@@ -49,6 +49,7 @@
                     확률 <span class="prob-nav-arrow">▾</span>
                 </button>
                 <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item" data-probtab="venn">덧셈정리</button>
                     <button class="prob-nav-item" data-probtab="monty">몬티홀 딜레마</button>
                 </div>
             </div>
@@ -72,6 +73,7 @@
                 <div class="prob-nav-dropdown">
                     <button class="prob-nav-item" data-probtab="lln">큰수의 법칙</button>
                     <button class="prob-nav-item" data-probtab="clt">중심극한 정리</button>
+                    <button class="prob-nav-item" data-probtab="conf">모평균 추정</button>
                 </div>
             </div>
 
@@ -946,6 +948,54 @@
                         </div>
                     </div><!-- /.prob-panel-pascal -->
 
+                    <div id="prob-panel-venn" class="quad-panel" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">⭕ 사건 A와 B의 덧셈정리</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                두 사건의 크기(확률)와 겹치는 정도(교집합)를 조절해 보세요.
+                            </div>
+                        </div>
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">확률 크기 조절</h3>
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">P(A) 크기</span>
+                                    <span id="venn-pa-val" style="color:#e53e3e; font-weight:800;">0.40</span>
+                                </div>
+                                <input type="range" id="venn-pa-slider" min="0.1" max="0.8" step="0.05" value="0.4"
+                                    style="width:100%;">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">P(B) 크기</span>
+                                    <span id="venn-pb-val" style="color:#3182ce; font-weight:800;">0.30</span>
+                                </div>
+                                <input type="range" id="venn-pb-slider" min="0.1" max="0.8" step="0.05" value="0.3"
+                                    style="width:100%;">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">겹치는 정도 (교집합)</span>
+                                </div>
+                                <input type="range" id="venn-dist-slider" min="0" max="1" step="0.01" value="0.5"
+                                    style="width:100%;">
+                                <div style="font-size:11px; color:#a0aec0; text-align:center; margin-top:4px;">← 배반사건
+                                    &nbsp; | &nbsp; 완전 포함 →</div>
+                            </div>
+                        </div>
+                        <div class="matrix-section" style="background:#fffaf0; border-color:#fbd38d;">
+                            <h3 class="matrix-section-title" style="color:#dd6b20;">📌 확률의 덧셈정리</h3>
+                            <div
+                                style="text-align:center; font-size:18px; font-weight:800; color:#2d3748; line-height:1.6;">
+                                P(A ∪ B) <br> = P(A) + P(B) - <span style="color:#805ad5;">P(A ∩ B)</span>
+
+                                <div id="venn-result-eq" style="color:#dd6b20; font-size:22px; margin-top:12px;">
+                                    0.50 <br> = 0.40 + 0.30 - 0.20
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 몬티홀 컨트롤 패널 -->
                     <div id="prob-panel-monty" class="quad-panel" style="display:none;">
                         <div class="matrix-section">
@@ -1310,6 +1360,76 @@
                                 그래프 초기화</button>
                         </div>
                     </div><!-- /.prob-panel-clt -->
+
+                    <div id="prob-panel-conf" class="quad-panel" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">⚙️ 모집단 및 표본 설정</h3>
+                            <div style="font-size:13px; color:#718096; line-height:1.5; margin-bottom:12px;">
+                                모집단의 특성과 표본의 크기를 조절해 보세요.
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">모평균 (μ): <span
+                                            id="conf-mu-val" style="color:#805ad5; font-size:16px;">100</span></span>
+                                </div>
+                                <input type="range" id="conf-mu-slider" min="50" max="150" step="1" value="100"
+                                    style="width:100%;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">모표준편차 (σ): <span
+                                            id="conf-sigma-val" style="color:#3182ce; font-size:16px;">20</span></span>
+                                </div>
+                                <input type="range" id="conf-sigma-slider" min="5" max="50" step="1" value="20"
+                                    style="width:100%;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">표본 크기 (n): <span
+                                            id="conf-n-val" style="color:#e53e3e; font-size:16px;">30</span></span>
+                                </div>
+                                <input type="range" id="conf-n-slider" min="1" max="50" step="1" value="30"
+                                    style="width:100%;">
+                            </div>
+                            <div style="margin-bottom: 5px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="font-size:13px; font-weight:700; color:#4a5568;">신뢰도 설정</span>
+                                </div>
+                                <select id="conf-level-select" class="transform-input"
+                                    style="width:100%; height:42px; font-size:15px; font-weight:700; cursor:pointer; color:#2d3748; background-color:#ffffff; border:1px solid #cbd5e0; border-radius:8px; padding:0 12px; outline:none; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                                    <option value="95">95% (k=1.96)</option>
+                                    <option value="99">99% (k=2.58)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🚀 추출 제어</h3>
+                            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                <button class="draw-btn" id="conf-run-1"
+                                    style="flex:1; padding:12px 0; font-size:14px; background:linear-gradient(135deg, #73a5ff, #3182ce);">표본
+                                    추출 (1회)</button>
+                                <button class="draw-btn" id="conf-run-auto"
+                                    style="flex:1; padding:12px 0; font-size:14px; background:linear-gradient(135deg, #a78bfa, #8b5cf6);">자동
+                                    추출 시작</button>
+                            </div>
+                            <button class="t-btn" id="conf-reset"
+                                style="width:100%; font-weight:bold; color:#718096; background:#f8fafc; border:1px solid #e2e8f0;">🔄
+                                초기화</button>
+                        </div>
+
+                        <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
+                            <h3 class="matrix-section-title" style="color:#276749;">🎯 포함 비율 (성공률)</h3>
+                            <div style="text-align:center;">
+                                <div style="font-size:14px; color:#4a5568;">전체 시행: <span id="conf-total-val"
+                                        style="font-weight:800;">0</span></div>
+                                <div style="font-size:14px; color:#4a5568;">성공 (포함): <span id="conf-hit-val"
+                                        style="color:#38a169; font-weight:800;">0</span></div>
+                                <div style="font-size:36px; font-weight:900; color:#276749; margin-top:8px;"
+                                    id="conf-ratio-val">0.0%</div>
+                            </div>
+                        </div>
+                    </div>
                 </div><!-- /.matrix-control-panel -->
 
 
@@ -1337,6 +1457,13 @@
                 transition: 0.3s;
                 ">
                             <span style="color: #a0aec0;">파스칼의 삼각형을 생성하면 이항정리 전개식이 나타납니다.</span>
+                        </div>
+                    </div>
+
+                    <div id="canvas-wrap-venn" style="display:none; width:100%; height:100%;">
+                        <div class="canvas-wrapper" style="width:100%; height:100%; padding:20px; background:#fff;">
+                            <canvas id="vennCanvas" width="760" height="500"
+                                style="width:100%; height:auto; display:block;"></canvas>
                         </div>
                     </div>
 
@@ -1420,6 +1547,30 @@
                         </div>
                     </div>
 
+                    <div id="canvas-wrap-conf" style="display:none; width:100%; height:100%;">
+                        <div class="canvas-wrapper"
+                            style="width:100%; height:100%; padding:20px; background:#ffffff; position:relative; overflow:hidden; border-radius:12px; border:1px solid #e2e8f0;">
+                            <div
+                                style="position:absolute; top:15px; left:50%; transform:translateX(-50%); font-size:13px; font-weight:bold; color:#3182ce; background:rgba(255, 255, 255, 0.9); padding:4px 12px; border-radius:20px; border:1px solid #bee3f8; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                                모평균(μ)
+                            </div>
+                            <div
+                                style="position:absolute; top:15px; right:20px; font-size:12px; font-weight:700; color:#718096; background:rgba(255,255,255,0.8); padding:8px; border-radius:8px; border:1px solid #edf2f7; z-index:10;">
+                                <div style="display:flex; align-items:center; margin-bottom:4px;">
+                                    <span
+                                        style="display:inline-block; width:12px; height:3px; background:#38a169; margin-right:6px;"></span>
+                                    모평균 포함
+                                </div>
+                                <div style="display:flex; align-items:center;">
+                                    <span
+                                        style="display:inline-block; width:12px; height:3px; background:#e53e3e; margin-right:6px;"></span>
+                                    모평균 미포함
+                                </div>
+                            </div>
+                            <canvas id="confCanvas" width="760" height="500"
+                                style="width:100%; height:auto; display:block; cursor:default;"></canvas>
+                        </div>
+                    </div>
                 </div><!-- /.exp-right-panel -->
 
             </div><!-- /.exp-main-content -->
