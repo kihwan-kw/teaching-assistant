@@ -2294,6 +2294,10 @@
                                     style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">이면각</button>
                                 <button class="t-btn geom-solid-btn" data-solid="three-perp"
                                     style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">삼수선의 정리</button>
+                                <button class="t-btn geom-solid-btn" data-solid="orth-proj"
+                                    style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">정사영</button>
+                                <button class="t-btn geom-solid-btn" data-solid="space-coord"
+                                    style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">공간좌표</button>
                             </div>
                         </div>
                         <div class="matrix-section">
@@ -2324,6 +2328,36 @@
                                 </label>
                             </div>
                         </div>
+
+                        <!-- 직선과 평면 관계 모드 버튼 -->
+                        <div class="matrix-section" id="geom-line-plane-controls" style="display:none;">
+                            <h3 class="matrix-section-title">📐 위치 관계 선택</h3>
+                            <div style="display:flex;flex-direction:column;gap:6px;">
+                                <button id="lp-btn-contain" class="lp-mode-btn t-btn"
+                                    style="padding:8px;font-size:14px;font-weight:800;border-left:4px solid #3182ce;">①
+                                    포함</button>
+                                <button id="lp-btn-parallel" class="lp-mode-btn t-btn"
+                                    style="padding:8px;font-size:14px;font-weight:700;border-left:4px solid #38a169;">②
+                                    평행</button>
+                                <button id="lp-btn-intersect" class="lp-mode-btn t-btn"
+                                    style="padding:8px;font-size:14px;font-weight:700;border-left:4px solid #ed8936;">③
+                                    교차</button>
+                                <button id="lp-btn-perp" class="lp-mode-btn t-btn"
+                                    style="padding:8px;font-size:14px;font-weight:700;border-left:4px solid #e53e3e;">④
+                                    수직</button>
+                            </div>
+                        </div>
+
+                        <!-- 정사영 슬라이더 -->
+                        <div class="matrix-section" id="geom-orth-controls" style="display:none;">
+                            <h3 class="matrix-section-title">📐 기울기 각도 θ</h3>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <input type="range" id="orth-angle-slider" min="0" max="90" step="5" value="45"
+                                    style="flex:1;">
+                                <span id="orth-angle-val"
+                                    style="font-size:16px;font-weight:800;color:#e53e3e;width:40px;">45°</span>
+                            </div>
+                        </div>
                         <div class="matrix-section" style="background:#fffaf0;border-color:#fbd38d;">
                             <h3 class="matrix-section-title" style="color:#dd6b20;">📌 핵심 성질</h3>
                             <div id="geom-solid-info" style="font-size:14px;line-height:1.9;color:#2d3748;"></div>
@@ -2339,6 +2373,8 @@
                                 style="display:block;width:100%;height:auto;"></canvas>
                             <canvas id="threePerpCanvas" width="800" height="520"
                                 style="display:none;width:100%;height:auto;outline:none;cursor:grab;"></canvas>
+                            <canvas id="spaceCoordCanvas" width="800" height="520"
+                                style="display:none;width:100%;height:auto;cursor:crosshair;"></canvas>
                         </div>
                     </div>
                 </div>
