@@ -1636,6 +1636,60 @@ window.initNormal = (function () {
             ctx.fillStyle = '#2d3748'; ctx.font = 'bold 15px Outfit'; ctx.textAlign = 'center';
             ctx.fillText(`N(${mu}, ${sigma}²)  —  정규분포`, W / 2, 30);
 
+            // ── 표준화 보기 모드
+            const isStd = document.getElementById('normal-standardize')?.checked;
+            if (isStd) {
+                const za = ((rangeA - mu) / sigma).toFixed(2);
+                const zb = ((rangeB - mu) / sigma).toFixed(2);
+
+                // Z변환된 구간에 표준정규분포 N(0,1) 곡선을 반투명하게 겹쳐 그리기
+                const stdPdf = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+
+                // 표준정규분포 색칠 영역
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(parseFloat(za)), baseY);
+                for (let px = toCanvasX(parseFloat(za)); px <= toCanvasX(parseFloat(zb)); px++) {
+                    const x = xMin + (px - PAD.l) / (W - PAD.l - PAD.r) * (xMax - xMin);
+                    ctx.lineTo(px, toCanvasY(stdPdf(x)));
+                }
+                ctx.lineTo(toCanvasX(parseFloat(zb)), baseY);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(128,90,213,0.15)';
+                ctx.fill();
+
+                // 표준정규분포 곡선
+                ctx.beginPath();
+                ctx.strokeStyle = '#805ad5';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 3]);
+                for (let px = PAD.l; px <= W - PAD.r; px++) {
+                    const x = xMin + (px - PAD.l) / (W - PAD.l - PAD.r) * (xMax - xMin);
+                    const y = toCanvasY(stdPdf(x));
+                    px === PAD.l ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 범례
+                ctx.fillStyle = '#805ad5';
+                ctx.font = 'bold 12px Outfit';
+                ctx.textAlign = 'left';
+                ctx.fillText('N(0,1) — 표준정규분포', PAD.l + 8, PAD.t + 20);
+
+                // 패널 Z값 업데이트
+                const zInfoEl = document.getElementById('normal-z-info');
+                if (zInfoEl) zInfoEl.style.display = 'block';
+                const zaEl = document.getElementById('normal-za');
+                const zbEl = document.getElementById('normal-zb');
+                const zpEl = document.getElementById('normal-z-prob');
+                if (zaEl) zaEl.textContent = za;
+                if (zbEl) zbEl.textContent = zb;
+                if (zpEl) zpEl.textContent = (prob * 100).toFixed(1) + '%';
+            } else {
+                const zInfoEl = document.getElementById('normal-z-info');
+                if (zInfoEl) zInfoEl.style.display = 'none';
+            }
+
             // UI 수치 업데이트
             document.getElementById('normal-prob-val').innerText = (prob * 100).toFixed(1) + '%';
         }
@@ -1659,6 +1713,8 @@ window.initNormal = (function () {
             rangeB = parseFloat(this.value);
             drawNormal();
         });
+
+        document.getElementById('normal-standardize')?.addEventListener('change', drawNormal);
 
         // 경험칙 버튼
         document.querySelectorAll('.normal-rule-btn').forEach(btn => {
@@ -2462,6 +2518,17 @@ window.initVenn = (function () {
             if (pIntersect > 0.01) {
                 ctx.fillStyle = '#553c9a'; ctx.font = 'bold 16px Outfit';
                 ctx.fillText(`${pIntersect.toFixed(2)}`, (cAx + cBx) / 2, centerY);
+            }
+
+            // 표본공간 나머지 영역 = 1 - P(A∪B)
+            const pOutside = Math.max(0, 1 - pUnion);
+            ctx.fillStyle = '#718096'; ctx.font = 'bold 15px Outfit'; ctx.textAlign = 'left';
+            ctx.fillText(`나머지: ${pOutside.toFixed(2)}`, 65, H - 70);
+
+            // P(A∪B) > 1 경고
+            if (pUnion > 1) {
+                ctx.fillStyle = '#e53e3e'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
+                ctx.fillText('⚠ P(A∪B) > 1 — 확률의 합이 1을 초과합니다', W / 2, H - 55);
             }
 
             // 하단 수식 업데이트
