@@ -678,44 +678,55 @@ window.initPascal = (function () {
                     return;
                 }
 
-                let isLeftHalf = (r <= n / 2);
-                let currN = n - 1;
-                let currR = isLeftHalf ? r - 1 : r;
-                let nodes = [];
-
-                // 1. 선택한 꼭짓점(결과값)부터 시작하여 대각선 위로 올라가며 노드 수집
-                while (true) {
-                    nodes.push({ n: currN, r: currR, val: getComb(currN, currR) });
-                    if (isLeftHalf) { if (currN === currR) break; currN--; }
-                    else { if (currR === 0) break; currN--; currR--; }
+                /* 파란: 열 r-1 고정, row = r-1 ~ n-1 */
+                let leftNodes = [];
+                for (let row = r - 1; row < n; row++) {
+                    leftNodes.push({ n: row, r: r - 1, val: getComb(row, r - 1) });
                 }
-                nodes.reverse(); // 위에서 아래로 순서 뒤집기
 
-                // 2. 조합 기호(nCr) 식 만들기
-                let combHTML = nodes.length <= 5 ?
-                    nodes.map(nd => `<sub>${nd.n}</sub>C<sub>${nd.r}</sub>`).join(' + ') :
-                    `<sub>${nodes[0].n}</sub>C<sub>${nodes[0].r}</sub> + <sub>${nodes[1].n}</sub>C<sub>${nodes[1].r}</sub> + ··· + <sub>${nodes[nodes.length - 1].n}</sub>C<sub>${nodes[nodes.length - 1].r}</sub>`;
+                /* 초록: C(n-1,r)+C(n-2,r-1)+...+C(n-r-1,0), 셀 (n-1-i, r-i) */
+                let rightNodes = [];
+                for (let i = 0; i <= r; i++) {
+                    rightNodes.push({ n: n - 1 - i, r: r - i, val: getComb(n - 1 - i, r - i) });
+                }
 
-                let finalCombHTML = `<sub>${n}</sub>C<sub>${r}</sub>`;
+                function makeStickHTML(nodes) {
+                    if (nodes.length === 0) return '—';
+                    return nodes.length <= 5
+                        ? nodes.map(nd => `<sub>${nd.n}</sub>C<sub>${nd.r}</sub>`).join(' + ')
+                        : `<sub>${nodes[0].n}</sub>C<sub>${nodes[0].r}</sub> + ··· + <sub>${nodes[nodes.length - 1].n}</sub>C<sub>${nodes[nodes.length - 1].r}</sub>`;
+                }
+                function makeNumHTML(nodes) {
+                    if (nodes.length === 0) return '—';
+                    return nodes.length <= 5
+                        ? nodes.map(nd => nd.val).join(' + ')
+                        : `${nodes[0].val} + ··· + ${nodes[nodes.length - 1].val}`;
+                }
 
-                // 3. 실제 계산된 숫자 식 만들기
-                let stickValsHTML = nodes.length <= 5 ?
-                    nodes.map(nd => nd.val).join(' + ') :
-                    `${nodes[0].val} + ${nodes[1].val} + ··· + ${nodes[nodes.length - 1].val}`;
+                const leftSum = getComb(n, r);
 
-                // 4. 화면 출력 (2줄 레이아웃)
                 formulaBox.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-                        <span style="font-size:15px; color:#718096; font-weight:700;">하키스틱 패턴 조합의 합</span>
-                        
-                        <!-- 첫 번째 줄: 조합(nCr) 식 -->
-                        <div style="font-size: 18px; color: #4a5568; margin-top: 5px;">
-                            <span class="pascal-hl-blue">${combHTML}</span> = <span class="pascal-hl-red">${finalCombHTML}</span>
-                        </div>
-                        
-                        <!-- 두 번째 줄: 계산된 숫자 식 -->
-                        <div style="font-size: 20px; margin-top: 2px;">
-                            <span class="pascal-hl-blue">${stickValsHTML}</span> = <span class="pascal-hl-red">${val}</span>
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                        <span style="font-size:13px; color:#718096; font-weight:700;">하키스틱 패턴 — 양방향</span>
+                        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
+                            <div style="text-align:center;">
+                                <div style="font-size:11px; color:#2b6cb0; font-weight:800; margin-bottom:3px;">← 왼쪽 하키스틱</div>
+                                <div style="font-size:15px;">
+                                    <span class="pascal-hl-blue">${makeStickHTML(leftNodes)}</span> = <span class="pascal-hl-red"><sub>${n}</sub>C<sub>${r}</sub></span>
+                                </div>
+                                <div style="font-size:17px; margin-top:2px;">
+                                    <span class="pascal-hl-blue">${makeNumHTML(leftNodes)}</span> = <span class="pascal-hl-red">${leftSum}</span>
+                                </div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:11px; color:#276749; font-weight:800; margin-bottom:3px;">nCr 대각 분해 →</div>
+                                <div style="font-size:15px;">
+                                    <span class="pascal-hl-green">${makeStickHTML(rightNodes)}</span> = <span class="pascal-hl-red"><sub>${n}</sub>C<sub>${r}</sub></span>
+                                </div>
+                                <div style="font-size:17px; margin-top:2px;">
+                                    <span class="pascal-hl-green">${makeNumHTML(rightNodes)}</span> = <span class="pascal-hl-red">${val}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -799,15 +810,20 @@ window.initPascal = (function () {
                 }
                 else if (mode === 'hockey') {
                     if (hoverNode.r > 0 && hoverNode.r < hoverNode.n) {
-                        hlNodes[`${hoverNode.n},${hoverNode.r}`] = 'sum';
-                        let isLeftHalf = (hoverNode.r <= hoverNode.n / 2);
-                        let currN = hoverNode.n - 1;
-                        let currR = isLeftHalf ? hoverNode.r - 1 : hoverNode.r;
+                        const hn = hoverNode.n, hr = hoverNode.r;
 
-                        while (true) {
-                            hlNodes[`${currN},${currR}`] = 'stick';
-                            if (isLeftHalf) { if (currN === currR) break; currN--; }
-                            else { if (currR === 0) break; currN--; currR--; }
+                        /* 선택 셀 (빨간) */
+                        hlNodes[`${hn},${hr}`] = 'sum';
+
+                        /* 파란 하키스틱: 열 r-1 고정, row = r-1 ~ n-1 */
+                        for (let row = hr - 1; row < hn; row++) {
+                            hlNodes[`${row},${hr - 1}`] = 'stick';
+                        }
+
+                        /* 초록 대각 하키스틱: C(n-1,r)+C(n-2,r-1)+...+C(n-r-1,0)
+                           셀: (n-1-i, r-i) for i=0..r */
+                        for (let i = 0; i <= hr; i++) {
+                            hlNodes[`${hn - 1 - i},${hr - i}`] = 'stick-green';
                         }
                     }
                 }
@@ -855,6 +871,8 @@ window.initPascal = (function () {
                             fill = '#fff5f5'; stroke = '#fc8181'; textCol = '#c53030';
                         } else if (hlType === 'left' || hlType === 'row' || hlType === 'stick' || hlType === 'poly') {
                             fill = '#ebf8ff'; stroke = '#73a5ff'; textCol = '#2b6cb0';
+                        } else if (hlType === 'stick-green') {
+                            fill = '#f0fff4'; stroke = '#48bb78'; textCol = '#276749';
                         } else if (hlType === 'right') {
                             fill = '#f0fff4'; stroke = '#48bb78'; textCol = '#276749';
                         } else if (hlType === 'fibo') {
@@ -908,9 +926,6 @@ window.initPascal = (function () {
    ===================================================== */
 window.initBinom = (function () {
     let initialized = false;
-    /* ---------- 클릭한 막대 식별 ---------- */
-    let barRects = [];  /* [{k, x, y, w, h}] */
-    let selectedK = null;
 
     return function () {
         const canvas = document.getElementById('binom-canvas');
@@ -978,6 +993,10 @@ window.initBinom = (function () {
     function normalPDF(x, mu, sigma) {
         return Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2)) / (sigma * Math.sqrt(2 * Math.PI));
     }
+
+    /* ---------- 클릭한 막대 식별 ---------- */
+    let barRects = [];  /* [{k, x, y, w, h}] */
+    let selectedK = null;
 
     function handleClick(mx, my) {
         for (const b of barRects) {
@@ -1636,60 +1655,6 @@ window.initNormal = (function () {
             ctx.fillStyle = '#2d3748'; ctx.font = 'bold 15px Outfit'; ctx.textAlign = 'center';
             ctx.fillText(`N(${mu}, ${sigma}²)  —  정규분포`, W / 2, 30);
 
-            // ── 표준화 보기 모드
-            const isStd = document.getElementById('normal-standardize')?.checked;
-            if (isStd) {
-                const za = ((rangeA - mu) / sigma).toFixed(2);
-                const zb = ((rangeB - mu) / sigma).toFixed(2);
-
-                // Z변환된 구간에 표준정규분포 N(0,1) 곡선을 반투명하게 겹쳐 그리기
-                const stdPdf = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
-
-                // 표준정규분포 색칠 영역
-                ctx.beginPath();
-                ctx.moveTo(toCanvasX(parseFloat(za)), baseY);
-                for (let px = toCanvasX(parseFloat(za)); px <= toCanvasX(parseFloat(zb)); px++) {
-                    const x = xMin + (px - PAD.l) / (W - PAD.l - PAD.r) * (xMax - xMin);
-                    ctx.lineTo(px, toCanvasY(stdPdf(x)));
-                }
-                ctx.lineTo(toCanvasX(parseFloat(zb)), baseY);
-                ctx.closePath();
-                ctx.fillStyle = 'rgba(128,90,213,0.15)';
-                ctx.fill();
-
-                // 표준정규분포 곡선
-                ctx.beginPath();
-                ctx.strokeStyle = '#805ad5';
-                ctx.lineWidth = 2.5;
-                ctx.setLineDash([6, 3]);
-                for (let px = PAD.l; px <= W - PAD.r; px++) {
-                    const x = xMin + (px - PAD.l) / (W - PAD.l - PAD.r) * (xMax - xMin);
-                    const y = toCanvasY(stdPdf(x));
-                    px === PAD.l ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                // 범례
-                ctx.fillStyle = '#805ad5';
-                ctx.font = 'bold 12px Outfit';
-                ctx.textAlign = 'left';
-                ctx.fillText('N(0,1) — 표준정규분포', PAD.l + 8, PAD.t + 20);
-
-                // 패널 Z값 업데이트
-                const zInfoEl = document.getElementById('normal-z-info');
-                if (zInfoEl) zInfoEl.style.display = 'block';
-                const zaEl = document.getElementById('normal-za');
-                const zbEl = document.getElementById('normal-zb');
-                const zpEl = document.getElementById('normal-z-prob');
-                if (zaEl) zaEl.textContent = za;
-                if (zbEl) zbEl.textContent = zb;
-                if (zpEl) zpEl.textContent = (prob * 100).toFixed(1) + '%';
-            } else {
-                const zInfoEl = document.getElementById('normal-z-info');
-                if (zInfoEl) zInfoEl.style.display = 'none';
-            }
-
             // UI 수치 업데이트
             document.getElementById('normal-prob-val').innerText = (prob * 100).toFixed(1) + '%';
         }
@@ -1713,8 +1678,6 @@ window.initNormal = (function () {
             rangeB = parseFloat(this.value);
             drawNormal();
         });
-
-        document.getElementById('normal-standardize')?.addEventListener('change', drawNormal);
 
         // 경험칙 버튼
         document.querySelectorAll('.normal-rule-btn').forEach(btn => {
@@ -2518,17 +2481,6 @@ window.initVenn = (function () {
             if (pIntersect > 0.01) {
                 ctx.fillStyle = '#553c9a'; ctx.font = 'bold 16px Outfit';
                 ctx.fillText(`${pIntersect.toFixed(2)}`, (cAx + cBx) / 2, centerY);
-            }
-
-            // 표본공간 나머지 영역 = 1 - P(A∪B)
-            const pOutside = Math.max(0, 1 - pUnion);
-            ctx.fillStyle = '#718096'; ctx.font = 'bold 15px Outfit'; ctx.textAlign = 'left';
-            ctx.fillText(`나머지: ${pOutside.toFixed(2)}`, 65, H - 70);
-
-            // P(A∪B) > 1 경고
-            if (pUnion > 1) {
-                ctx.fillStyle = '#e53e3e'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
-                ctx.fillText('⚠ P(A∪B) > 1 — 확률의 합이 1을 초과합니다', W / 2, H - 55);
             }
 
             // 하단 수식 업데이트
