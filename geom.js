@@ -1183,7 +1183,7 @@
        ============================================================ */
     const SOLID_CW = 800, SOLID_CH = 520;
     let solidTopic = 'line-plane';
-    let rotH = 30, rotV = 25;
+    let rotH = 50, rotV = 70;
 
     const SOLID_INFO = {
         'line-plane': `<b>직선과 평면의 위치 관계</b><br>버튼으로 4가지 관계를 전환해 보세요.<br><br>① <b style="color:#3182ce;">포함</b> — 직선이 평면 위에 있음<br>② <b style="color:#38a169;">평행</b> — 만나지 않고 공유점 없음<br>③ <b style="color:#ed8936;">교차</b> — 한 점에서 만남<br>④ <b style="color:#e53e3e;">수직</b> — 교차 중 특수한 경우<br><br><span style="color:#718096;font-size:12px;">직선 ℓ ⊥ 평면 α 이면 α 위 모든 직선에 수직</span>`,
@@ -1198,7 +1198,7 @@
         const x1 = x * Math.cos(rh) - z * Math.sin(rh), z1 = x * Math.sin(rh) + z * Math.cos(rh);
         const y2 = y * Math.cos(rv) - z1 * Math.sin(rv), z2 = y * Math.sin(rv) + z1 * Math.cos(rv);
         const f = 6 / (6 + z2 * 0.35);
-        return { sx: cx + x1 * f * 68, sy: cy - y2 * f * 68 };
+        return { sx: cx + x1 * f * 68, sy: cy + y2 * f * 68 };
     }
 
     function redrawSolid() {
@@ -1301,7 +1301,8 @@
         } else if (mode === 'intersect') {
             // ③ 교차: 사선으로 평면 관통
             const a = p(-2, 2.5, -1), b = p(2, -2, -1);
-            const meet = p(0, 0, -1);
+            const t = 2.5 / 4.5;
+            const meet = p(-2 + 4 * t, 0, -1);
             ctx.beginPath(); ctx.strokeStyle = '#ed8936'; ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
             ctx.beginPath(); ctx.fillStyle = '#ed8936'; ctx.arc(meet.sx, meet.sy, 6, 0, Math.PI * 2); ctx.fill();
             ctx.font = 'italic bold 20px Outfit'; ctx.fillStyle = '#ed8936'; ctx.fillText('ℓ', a.sx - 18, a.sy);
@@ -1320,11 +1321,15 @@
             ctx.fillStyle = '#e53e3e'; ctx.fill(); ctx.restore();
             ctx.font = 'italic bold 20px Outfit'; ctx.fillStyle = '#e53e3e'; ctx.fillText('ℓ', top.sx + 8, top.sy - 4);
             // 직각 기호
-            const dxp = p(0.35, 0, 0), dzp = p(0, 0, 0.35);
-            ctx.beginPath(); ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 1.8;
-            ctx.moveTo(orig.sx + (dxp.sx - orig.sx), orig.sy + (dxp.sy - orig.sy));
-            ctx.lineTo(orig.sx + (dxp.sx - orig.sx) + (dzp.sx - orig.sx), orig.sy + (dxp.sy - orig.sy) + (dzp.sy - orig.sy));
-            ctx.lineTo(orig.sx + (dzp.sx - orig.sx), orig.sy + (dzp.sy - orig.sy)); ctx.stroke();
+            const sq = 0.4;
+            const px = p(sq, 0, 0);
+            const py = p(0, sq, 0);
+            const pc = p(sq, sq, 0);
+            ctx.beginPath(); ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2;
+            ctx.moveTo(px.sx, px.sy);
+            ctx.lineTo(pc.sx, pc.sy);
+            ctx.lineTo(py.sx, py.sy);
+            ctx.stroke();
             ctx.font = '15px Outfit'; ctx.fillStyle = '#e53e3e';
             ctx.fillText('ℓ ⊥ α  (직선이 평면에 수직)', 18, 26);
         }
@@ -1827,7 +1832,7 @@
         const p = (x, y, z) => scProj(x, y, z, cx, cy);
 
         // ── 격자 (xy 평면) ──
-        ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
         for (let i = -RANGE; i <= RANGE; i++) {
             const a = p(i, 0, -RANGE), b = p(i, 0, RANGE);
             const c = p(-RANGE, 0, i), d = p(RANGE, 0, i);

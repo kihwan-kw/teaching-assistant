@@ -2309,7 +2309,7 @@
                     <div class="matrix-control-panel" style="flex: 0 0 300px;">
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">✨ 주제 선택</h3>
-                            <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap: 8px;">
                                 <button class="t-btn geom-solid-btn active" data-solid="line-plane"
                                     style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">직선과 평면의
                                     관계</button>
@@ -2376,9 +2376,6 @@
                     <div class="exp-right-panel"
                         style="align-items:stretch; flex:1; min-width:0; flex-direction:column;">
                         <div class="canvas-wrapper" style="width:100%;padding:20px;background:#fff;position:relative;">
-                            <div
-                                style="position:absolute;top:20px;left:30px;font-weight:800;color:#a0aec0;font-size:14px;z-index:10;">
-                                🖱 슬라이더로 시점을 조절하세요</div>
                             <canvas id="geomSolidCanvas" width="800" height="520"
                                 style="display:block;width:100%;height:auto;"></canvas>
                             <canvas id="threePerpCanvas" width="800" height="520"
