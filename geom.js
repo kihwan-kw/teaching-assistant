@@ -1417,6 +1417,7 @@
 
     function initThreePerp() {
         if (tpInitDone) return;
+        if (!tpGroup) tpGroup = new THREE.Group();
         const canvas = document.getElementById('threePerpCanvas');
         if (!canvas || typeof THREE === 'undefined') return;
 
@@ -1984,7 +1985,9 @@
             });
         }
     }
-
+    let tpScene, tpCamera, tpRenderer, tpControls;
+    let tpGroup, tpInitDone = false;
+    let tpStep1 = false, tpStep2 = false;
 
     function initSolidSection() {
         const canvas = document.getElementById('geomSolidCanvas');
