@@ -30,7 +30,31 @@
         <button id="back-btn" class="back-btn">← 홈으로</button>
         <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
 
-        <!-- 확률과 통계 전용 드롭다운 네비게이<야터 -->
+        <!-- 기하 전용 드롭다운 네비게이터 -->
+        <div id="geom-nav" class="prob-nav" style="display:none;">
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn active" data-navgroup="conic">이차곡선 <span
+                        class="prob-nav-arrow">▾</span></button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item active" data-geomtab="conic">포물선 · 타원 · 쌍곡선</button>
+                </div>
+            </div>
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn" data-navgroup="vector">벡터 <span
+                        class="prob-nav-arrow">▾</span></button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item" data-geomtab="vector">벡터 연산</button>
+                </div>
+            </div>
+            <div class="prob-nav-group">
+                <button class="prob-nav-group-btn" data-navgroup="solid">공간도형 <span
+                        class="prob-nav-arrow">▾</span></button>
+                <div class="prob-nav-dropdown">
+                    <button class="prob-nav-item" data-geomtab="solid">직선 · 평면 · 정사영 · 공간좌표</button>
+                </div>
+            </div>
+        </div>
+
         <div id="prob-nav" class="prob-nav" style="display:none;">
 
             <!-- 그룹 1: 경우의 수 -->
@@ -214,11 +238,7 @@
         <div id="idx-prob" style="display:none;"></div>
 
         <!-- 기하 전용 왼쪽 인덱스 -->
-        <div class="side-index-wrapper side-index-left" id="idx-geom" style="display:none;">
-            <div class="index-tab active" data-geomtab="conic">이차곡선</div>
-            <div class="index-tab" data-geomtab="vector">벡터</div>
-            <div class="index-tab" data-geomtab="solid">공간도형</div>
-        </div>
+        <div id="idx-geom" style="display:none;"></div>
 
         <!-- ===== 그래프 그리기 (인덱스 없음) ===== -->
         <div id="unit-exp" class="unit-content">
@@ -2125,8 +2145,8 @@
             <!-- 이차곡선 패널 -->
             <div id="geom-conic-container" class="geom-panel">
                 <div class="exp-main-content"
-                    style="max-width:1600px; align-items:flex-start; width:100%; flex-direction:row; flex-wrap:nowrap; margin-left:-60px; padding-left:0;">
-                    <div class="matrix-control-panel" style="flex:0 0 260px; min-width:260px;">
+                    style="max-width: 1400px; align-items: flex-start; width:100%; flex-direction:row; flex-wrap:nowrap;">
+                    <div class="matrix-control-panel" style="flex: 0 0 300px;">
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">✨ 곡선 선택</h3>
                             <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
@@ -2183,9 +2203,9 @@
                             <div id="geom-conic-info" style="font-size:14px;line-height:1.9;color:#2d3748;"></div>
                         </div>
                     </div>
-                    <div class="exp-right-panel" style="align-items:center;">
-                        <div class="canvas-wrapper"
-                            style="width:100%;max-width:800px;padding:20px;background:#fff;position:relative;">
+                    <div class="exp-right-panel"
+                        style="align-items:stretch; flex:1; min-width:0; flex-direction:column;">
+                        <div class="canvas-wrapper" style="width:100%;padding:20px;background:#fff;position:relative;">
 
                             <canvas id="geomConicCanvas" width="800" height="520"
                                 style="display:block;width:100%;height:auto;cursor:crosshair;"></canvas>
@@ -2202,8 +2222,8 @@
             <!-- 벡터 패널 -->
             <div id="geom-vector-container" class="geom-panel" style="display:none;">
                 <div class="exp-main-content"
-                    style="max-width:1600px; align-items:flex-start; width:100%; flex-direction:row; flex-wrap:nowrap; margin-left:-60px; padding-left:0;">
-                    <div class="matrix-control-panel" style="flex:0 0 260px; min-width:260px;">
+                    style="max-width: 1400px; align-items: flex-start; width:100%; flex-direction:row; flex-wrap:nowrap;">
+                    <div class="matrix-control-panel" style="flex: 0 0 300px;">
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">✨ 연산 선택</h3>
                             <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
@@ -2263,9 +2283,9 @@
                                 style="font-size:15px;line-height:2;color:#2d3748;font-weight:600;"></div>
                         </div>
                     </div>
-                    <div class="exp-right-panel" style="align-items:center;">
-                        <div class="canvas-wrapper"
-                            style="width:100%;max-width:800px;padding:20px;background:#fff;position:relative;">
+                    <div class="exp-right-panel"
+                        style="align-items:stretch; flex:1; min-width:0; flex-direction:column;">
+                        <div class="canvas-wrapper" style="width:100%;padding:20px;background:#fff;position:relative;">
                             <div
                                 style="position:absolute;top:22px;left:28px;font-weight:700;color:#a0aec0;font-size:13px;z-index:10;pointer-events:none;">
                                 🖱 벡터 끝점(●)을 드래그하거나 휠로 줌하세요
@@ -2285,8 +2305,8 @@
             <!-- 공간도형 패널 -->
             <div id="geom-solid-container" class="geom-panel" style="display:none;">
                 <div class="exp-main-content"
-                    style="max-width:1600px; align-items:flex-start; width:100%; flex-direction:row; flex-wrap:nowrap; margin-left:-60px; padding-left:0;">
-                    <div class="matrix-control-panel" style="flex:0 0 260px; min-width:260px;">
+                    style="max-width: 1400px; align-items: flex-start; width:100%; flex-direction:row; flex-wrap:nowrap;">
+                    <div class="matrix-control-panel" style="flex: 0 0 300px;">
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">✨ 주제 선택</h3>
                             <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
@@ -2301,17 +2321,6 @@
                                     style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">정사영</button>
                                 <button class="t-btn geom-solid-btn" data-solid="space-coord"
                                     style="flex:1 1 100%;padding:10px;font-weight:800;font-size:15px;">공간좌표</button>
-                            </div>
-                        </div>
-                        <div class="matrix-section">
-                            <h3 class="matrix-section-title">🔄 회전 제어</h3>
-                            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
-                                <span style="width:30px;font-size:13px;">수평</span>
-                                <input type="range" id="geom-rot-h" min="0" max="360" value="30" style="flex:1;">
-                            </div>
-                            <div style="display:flex;gap:10px;align-items:center;">
-                                <span style="width:30px;font-size:13px;">수직</span>
-                                <input type="range" id="geom-rot-v" min="10" max="80" value="30" style="flex:1;">
                             </div>
                         </div>
                         <div class="matrix-section" id="geom-three-perp-controls" style="display:none;">
@@ -2364,9 +2373,9 @@
                             <div id="geom-solid-info" style="font-size:14px;line-height:1.9;color:#2d3748;"></div>
                         </div>
                     </div>
-                    <div class="exp-right-panel" style="align-items:flex-start; justify-content:flex-start;">
-                        <div class="canvas-wrapper"
-                            style="width:100%;max-width:800px;padding:20px;background:#fff;position:relative;">
+                    <div class="exp-right-panel"
+                        style="align-items:stretch; flex:1; min-width:0; flex-direction:column;">
+                        <div class="canvas-wrapper" style="width:100%;padding:20px;background:#fff;position:relative;">
                             <div
                                 style="position:absolute;top:20px;left:30px;font-weight:800;color:#a0aec0;font-size:14px;z-index:10;">
                                 🖱 슬라이더로 시점을 조절하세요</div>

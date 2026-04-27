@@ -656,10 +656,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .exp-right-panel {
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .color-picker {
@@ -3503,6 +3504,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: white;
     color: #2d3748;
     border-color: #cbd5e0;
+}
+
+/* 기하 단원 공통 레이아웃 */
+.geom-panel .matrix-control-panel {
+    flex: 0 0 240px;
+    min-width: 240px;
+}
+
+.geom-panel .canvas-wrapper {
+    width: 100%;
 }
 
 /* unit-topbar가 보일 때 app-container 상단 여백 제거 */

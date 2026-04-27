@@ -203,9 +203,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switchIndexPanel(unit.id);
 
-        /* 확률과 통계 드롭다운 네비 표시/숨김 */
+        /* 확률과 통계 / 기하 드롭다운 네비 표시/숨김 */
         const probNav = document.getElementById('prob-nav');
         if (probNav) probNav.style.display = unit.id === 'prob' ? 'flex' : 'none';
+        const geomNav = document.getElementById('geom-nav');
+        if (geomNav) geomNav.style.display = unit.id === 'geom' ? 'flex' : 'none';
 
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
@@ -237,9 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
         unitContents.forEach(el => el.classList.remove('active'));
         allIndexPanels.forEach(p => p.style.display = 'none');
 
-        /* prob-nav 숨기기 */
+        /* prob-nav / geom-nav 숨기기 */
         const probNav = document.getElementById('prob-nav');
         if (probNav) probNav.style.display = 'none';
+        const geomNav = document.getElementById('geom-nav');
+        if (geomNav) geomNav.style.display = 'none';
     }
 
     if (backBtn) backBtn.addEventListener('click', navigateHome);
@@ -283,13 +287,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    /* 기하 인덱스 탭 → geom.js 탭 연동 */
-    document.querySelectorAll('#idx-geom .index-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('#idx-geom .index-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            if (window.geomSwitchPanel) window.geomSwitchPanel(tab.dataset.geomtab);
+    /* 기하 드롭다운 네비 — 그룹 버튼 클릭 시 바로 패널 전환 */
+    document.querySelectorAll('#geom-nav .prob-nav-group-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tab = btn.dataset.navgroup;
+
+            /* active 상태 동기화 */
+            document.querySelectorAll('#geom-nav .prob-nav-group-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('#geom-nav .prob-nav-item').forEach(i => {
+                i.classList.toggle('active', i.dataset.geomtab === tab);
+            });
+
+            /* 드롭다운은 hover로만 — 클릭 시 바로 닫기 */
+            document.querySelectorAll('#geom-nav .prob-nav-group').forEach(g => g.classList.remove('open'));
+
+            if (window.geomSwitchPanel) window.geomSwitchPanel(tab);
         });
+    });
+
+    /* 기하 드롭다운 아이템 클릭 (하위 탭이 여러 개일 때 대비) */
+    document.querySelectorAll('#geom-nav .prob-nav-item[data-geomtab]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tab = item.dataset.geomtab;
+            document.querySelectorAll('#geom-nav .prob-nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            document.querySelectorAll('#geom-nav .prob-nav-group-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.navgroup === tab);
+            });
+            document.querySelectorAll('#geom-nav .prob-nav-group').forEach(g => g.classList.remove('open'));
+            if (window.geomSwitchPanel) window.geomSwitchPanel(tab);
+        });
+    });
+
+    /* 외부 클릭 시 기하 드롭다운 닫기 */
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('#geom-nav')) {
+            document.querySelectorAll('#geom-nav .prob-nav-group').forEach(g => g.classList.remove('open'));
+        }
     });
     renderCards();
 });

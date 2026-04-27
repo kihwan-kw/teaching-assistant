@@ -1997,13 +1997,68 @@
             });
         });
 
-        const slH = document.getElementById('geom-rot-h');
-        const slV = document.getElementById('geom-rot-v');
-        if (slH) slH.addEventListener('input', () => { rotH = +slH.value; redrawSolid(); });
-        if (slV) slV.addEventListener('input', () => { rotV = +slV.value; redrawSolid(); });
+
 
         const el = document.getElementById('geom-solid-info');
         if (el) el.innerHTML = SOLID_INFO[solidTopic] || '';
+
+        /* ── 마우스 드래그 회전 ── */
+        const solidCanvas = document.getElementById('geomSolidCanvas');
+        if (solidCanvas && !solidCanvas.dataset.dragBound) {
+            solidCanvas.dataset.dragBound = '1';
+            let dragging = false, lastX = 0, lastY = 0;
+            let velH = 0, velV = 0;
+
+            solidCanvas.addEventListener('mousedown', e => {
+                dragging = true;
+                lastX = e.clientX; lastY = e.clientY;
+                velH = velV = 0;
+                solidCanvas.style.cursor = 'grabbing';
+            });
+            window.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                velH = dx * 0.5;
+                velV = dy * 0.3;
+                rotH = (rotH + velH + 360) % 360;
+                rotV = Math.max(10, Math.min(80, rotV + velV));
+                lastX = e.clientX; lastY = e.clientY;
+                redrawSolid();
+            });
+            window.addEventListener('mouseup', () => {
+                dragging = false;
+                solidCanvas.style.cursor = 'grab';
+                /* 관성 */
+                (function inertia() {
+                    if (dragging) return;
+                    velH *= 0.88; velV *= 0.88;
+                    if (Math.abs(velH) > 0.05 || Math.abs(velV) > 0.05) {
+                        rotH = (rotH + velH + 360) % 360;
+                        rotV = Math.max(10, Math.min(80, rotV + velV));
+                        redrawSolid();
+                        requestAnimationFrame(inertia);
+                    }
+                })();
+            });
+
+            /* 터치 지원 */
+            solidCanvas.addEventListener('touchstart', e => {
+                dragging = true;
+                lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+                velH = velV = 0;
+            }, { passive: true });
+            solidCanvas.addEventListener('touchmove', e => {
+                if (!dragging) return;
+                const dx = e.touches[0].clientX - lastX;
+                const dy = e.touches[0].clientY - lastY;
+                rotH = (rotH + dx * 0.5 + 360) % 360;
+                rotV = Math.max(10, Math.min(80, rotV + dy * 0.3));
+                lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+                redrawSolid();
+            }, { passive: true });
+            solidCanvas.addEventListener('touchend', () => { dragging = false; });
+        }
 
         initLinePlaneButtons();
         initOrthProjSlider();
