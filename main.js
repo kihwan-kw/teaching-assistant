@@ -208,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (probNav) probNav.style.display = unit.id === 'prob' ? 'flex' : 'none';
         const geomNav = document.getElementById('geom-nav');
         if (geomNav) geomNav.style.display = unit.id === 'geom' ? 'flex' : 'none';
-
+        const trigNav = document.getElementById('trig-nav');
+        if (trigNav) trigNav.style.display = unit.id === 'trig' ? 'flex' : 'none';
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
             setTimeout(unit.init, 300);
@@ -244,17 +245,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (probNav) probNav.style.display = 'none';
         const geomNav = document.getElementById('geom-nav');
         if (geomNav) geomNav.style.display = 'none';
+        const trigNav = document.getElementById('trig-nav');
+        if (trigNav) trigNav.style.display = 'none';
     }
 
     if (backBtn) backBtn.addEventListener('click', navigateHome);
 
-    /* 삼각함수 인덱스 탭 → trig.js 탭 연동 */
-    document.querySelectorAll('#idx-trig .index-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('#idx-trig .index-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            // trig.js가 내부적으로 듣는 .tab-btn을 프로그래매틱하게 클릭
-            const trigTabBtn = document.querySelector(`.tab-btn[data-func="${tab.dataset.func}"]`);
+    /* 삼각함수 드롭다운 네비 */
+    document.querySelectorAll('#trig-nav [data-trigfunc]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#trig-nav [data-trigfunc]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const trigTabBtn = document.querySelector(`.tab-btn[data-func="${btn.dataset.trigfunc}"]`);
             if (trigTabBtn) trigTabBtn.click();
         });
     });
