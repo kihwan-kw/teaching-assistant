@@ -644,30 +644,7 @@ window.initQuad = (function () {
                 let leadA = ineqA === 1 ? '' : (ineqA === -1 ? '-' : String(ineqA));
                 step2Str = `\\Rightarrow \\quad ${leadA}${fac} \\; ${signLatex} \\; 0`;
 
-                // 3단계: 부등호 방향에 따른 최종 해
-                if (ineqA > 0) {
-                    if (ineqSign === '>') finalAns = `x < ${aStr} \\quad \\text{또는} \\quad x > ${bStr}`;
-                    else if (ineqSign === '<') finalAns = `${aStr} < x < ${bStr}`;
-                    else if (ineqSign === '>=') finalAns = `x \\le ${aStr} \\quad \\text{또는} \\quad x \\ge ${bStr}`;
-                    else if (ineqSign === '<=') finalAns = `${aStr} \\le x \\le ${bStr}`;
-                } else { // 위로 볼록일 때 해가 뒤집힘
-                    if (ineqSign === '>') finalAns = `${aStr} < x < ${bStr}`;
-                    else if (ineqSign === '<') finalAns = `x < ${aStr} \\quad \\text{또는} \\quad x > ${bStr}`;
-                    else if (ineqSign === '>=') finalAns = `${aStr} \\le x \\le ${bStr}`;
-                    else if (ineqSign === '<=') finalAns = `x \\le ${aStr} \\quad \\text{또는} \\quad x \\ge ${bStr}`;
-                }
-
-            } else if (Math.abs(D) <= 1e-7) { // 중근 (완전제곱식)
-                let alpha = -ineqB / (2 * ineqA);
-                ineqRoots = [alpha];
-                let aStr = alpha.toFixed(2).replace(/\.00$/, '');
-
-                // 2단계: 완전제곱식 형태
-                let fac = alpha > 0 ? `(x-${aStr})^2` : (alpha === 0 ? `x^2` : `(x+${Math.abs(alpha)})^2`);
-                let leadA = ineqA === 1 ? '' : (ineqA === -1 ? '-' : String(ineqA));
-                step2Str = `\\Rightarrow \\quad ${leadA}${fac} \\; ${signLatex} \\; 0`;
-
-                // 3단계: 최종 해
+                // 3단계: 최종 해 (중근은 alpha 하나뿐)
                 if (ineqA > 0) {
                     if (ineqSign === '>') finalAns = `x \\neq ${aStr} \\text{ 인 모든 실수}`;
                     else if (ineqSign === '<') finalAns = `\\text{해가 없다}`;

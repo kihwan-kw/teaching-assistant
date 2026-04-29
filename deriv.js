@@ -268,6 +268,8 @@
     /* ========================================================= */
     /* --- 초기화 및 이벤트 리스너 설정 --- */
     /* ========================================================= */
+    let _initialized = false;
+
     window.initDeriv = function () {
         tCanvas = document.getElementById('derivThinkCanvas');
         gCanvas = document.getElementById('derivGeomCanvas');
@@ -281,29 +283,37 @@
             gWidth = gCanvas.width;
             gHeight = gCanvas.height;
 
-            // 슬라이더 이벤트 1 (생각 열기)
-            const tSlider = document.getElementById('deriv-think-slider');
-            if (tSlider) {
-                tSlider.addEventListener('input', (e) => {
-                    tPointP_x = parseFloat(e.target.value);
-                    renderThinkOpen();
-                });
+            if (!_initialized) {
+                _initialized = true;
+
+                // 슬라이더 이벤트 1 (생각 열기)
+                const tSlider = document.getElementById('deriv-think-slider');
+                if (tSlider) {
+                    tSlider.addEventListener('input', (e) => {
+                        tPointP_x = parseFloat(e.target.value);
+                        renderThinkOpen();
+                    });
+                }
+
+                // 슬라이더 이벤트 2 (기하적 의미)
+                const gSlider = document.getElementById('deriv-geom-slider');
+                if (gSlider) {
+                    gSlider.addEventListener('input', (e) => {
+                        let v = parseFloat(e.target.value);
+                        gDeltaX = v * 3.5;
+                        renderGeometric();
+                    });
+                    gDeltaX = parseFloat(gSlider.value) * 3.5;
+                }
+
+                // 평균변화율 수식 KaTeX 렌더링
+                const avgFormulaEl = document.getElementById('deriv-avg-formula');
+                if (avgFormulaEl && window.katex) {
+                    katex.render('\\dfrac{\\Delta y}{\\Delta x}=\\dfrac{f(a+\\Delta x)-f(a)}{\\Delta x}', avgFormulaEl, { throwOnError: false, displayMode: true });
+                }
             }
 
-            // 슬라이더 이벤트 2 (기하적 의미)
-            const gSlider = document.getElementById('deriv-geom-slider');
-            if (gSlider) {
-                gSlider.addEventListener('input', (e) => {
-                    let v = parseFloat(e.target.value);
-                    // v가 작아질수록 dx도 작아지게 (0일 때 dx=0, 1일 때 dx=3.5)
-                    gDeltaX = v * 3.5;
-                    renderGeometric();
-                });
-                // Initialize deltaX correctly based on DOM default
-                gDeltaX = parseFloat(gSlider.value) * 3.5;
-            }
-
-            // 초기 렌더링
+            // 재방문 시에도 항상 다시 그리기
             renderThinkOpen();
             renderGeometric();
         }

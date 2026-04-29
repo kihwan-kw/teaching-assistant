@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unit.id === 'integ') setTimeout(() => window.drawInteg(), 50);
             if (unit.id === 'matrix') setTimeout(() => { window.drawOriginal(); window.applyMatrixTransform(); }, 50);
             if (unit.id === 'trig') setTimeout(() => window.drawTrig(), 50);
-            if (unit.id === 'deriv') setTimeout(() => { window.renderDerivMain(); window.renderDerivF(); }, 50);
+            if (unit.id === 'deriv') setTimeout(() => window.initDeriv && window.initDeriv(), 50);
             if (unit.id === 'seq') setTimeout(() => window.seqRedraw && window.seqRedraw(), 50);
             if (unit.id === 'quad') setTimeout(() => window.initQuad(), 50);
             if (unit.id === 'prob') setTimeout(() => {

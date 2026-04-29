@@ -382,9 +382,6 @@ window.initPoly = (function () {
        - 그 다음 qRoll 적용(Z축 기준 rz 회전)
        - 순서: targetQuat = qRoll * qFlat  (THREE.js 오른쪽부터 적용)
     ══════════════════════════════════════════════════════════ */
-    /* ══════════════════════════════════════════════════════════
-       도형 생성 및 전개도 목표 설정 (🌟 오류 완벽 수정본 🌟)
-    ══════════════════════════════════════════════════════════ */
     function buildPolyhedron(typeKey) {
         polyMeshGroup.clear();
         faceData = [];
@@ -456,14 +453,14 @@ window.initPoly = (function () {
 
             // 🌟 [추가된 2D 회전 보정 코드] 🌟
             const v0_flat = localV[0].clone().applyQuaternion(qFlat);
-            const currentAngle = Math.atan2(v0_flat.y, v0_flat.x);
+            const faceAngle = Math.atan2(v0_flat.y, v0_flat.x);
 
             // 기본적으로 다각형의 첫 꼭짓점이 12시(90도) 방향을 보도록 기준을 잡음
             let baseAngle = Math.PI / 2;
             // 정육면체(사각형)일 경우에만 대각선(45도) 방향으로 기준 변경
             if (typeKey === 'hexa') baseAngle = Math.PI / 4;
 
-            const correctionAngle = baseAngle - currentAngle;
+            const correctionAngle = baseAngle - faceAngle;
             const finalRz = (netPos[i].rz || 0) + correctionAngle;
 
             // 수정된 finalRz 각도를 적용
@@ -524,11 +521,8 @@ window.initPoly = (function () {
         if (get('poly-info-v')) get('poly-info-v').innerText = d.v;
         if (get('poly-info-e')) get('poly-info-e').innerText = d.e;
 
-        const showDual = ['hexa', 'octa', 'dodeca', 'icosa'].includes(typeKey);
-        const hint = get('poly-dual-hint');
-        if (hint) hint.style.display = showDual ? 'block' : 'none';
-        if (get('poly-info-f')) get('poly-info-f').style.textDecoration = showDual ? 'underline' : 'none';
-        if (get('poly-info-v')) get('poly-info-v').style.textDecoration = showDual ? 'underline' : 'none';
+        if (get('poly-info-f')) get('poly-info-f').style.textDecoration = 'none';
+        if (get('poly-info-v')) get('poly-info-v').style.textDecoration = 'none';
     }
 
     /* ══════════════════════════════════════════════════════════
