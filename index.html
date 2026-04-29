@@ -31,6 +31,14 @@
         <div class="unit-breadcrumb">수업 도우미 / <span id="breadcrumb-title"></span></div>
 
         <!-- 삼각함수 전용 드롭다운 네비게이터 -->
+        <!-- 극한과 연속 전용 드롭다운 네비게이터 -->
+        <div id="limit-nav" class="prob-nav" style="display:none;">
+            <button class="prob-nav-group-btn active" data-limittab="intuition">극한의 직관</button>
+            <button class="prob-nav-group-btn" data-limittab="onesided">좌·우 극한</button>
+            <button class="prob-nav-group-btn" data-limittab="continuity">연속의 정의</button>
+            <button class="prob-nav-group-btn" data-limittab="epsilon">ε-δ 논법</button>
+        </div>
+
         <div id="trig-nav" class="prob-nav" style="display:none;">
             <button class="prob-nav-group-btn active" data-trigfunc="radian">호도법</button>
             <button class="prob-nav-group-btn" data-trigfunc="definition">정의</button>
@@ -618,10 +626,12 @@
                         π rad <span style="font-size:12px; opacity:0.9;">(= 180°)</span>
                     </button>
                 </div>
-                <div id="trig-slider-row" style="display:flex; align-items:center; gap:12px; width:100%; max-width:900px; flex-wrap:wrap; justify-content:center;">
+                <div id="trig-slider-row"
+                    style="display:flex; align-items:center; gap:12px; width:100%; max-width:900px; flex-wrap:wrap; justify-content:center;">
                     <div class="r-slider-wrapper" id="rSliderWrapper" style="flex-shrink:0; margin-bottom:0;">
                         <div>반지름 r: <span id="rVal">1.0</span></div>
-                        <input type="range" id="rSlider" min="0.1" max="2.0" step="0.1" value="1.0" style="width:140px;">
+                        <input type="range" id="rSlider" min="0.1" max="2.0" step="0.1" value="1.0"
+                            style="width:140px;">
                     </div>
                     <div class="slider-container" style="flex:1; min-width:280px;">
                         <span>-360°</span>
@@ -631,46 +641,56 @@
                     </div>
                 </div>
                 <!-- 합성 전용 컨트롤 -->
-                <div id="composeControls" style="display:none; flex-direction:column; gap:14px; width:100%; max-width:960px; align-items:center;">
+                <div id="composeControls"
+                    style="display:none; flex-direction:column; gap:14px; width:100%; max-width:960px; align-items:center;">
                     <!-- 함수 선택 버튼 -->
                     <div style="display:flex; gap:12px;">
                         <button class="t-btn compose-func-btn active" data-fn="sin"
                             style="font-weight:900; font-size:18px; padding:10px 36px; border-radius:50px;
                                    background:linear-gradient(135deg,#ff8bad,#e53e3e); color:#fff;
                                    box-shadow:0 4px 14px rgba(229,62,62,0.35); border:none; letter-spacing:1px;">sin</button>
-                        <button class="t-btn compose-func-btn" data-fn="cos"
-                            style="font-weight:900; font-size:18px; padding:10px 36px; border-radius:50px;
+                        <button class="t-btn compose-func-btn" data-fn="cos" style="font-weight:900; font-size:18px; padding:10px 36px; border-radius:50px;
                                    background:rgba(255,255,255,0.7); color:#3182ce; border:2px solid #73a5ff;
                                    letter-spacing:1px;">cos</button>
-                        <button class="t-btn compose-func-btn" data-fn="tan"
-                            style="font-weight:900; font-size:18px; padding:10px 36px; border-radius:50px;
+                        <button class="t-btn compose-func-btn" data-fn="tan" style="font-weight:900; font-size:18px; padding:10px 36px; border-radius:50px;
                                    background:rgba(255,255,255,0.7); color:#dd6b20; border:2px solid #ffb86c;
                                    letter-spacing:1px;">tan</button>
                     </div>
                     <!-- 슬라이더 3개 한 행 -->
-                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center;
+                    <div
+                        style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center;
                                 background:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.8);
                                 border-radius:50px; padding:12px 28px; box-shadow:0 4px 16px rgba(0,0,0,0.04); width:100%; box-sizing:border-box;">
                         <!-- 진폭 -->
                         <div style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-                            <span style="font-size:14px; font-weight:700; color:#4a5568;">진폭 <em style="font-style:italic;color:#e53e3e;">a</em> = <strong id="composeAVal" style="color:#2d3748; min-width:28px; display:inline-block;">1.0</strong></span>
-                            <input type="range" id="composeA" min="-3" max="3" step="0.1" value="1" style="width:130px;">
+                            <span style="font-size:14px; font-weight:700; color:#4a5568;">진폭 <em
+                                    style="font-style:italic;color:#e53e3e;">a</em> = <strong id="composeAVal"
+                                    style="color:#2d3748; min-width:28px; display:inline-block;">1.0</strong></span>
+                            <input type="range" id="composeA" min="-3" max="3" step="0.1" value="1"
+                                style="width:130px;">
                         </div>
                         <div style="width:1px; height:24px; background:rgba(0,0,0,0.1); flex-shrink:0;"></div>
                         <!-- 주기계수 -->
                         <div style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-                            <span style="font-size:14px; font-weight:700; color:#4a5568;">주기계수 <em style="font-style:italic;color:#3182ce;">b</em> = <strong id="composeBVal" style="color:#2d3748; min-width:28px; display:inline-block;">1.0</strong></span>
-                            <input type="range" id="composeB" min="0.5" max="4" step="0.5" value="1" style="width:130px;">
+                            <span style="font-size:14px; font-weight:700; color:#4a5568;">주기계수 <em
+                                    style="font-style:italic;color:#3182ce;">b</em> = <strong id="composeBVal"
+                                    style="color:#2d3748; min-width:28px; display:inline-block;">1.0</strong></span>
+                            <input type="range" id="composeB" min="0.5" max="4" step="0.5" value="1"
+                                style="width:130px;">
                         </div>
                         <div style="width:1px; height:24px; background:rgba(0,0,0,0.1); flex-shrink:0;"></div>
                         <!-- 위상 -->
                         <div style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-                            <span style="font-size:14px; font-weight:700; color:#4a5568;">위상 <em style="font-style:italic;color:#805ad5;">c</em> = <strong id="composeCVal" style="color:#2d3748; min-width:32px; display:inline-block;">0.0</strong></span>
-                            <input type="range" id="composeC" min="-3.14" max="3.14" step="0.1" value="0" style="width:130px;">
+                            <span style="font-size:14px; font-weight:700; color:#4a5568;">위상 <em
+                                    style="font-style:italic;color:#805ad5;">c</em> = <strong id="composeCVal"
+                                    style="color:#2d3748; min-width:32px; display:inline-block;">0.0</strong></span>
+                            <input type="range" id="composeC" min="-3.14" max="3.14" step="0.1" value="0"
+                                style="width:130px;">
                         </div>
                         <div style="width:1px; height:24px; background:rgba(0,0,0,0.1); flex-shrink:0;"></div>
                         <!-- 함수식 -->
-                        <div id="composeInfo" style="font-size:15px; font-weight:800; color:#553c9a; white-space:nowrap;"></div>
+                        <div id="composeInfo"
+                            style="font-size:15px; font-weight:800; color:#553c9a; white-space:nowrap;"></div>
                     </div>
                 </div>
             </div>
@@ -943,12 +963,168 @@
 
         <!-- ===== 극한과 연속 (준비 중) ===== -->
         <div id="unit-limit" class="unit-content">
-            <h2 class="unit-title">함수의 극한과 연속 (준비 중)</h2>
-            <div
-                style="text-align:center;padding:100px 20px;color:#718096;font-size:1.2rem;background:rgba(255,255,255,0.5);border-radius:12px;">
-                함수의 극한과 연속 시각화 기능을 갖출 단위 공간입니다.
+            <h2 class="unit-title">함수의 극한과 연속</h2>
+
+            <div class="exp-main-content"
+                style="max-width: 1400px; align-items: flex-start; width:100%; flex-direction:row; flex-wrap:nowrap;">
+
+                <!-- 좌측 컨트롤 패널 -->
+                <div class="matrix-control-panel" style="flex: 0 0 300px;">
+
+                    <!-- 탭 1: 극한의 직관 -->
+                    <div id="limitPanel-intuition">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📈 함수 선택</h3>
+                            <select id="limitFnSelect"
+                                style="width:100%;padding:8px;border-radius:8px;border:1px solid #e2e8f0;font-size:14px;font-weight:700;">
+                                <option value="(x²-4)/(x-2)">(x²-4)/(x-2)</option>
+                                <option value="sin(x)/x">sin(x)/x</option>
+                                <option value="(1-cos x)/x">(1-cos x)/x</option>
+                            </select>
+                        </div>
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">← 왼쪽 접근 (보라)</h3>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <input type="range" id="limitApproachL" min="-0.99" max="1.99" step="0.01" value="-0.5"
+                                    style="flex:1;">
+                                <span id="limitApproachLVal"
+                                    style="font-weight:800;color:#805ad5;width:40px;">-0.50</span>
+                            </div>
+                        </div>
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">오른쪽 접근 → (초록)</h3>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <input type="range" id="limitApproachR" min="2.01" max="4.99" step="0.01" value="4.5"
+                                    style="flex:1;">
+                                <span id="limitApproachRVal"
+                                    style="font-weight:800;color:#38a169;width:40px;">4.50</span>
+                            </div>
+                        </div>
+                        <div class="matrix-section" style="background:rgba(99,179,237,0.08);">
+                            <div id="limitIntuitionConverge"
+                                style="font-size:13px;font-weight:700;color:#718096;line-height:1.6;">
+                                양쪽에서 x → a 로 접근하면 f(x) → ?
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 탭 2: 좌극한·우극한 -->
+                    <div id="limitPanel-onesided" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📊 유형 선택</h3>
+                            <div style="display:flex;flex-direction:column;gap:6px;">
+                                <button class="t-btn limit-onesided-btn active" data-fn="극한 존재 (연속)"
+                                    style="font-size:13px;font-weight:800;border-left:4px solid #38a169;">극한 존재
+                                    (연속)</button>
+                                <button class="t-btn limit-onesided-btn" data-fn="극한 존재 (불연속)"
+                                    style="font-size:13px;font-weight:700;border-left:4px solid #ed8936;">극한 존재
+                                    (불연속)</button>
+                                <button class="t-btn limit-onesided-btn" data-fn="좌극한≠우극한"
+                                    style="font-size:13px;font-weight:700;border-left:4px solid #e53e3e;">좌극한 ≠
+                                    우극한</button>
+                                <button class="t-btn limit-onesided-btn" data-fn="진동 (극한 없음)"
+                                    style="font-size:13px;font-weight:700;border-left:4px solid #805ad5;">진동 (극한
+                                    없음)</button>
+                            </div>
+                        </div>
+                        <div class="matrix-section" style="background:rgba(49,130,206,0.06);">
+                            <h3 class="matrix-section-title">📌 극한 존재 조건</h3>
+                            <div style="font-size:13px;color:#4a5568;line-height:2;font-weight:600;">
+                                <div style="color:#805ad5;">좌극한 = lim<sub>x→a⁻</sub> f(x)</div>
+                                <div style="color:#38a169;">우극한 = lim<sub>x→a⁺</sub> f(x)</div>
+                                <div
+                                    style="margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;color:#2d3748;">
+                                    좌극한 = 우극한 일 때만<br>극한값이 존재합니다
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 탭 3: 연속의 정의 -->
+                    <div id="limitPanel-continuity" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">📊 불연속 유형</h3>
+                            <div style="display:flex;flex-direction:column;gap:6px;">
+                                <button class="t-btn limit-cont-btn active" data-fn="연속"
+                                    style="font-size:13px;font-weight:800;border-left:4px solid #38a169;">연속 (세 조건
+                                    만족)</button>
+                                <button class="t-btn limit-cont-btn" data-fn="제거가능 불연속"
+                                    style="font-size:13px;font-weight:700;border-left:4px solid #ed8936;">제거가능
+                                    불연속</button>
+                                <button class="t-btn limit-cont-btn" data-fn="점프 불연속"
+                                    style="font-size:13px;font-weight:700;border-left:4px solid #e53e3e;">점프
+                                    불연속</button>
+                                <button class="t-btn limit-cont-btn" data-fn="무한 불연속"
+                                    style="font-size:13px;font-weight:700;border-left:4px solid #805ad5;">무한
+                                    불연속</button>
+                            </div>
+                        </div>
+                        <div class="matrix-section" style="background:rgba(49,130,206,0.06);">
+                            <h3 class="matrix-section-title">📌 연속의 3조건</h3>
+                            <div style="font-size:13px;color:#4a5568;line-height:2;font-weight:600;">
+                                <div>① f(a) 가 정의되어야 함</div>
+                                <div>② lim f(x) 가 존재해야 함</div>
+                                <div>③ lim f(x) = f(a) 이어야 함</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 탭 4: ε-δ -->
+                    <div id="limitPanel-epsilon" style="display:none;">
+                        <div class="matrix-section">
+                            <h3 class="matrix-section-title">🎯 ε 값 조절</h3>
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                <span style="font-weight:800;color:#e53e3e;">ε = </span>
+                                <input type="range" id="limitEpsilonSlider" min="0.1" max="2.5" step="0.05" value="1.0"
+                                    style="flex:1;">
+                                <span id="limitEpsilonVal" style="font-weight:800;color:#e53e3e;width:36px;">1.00</span>
+                            </div>
+                        </div>
+                        <div class="matrix-section" style="background:rgba(49,130,206,0.06);">
+                            <h3 class="matrix-section-title">📌 ε-δ 논법</h3>
+                            <div id="limitEpsilonInfo"
+                                style="font-size:13px;font-weight:700;color:#4a5568;line-height:2;">
+                            </div>
+                        </div>
+                        <div class="matrix-section" style="background:rgba(229,62,62,0.06);">
+                            <div style="font-size:12px;color:#4a5568;line-height:1.8;">
+                                <b>ε-δ 논법의 의미</b><br>
+                                ε을 아무리 작게 줘도<br>
+                                그에 대응하는 δ를 항상 찾을 수 있으면<br>
+                                → 극한값이 존재합니다
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 우측 캔버스 -->
+                <div class="exp-right-panel" style="align-items:stretch; flex:1; min-width:0; flex-direction:column;">
+
+                    <div id="limitCanvas-intuition" style="width:100%;">
+                        <canvas id="limitIntuitionCanvas" width="800" height="520"
+                            style="width:100%;height:auto;display:block;background:#f8fafc;border-radius:12px;"></canvas>
+                    </div>
+
+                    <div id="limitCanvas-onesided" style="display:none;width:100%;">
+                        <canvas id="limitOneSidedCanvas" width="800" height="520"
+                            style="width:100%;height:auto;display:block;background:#f8fafc;border-radius:12px;"></canvas>
+                    </div>
+
+                    <div id="limitCanvas-continuity" style="display:none;width:100%;">
+                        <canvas id="limitContinuityCanvas" width="800" height="520"
+                            style="width:100%;height:auto;display:block;background:#f8fafc;border-radius:12px;"></canvas>
+                    </div>
+
+                    <div id="limitCanvas-epsilon" style="display:none;width:100%;">
+                        <canvas id="limitEpsilonCanvas" width="800" height="520"
+                            style="width:100%;height:auto;display:block;background:#f8fafc;border-radius:12px;"></canvas>
+                    </div>
+
+                </div>
             </div>
         </div>
+
 
         <!-- ===== 확률과 통계 (Probability) ===== -->
         <div id="unit-prob" class="unit-content">
@@ -1756,13 +1932,11 @@
                            background:linear-gradient(135deg,#63b3ed,#3182ce); color:#fff; box-shadow:0 4px 12px rgba(49,130,206,0.35);">
                     ① 할선 → 접선 극한
                 </button>
-                <button class="deriv-tab-btn" data-derivtab="graph"
-                    style="padding:10px 28px; font-size:15px; font-weight:800; border-radius:50px; border:2px solid #68d391; cursor:pointer; transition:all 0.25s;
+                <button class="deriv-tab-btn" data-derivtab="graph" style="padding:10px 28px; font-size:15px; font-weight:800; border-radius:50px; border:2px solid #68d391; cursor:pointer; transition:all 0.25s;
                            background:rgba(255,255,255,0.7); color:#276749;">
                     ② 도함수 그래프
                 </button>
-                <button class="deriv-tab-btn" data-derivtab="monotone"
-                    style="padding:10px 28px; font-size:15px; font-weight:800; border-radius:50px; border:2px solid #f6ad55; cursor:pointer; transition:all 0.25s;
+                <button class="deriv-tab-btn" data-derivtab="monotone" style="padding:10px 28px; font-size:15px; font-weight:800; border-radius:50px; border:2px solid #f6ad55; cursor:pointer; transition:all 0.25s;
                            background:rgba(255,255,255,0.7); color:#c05621;">
                     ③ 증감·극값
                 </button>
@@ -1862,7 +2036,8 @@
                                         기울기</strong>와 같다.
                                     <div
                                         style="text-align:center; margin:15px 0; background:#fff; padding:10px; border-radius:8px; border:1px solid #e9d8fd;">
-                                        <span id="deriv-avg-formula" style="font-size:1.2rem; display:block; text-align:center;"></span>
+                                        <span id="deriv-avg-formula"
+                                            style="font-size:1.2rem; display:block; text-align:center;"></span>
                                     </div>
                                 </div>
                             </div>
@@ -1917,15 +2092,18 @@
                     <div class="matrix-control-panel" style="flex:0 0 280px;">
                         <div class="matrix-section" style="background:#f0fff4; border-left:5px solid #38a169;">
                             <h3 class="matrix-section-title" style="color:#276749;">f(x) 함수 입력</h3>
-                            <input type="text" id="deriv-graph-input" class="func-input"
-                                value="x^3 - 3*x" placeholder="예: x^3 - 3*x, x^2 - 2*x"
+                            <input type="text" id="deriv-graph-input" class="func-input" value="x^3 - 3*x"
+                                placeholder="예: x^3 - 3*x, x^2 - 2*x"
                                 style="width:100%; box-sizing:border-box; margin-bottom:10px;">
-                            <button id="deriv-graph-draw-btn" class="draw-btn" style="width:100%; background:linear-gradient(135deg,#68d391,#38a169);">그래프 그리기</button>
-                            <div id="deriv-graph-error" style="color:#e53e3e; font-size:13px; margin-top:6px; min-height:18px;"></div>
+                            <button id="deriv-graph-draw-btn" class="draw-btn"
+                                style="width:100%; background:linear-gradient(135deg,#68d391,#38a169);">그래프 그리기</button>
+                            <div id="deriv-graph-error"
+                                style="color:#e53e3e; font-size:13px; margin-top:6px; min-height:18px;"></div>
                         </div>
                         <div class="matrix-section">
                             <h3 class="matrix-section-title">📌 범례</h3>
-                            <div style="display:flex; flex-direction:column; gap:10px; font-size:14px; font-weight:600; color:#4a5568;">
+                            <div
+                                style="display:flex; flex-direction:column; gap:10px; font-size:14px; font-weight:600; color:#4a5568;">
                                 <div style="display:flex; align-items:center; gap:10px;">
                                     <div style="width:32px; height:4px; background:#3182ce; border-radius:2px;"></div>
                                     <span>y = f(x)</span>
@@ -1944,24 +2122,35 @@
                             <h3 class="matrix-section-title" style="color:#2b6cb0;">현재 x에서의 기울기</h3>
                             <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
                                 <span style="font-size:14px; font-weight:700; color:#4a5568;">x =</span>
-                                <input type="range" id="deriv-graph-x-slider" min="-3" max="3" step="0.05" value="0" style="flex:1;">
-                                <span id="deriv-graph-x-val" style="font-size:15px; font-weight:800; color:#3182ce; min-width:36px;">0.00</span>
+                                <input type="range" id="deriv-graph-x-slider" min="-3" max="3" step="0.05" value="0"
+                                    style="flex:1;">
+                                <span id="deriv-graph-x-val"
+                                    style="font-size:15px; font-weight:800; color:#3182ce; min-width:36px;">0.00</span>
                             </div>
-                            <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #bee3f8; text-align:center;">
-                                <div style="font-size:13px; color:#4a5568; margin-bottom:4px;">f′(<span id="deriv-slope-x">0</span>) =</div>
-                                <div id="deriv-slope-val" style="font-size:26px; font-weight:900; color:#e53e3e;">0.00</div>
+                            <div
+                                style="background:#fff; border-radius:8px; padding:12px; border:1px solid #bee3f8; text-align:center;">
+                                <div style="font-size:13px; color:#4a5568; margin-bottom:4px;">f′(<span
+                                        id="deriv-slope-x">0</span>) =</div>
+                                <div id="deriv-slope-val" style="font-size:26px; font-weight:900; color:#e53e3e;">0.00
+                                </div>
                             </div>
                         </div>
                     </div>
                     <!-- 오른쪽 캔버스 (위: f(x), 아래: f'(x)) -->
                     <div style="flex:1; min-width:400px; display:flex; flex-direction:column; gap:8px;">
                         <div class="canvas-wrapper" style="padding:10px; background:#fff; position:relative;">
-                            <div style="position:absolute; top:14px; left:18px; font-size:13px; font-weight:800; color:#3182ce; z-index:5;">y = f(x)</div>
-                            <canvas id="derivFxCanvas" width="800" height="280" style="width:100%; height:auto; display:block;"></canvas>
+                            <div
+                                style="position:absolute; top:14px; left:18px; font-size:13px; font-weight:800; color:#3182ce; z-index:5;">
+                                y = f(x)</div>
+                            <canvas id="derivFxCanvas" width="800" height="280"
+                                style="width:100%; height:auto; display:block;"></canvas>
                         </div>
                         <div class="canvas-wrapper" style="padding:10px; background:#fff; position:relative;">
-                            <div style="position:absolute; top:14px; left:18px; font-size:13px; font-weight:800; color:#e53e3e; z-index:5;">y = f′(x)</div>
-                            <canvas id="derivDfxCanvas" width="800" height="220" style="width:100%; height:auto; display:block;"></canvas>
+                            <div
+                                style="position:absolute; top:14px; left:18px; font-size:13px; font-weight:800; color:#e53e3e; z-index:5;">
+                                y = f′(x)</div>
+                            <canvas id="derivDfxCanvas" width="800" height="220"
+                                style="width:100%; height:auto; display:block;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -2001,10 +2190,12 @@
                     <!-- 오른쪽 캔버스 -->
                     <div style="flex:1; min-width:400px; display:flex; flex-direction:column; gap:8px;">
                         <div class="canvas-wrapper" style="padding:10px; background:#fff; position:relative;">
-                            <canvas id="derivMonoFxCanvas" width="800" height="280" style="width:100%; height:auto; display:block;"></canvas>
+                            <canvas id="derivMonoFxCanvas" width="800" height="280"
+                                style="width:100%; height:auto; display:block;"></canvas>
                         </div>
                         <div class="canvas-wrapper" style="padding:10px; background:#fff; position:relative;">
-                            <canvas id="derivMonoDfxCanvas" width="800" height="200" style="width:100%; height:auto; display:block;"></canvas>
+                            <canvas id="derivMonoDfxCanvas" width="800" height="200"
+                                style="width:100%; height:auto; display:block;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -2652,6 +2843,7 @@
     <script src="integ.js"></script>
     <script src="factor.js"></script>
     <script src="seq.js"></script>
+    <script src="limit.js"></script>
     <script src="main.js"></script>
     <script src="geom.js"></script>
     <script src="deriv.js"></script>

@@ -206,13 +206,20 @@
         ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
         ctx.stroke();
 
-        // x축 눈금 (π 단위)
+        // x축 눈금 (π/2 단위)
         ctx.fillStyle = '#a0aec0'; ctx.font = '13px Outfit'; ctx.textAlign = 'center';
-        for (let k = -4; k <= 4; k++) {
-            const sx = cx + k * Math.PI * xScale;
+        for (let k = -8; k <= 8; k++) {
+            const sx = cx + k * (Math.PI / 2) * xScale;
             ctx.beginPath(); ctx.moveTo(sx, cy - 5); ctx.lineTo(sx, cy + 5); ctx.stroke();
             if (k !== 0) {
-                const label = k === 1 ? 'π' : k === -1 ? '-π' : k + 'π';
+                let label = '';
+                if (k % 2 === 0) {
+                    const piCount = k / 2;
+                    label = piCount === 1 ? 'π' : piCount === -1 ? '-π' : piCount + 'π';
+                } else {
+                    const num = k === 1 ? '' : k === -1 ? '-' : k;
+                    label = num + 'π/2';
+                }
                 ctx.fillText(label, sx, cy + 18);
             }
         }
@@ -221,6 +228,17 @@
         // 기준선 — 회색 (tan은 branch 분리)
         ctx.strokeStyle = 'rgba(160,174,192,0.5)'; ctx.lineWidth = 1.5;
         if (composeFunc === 'tan') {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(160,174,192,0.3)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            for(let n = -10; n <= 10; n++) {
+                let asympX = Math.PI/2 + n * Math.PI;
+                let asympPx = cx + asympX * xScale;
+                ctx.beginPath(); ctx.moveTo(asympPx, 0); ctx.lineTo(asympPx, H); ctx.stroke();
+            }
+            ctx.restore();
+
             let inPath = false;
             for (let px = 0; px <= W; px++) {
                 const x = (px - cx) / xScale;
@@ -246,6 +264,19 @@
         // a·f(bx + c) — 메인 곡선 (tan은 branch 분리)
         ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 3;
         if (composeFunc === 'tan') {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(229,62,62,0.4)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            for(let n = -20; n <= 20; n++) {
+                let asympX = (Math.PI/2 - composeC + n * Math.PI) / composeB;
+                let asympPx = cx + asympX * xScale;
+                if (asympPx >= 0 && asympPx <= W) {
+                    ctx.beginPath(); ctx.moveTo(asympPx, 0); ctx.lineTo(asympPx, H); ctx.stroke();
+                }
+            }
+            ctx.restore();
+
             let inPath = false;
             let prevY = null;
             for (let px = 0; px <= W; px++) {
@@ -633,6 +664,21 @@
         ctx.beginPath();
         ctx.rect(GX, 0, G_WIDTH + 40, canvas.height);
         ctx.clip();
+
+        if (currentFunc === 'tan') {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 184, 108, 0.4)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            for (let a = -1080; a <= 1080; a += 180) {
+                let asympAngle = 90 + a;
+                if (asympAngle >= minReachedAngle && asympAngle <= maxReachedAngle) {
+                    let gxAsymp = G_ORIGIN_X + asympAngle * X_SCALE_EXT;
+                    ctx.beginPath(); ctx.moveTo(gxAsymp, 0); ctx.lineTo(gxAsymp, canvas.height); ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
 
         let activeColor = activeColors[currentFunc];
         ctx.beginPath();

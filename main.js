@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'matrix', icon: '🔲', title: '행렬과 변환', subtitle: '선형 변환을 이미지로 직관적으로 확인', ready: true, colorClass: 'card-matrix', init: () => window.initMatrix() },
         { id: 'trig', icon: '〽️', title: '삼각함수', subtitle: '단위원과 그래프로 sin·cos·tan 이해', ready: true, colorClass: 'card-trig', init: () => window.initTrig() },
         { id: 'seq', icon: '🔢', title: '수열', subtitle: '시그마(Σ) 거듭제곱의 합 테트리스 퍼즐', ready: true, colorClass: 'card-seq', init: () => window.initSeq() },
-        { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '함수의 극한과 연속', ready: false, colorClass: 'card-limit', init: null },
+        { id: 'limit', icon: '→', title: '극한과 연속', subtitle: '극한·좌우극한·연속·ε-δ', ready: true, colorClass: 'card-limit', init: () => window.initLimit && window.initLimit() },
         { id: 'deriv', icon: '📐', title: '미분', subtitle: '할선→접선 수렴 + 도함수 실시간 그래프', ready: true, colorClass: 'card-deriv', init: () => window.initDeriv() },
         { id: 'integ', icon: '∫', title: '적분', subtitle: '상합·하합으로 구분구적법 시각화', ready: true, colorClass: 'card-integ', init: () => window.initInteg() },
         { id: 'prob', icon: '🎲', title: '확률과 통계', subtitle: '직관을 깨는 몬티홀 딜레마 시뮬레이션', ready: true, colorClass: 'card-limit', init: () => window.probShowTab ? window.probShowTab('pascal') : null },
@@ -206,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
         /* 확률과 통계 / 기하 드롭다운 네비 표시/숨김 */
         const probNav = document.getElementById('prob-nav');
         if (probNav) probNav.style.display = unit.id === 'prob' ? 'flex' : 'none';
+        const limitNav = document.getElementById('limit-nav');
+        if (limitNav) limitNav.style.display = unit.id === 'limit' ? 'flex' : 'none';
         const geomNav = document.getElementById('geom-nav');
         if (geomNav) geomNav.style.display = unit.id === 'geom' ? 'flex' : 'none';
         const trigNav = document.getElementById('trig-nav');
@@ -243,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
         /* prob-nav / geom-nav 숨기기 */
         const probNav = document.getElementById('prob-nav');
         if (probNav) probNav.style.display = 'none';
+        const limitNav = document.getElementById('limit-nav');
+        if (limitNav) limitNav.style.display = 'none';
         const geomNav = document.getElementById('geom-nav');
         if (geomNav) geomNav.style.display = 'none';
         const trigNav = document.getElementById('trig-nav');
