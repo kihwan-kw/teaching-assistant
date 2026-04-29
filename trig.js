@@ -39,6 +39,11 @@
     let maxReachedAngle = 0;
     let composeA = 1.0, composeB = 1.0, composeC = 0.0, composeD = 0.0;
     let composeFunc = 'sin';
+    let intersectM = 0.1, intersectN = 0.0;
+    let intersectA = 1.0, intersectB = 1.0, intersectC = 0.0, intersectD = 0.0;
+    let intersectFunc = 'sin';
+    let intersectUseDomain = false;
+    let intersectDomainMin = -4.0, intersectDomainMax = 4.0;
 
     function initTrig() {
         slider.addEventListener('input', (e) => {
@@ -111,6 +116,81 @@
             if (currentFunc === 'compose') drawTrig();
         });
 
+        function updateIntersectBtnStyles() {
+            document.querySelectorAll('.intersect-func-btn').forEach(b => {
+                const fn = b.dataset.fn;
+                const base = 'font-weight:900;font-size:18px;padding:10px 36px;border-radius:50px;letter-spacing:1px;cursor:pointer;transition:all 0.25s;';
+                b.style.cssText = base + (b.dataset.fn === intersectFunc ? COMPOSE_BTN_STYLES[fn].active : COMPOSE_BTN_STYLES[fn].inactive);
+            });
+        }
+
+        document.querySelectorAll('.intersect-func-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                intersectFunc = btn.dataset.fn;
+                updateIntersectBtnStyles();
+                if (currentFunc === 'intersect') drawTrig();
+            });
+        });
+        updateIntersectBtnStyles();
+
+        document.getElementById('intersectM').addEventListener('input', function () {
+            intersectM = parseFloat(this.value);
+            document.getElementById('intersectMVal').textContent = intersectM.toFixed(2);
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectN').addEventListener('input', function () {
+            intersectN = parseFloat(this.value);
+            document.getElementById('intersectNVal').textContent = intersectN.toFixed(2);
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectA').addEventListener('input', function () {
+            intersectA = parseFloat(this.value);
+            document.getElementById('intersectAVal').textContent = intersectA.toFixed(1);
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectB').addEventListener('input', function () {
+            intersectB = parseFloat(this.value);
+            document.getElementById('intersectBVal').textContent = intersectB.toFixed(2) + 'π';
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectC').addEventListener('input', function () {
+            intersectC = parseFloat(this.value);
+            document.getElementById('intersectCVal').textContent = intersectC.toFixed(1);
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectD').addEventListener('input', function () {
+            intersectD = parseFloat(this.value);
+            document.getElementById('intersectDVal').textContent = intersectD.toFixed(1);
+            if (currentFunc === 'intersect') drawTrig();
+        });
+
+        document.getElementById('intersectUseDomain').addEventListener('change', function () {
+            intersectUseDomain = this.checked;
+            document.getElementById('intersectDomainMin').disabled = !intersectUseDomain;
+            document.getElementById('intersectDomainMax').disabled = !intersectUseDomain;
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectDomainMin').addEventListener('input', function () {
+            intersectDomainMin = parseFloat(this.value);
+            if (intersectDomainMin > intersectDomainMax) {
+                intersectDomainMax = intersectDomainMin;
+                document.getElementById('intersectDomainMax').value = intersectDomainMax;
+                document.getElementById('intersectDomainMaxVal').textContent = intersectDomainMax.toFixed(1) + 'π';
+            }
+            document.getElementById('intersectDomainMinVal').textContent = intersectDomainMin.toFixed(1) + 'π';
+            if (currentFunc === 'intersect') drawTrig();
+        });
+        document.getElementById('intersectDomainMax').addEventListener('input', function () {
+            intersectDomainMax = parseFloat(this.value);
+            if (intersectDomainMax < intersectDomainMin) {
+                intersectDomainMin = intersectDomainMax;
+                document.getElementById('intersectDomainMin').value = intersectDomainMin;
+                document.getElementById('intersectDomainMinVal').textContent = intersectDomainMin.toFixed(1) + 'π';
+            }
+            document.getElementById('intersectDomainMaxVal').textContent = intersectDomainMax.toFixed(1) + 'π';
+            if (currentFunc === 'intersect') drawTrig();
+        });
+
         tabBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 tabBtns.forEach(b => b.classList.remove('active'));
@@ -139,14 +219,16 @@
                     document.getElementById('radianControls').style.display = 'none';
                 }
 
-                if (currentFunc === 'compose') {
-                    document.getElementById('composeControls').style.display = 'flex';
+                if (currentFunc === 'compose' || currentFunc === 'intersect') {
+                    document.getElementById('composeControls').style.display = currentFunc === 'compose' ? 'flex' : 'none';
+                    document.getElementById('intersectControls').style.display = currentFunc === 'intersect' ? 'flex' : 'none';
                     document.getElementById('radianControls').style.display = 'none';
                     rSliderWrapper.style.display = 'none';
                     infoText.style.display = 'none';
                     document.getElementById('trig-slider-row').style.display = 'none';
                 } else {
                     document.getElementById('composeControls').style.display = 'none';
+                    document.getElementById('intersectControls').style.display = 'none';
                     infoText.style.display = '';
                     document.getElementById('trig-slider-row').style.display = 'flex';
                 }
@@ -193,12 +275,245 @@
             drawDefinition();
         } else if (currentFunc === 'compose') {
             drawCompose();
+        } else if (currentFunc === 'intersect') {
+            drawIntersect();
         } else {
             drawUnitCircle();
             drawTraceExtended();
             drawCurrentStateExtended();
         }
     }
+
+    function formatXValue(x) {
+        const p = x / Math.PI;
+        const denoms = [1, 2, 3, 4, 6];
+        for (let d of denoms) {
+            const num = Math.round(p * d);
+            if (Math.abs(p * d - num) < 0.01) {
+                if (num === 0) return '0';
+                let sign = num < 0 ? '-' : '';
+                let n = Math.abs(num);
+                let gcd = function (a, b) { return b === 0 ? a : gcd(b, a % b); };
+                let g = gcd(n, d);
+                n /= g;
+                let d_simp = d / g;
+                let numStr = n === 1 ? 'π' : `${n}π`;
+                if (d_simp === 1) return sign + numStr;
+                return sign + numStr + '/' + d_simp;
+            }
+        }
+        if (Math.abs(x - Math.round(x)) < 0.01) {
+            return Math.round(x).toString();
+        }
+        return x.toFixed(2);
+    }
+
+    function drawIntersect() {
+        const W = canvas.width, H = canvas.height;
+        const cx = W / 2, cy = H / 2;
+        const xScale = 80, yScale = 120;
+
+        // 축 및 배경
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, cy); ctx.lineTo(W, cy);
+        ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+        ctx.stroke();
+
+        ctx.fillStyle = '#a0aec0'; ctx.font = '13px Outfit'; ctx.textAlign = 'center';
+        for (let k = -8; k <= 8; k++) {
+            const sx = cx + k * (Math.PI / 2) * xScale;
+            ctx.beginPath(); ctx.moveTo(sx, cy - 5); ctx.lineTo(sx, cy + 5); ctx.stroke();
+            if (k !== 0) {
+                let label = '';
+                if (k % 2 === 0) {
+                    const piCount = k / 2;
+                    label = piCount === 1 ? 'π' : piCount === -1 ? '-π' : piCount + 'π';
+                } else {
+                    const num = k === 1 ? '' : k === -1 ? '-' : k;
+                    label = num + 'π/2';
+                }
+                ctx.fillText(label, sx, cy + 18);
+            }
+        }
+        ctx.fillText('0', cx + 8, cy + 18);
+
+        // 삼각함수 곡선
+        ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2.5;
+        let funcVals = [];
+        let inPath = false;
+
+        ctx.beginPath();
+        for (let px = 0; px <= W; px++) {
+            const x = (px - cx) / xScale;
+
+            if (intersectUseDomain) {
+                const domainMin = intersectDomainMin * Math.PI;
+                const domainMax = intersectDomainMax * Math.PI;
+                if (x < domainMin || x > domainMax) {
+                    if (inPath) { ctx.stroke(); inPath = false; }
+                    ctx.beginPath(); continue;
+                }
+            }
+
+            let val = 0;
+            const inner = intersectB * Math.PI * (x + intersectC);
+            if (intersectFunc === 'sin') val = intersectA * Math.sin(inner) + intersectD;
+            else if (intersectFunc === 'cos') val = intersectA * Math.cos(inner) + intersectD;
+            else if (intersectFunc === 'tan') val = intersectA * Math.tan(inner) + intersectD;
+
+            const y = cy - val * yScale;
+            funcVals.push({ px, x, y, val });
+
+            if (intersectFunc === 'tan' && (Math.abs(val) > H / yScale || !isFinite(val))) {
+                if (inPath) { ctx.stroke(); inPath = false; }
+                ctx.beginPath(); continue;
+            }
+            if (!inPath) { ctx.moveTo(px, y); inPath = true; }
+            else { ctx.lineTo(px, y); }
+        }
+        if (inPath) ctx.stroke();
+
+        // tan 점근선
+        if (intersectFunc === 'tan') {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(229,62,62,0.3)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            for (let n = -20; n <= 20; n++) {
+                let asympX = (Math.PI / 2 + n * Math.PI) / (intersectB * Math.PI) - intersectC;
+                if (intersectUseDomain) {
+                    const domainMin = intersectDomainMin * Math.PI;
+                    const domainMax = intersectDomainMax * Math.PI;
+                    if (asympX < domainMin || asympX > domainMax) continue;
+                }
+                let asympPx = cx + asympX * xScale;
+                if (asympPx >= 0 && asympPx <= W) {
+                    ctx.beginPath(); ctx.moveTo(asympPx, 0); ctx.lineTo(asympPx, H); ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // 직선 그리기 y = mx + n
+        ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        const startX = (0 - cx) / xScale;
+        const endX = (W - cx) / xScale;
+        const startY = cy - (intersectM * startX + intersectN) * yScale;
+        const endY = cy - (intersectM * endX + intersectN) * yScale;
+        ctx.moveTo(0, startY);
+        ctx.lineTo(W, endY);
+        ctx.stroke();
+
+        // 수식 텍스트
+        ctx.fillStyle = '#2d3748'; ctx.font = 'bold 18px Outfit'; ctx.textAlign = 'left';
+        let bStr = intersectB === 1 ? 'π' : intersectB.toFixed(2) + 'π';
+        let cStr = intersectC === 0 ? '' : (intersectC > 0 ? ` + ${intersectC.toFixed(1)}` : ` - ${Math.abs(intersectC).toFixed(1)}`);
+        let dStr = intersectD === 0 ? '' : (intersectD > 0 ? ` + ${intersectD.toFixed(1)}` : ` - ${Math.abs(intersectD).toFixed(1)}`);
+        ctx.fillText(`y = ${intersectA.toFixed(1)}${intersectFunc}(${bStr}(x${cStr}))${dStr}`, 20, 36);
+        ctx.fillText(`y = ${intersectM.toFixed(2)}x ${intersectN >= 0 ? '+' : '-'} ${Math.abs(intersectN).toFixed(2)}`, 20, 64);
+
+        // 교점 찾기 및 표시
+        let intersectPoints = [];
+        let diffs = [];
+        for (let i = 0; i < funcVals.length; i++) {
+            const pt = funcVals[i];
+            const lineY = intersectM * pt.x + intersectN;
+            diffs.push(pt.val - lineY);
+        }
+
+        for (let i = 1; i < funcVals.length - 1; i++) {
+            const pt = funcVals[i];
+            if (intersectFunc === 'tan' && !isFinite(pt.val)) continue;
+
+            const prevDiff = diffs[i - 1];
+            const diff = diffs[i];
+            const nextDiff = diffs[i + 1];
+
+            let isIntersect = false;
+            let ix, iy, realX;
+
+            // 1. 교차 (Crossing)
+            if (Math.sign(diff) !== Math.sign(prevDiff) && Math.sign(diff) !== 0 && Math.sign(prevDiff) !== 0) {
+                if (intersectFunc !== 'tan' || Math.abs(diff - prevDiff) < 5) {
+                    isIntersect = true;
+                    const t = Math.abs(prevDiff) / (Math.abs(prevDiff) + Math.abs(diff));
+                    ix = funcVals[i - 1].px + t * (pt.px - funcVals[i - 1].px);
+                }
+            }
+            // 2. 접함 (Tangent touch)
+            else if (Math.abs(diff) < 0.08) {
+                if (Math.abs(diff) <= Math.abs(prevDiff) && Math.abs(diff) <= Math.abs(nextDiff)) {
+                    if (intersectFunc !== 'tan' || Math.abs(diff - prevDiff) < 5) {
+                        isIntersect = true;
+                        ix = pt.px;
+                    }
+                }
+            }
+
+            if (isIntersect) {
+                realX = (ix - cx) / xScale;
+                iy = cy - (intersectM * realX + intersectN) * yScale;
+
+                if (iy >= 0 && iy <= H) {
+                    let duplicate = false;
+                    if (intersectPoints.length > 0) {
+                        const lastPt = intersectPoints[intersectPoints.length - 1];
+                        if (Math.abs(lastPt.ix - ix) < 5) duplicate = true;
+                    }
+                    if (!duplicate) {
+                        intersectPoints.push({ ix, iy, realX });
+                    }
+                }
+            }
+        }
+        let intersections = intersectPoints.length;
+
+        // 겹침 방지를 위해 교점별 라벨 높이 분산
+        intersectPoints.sort((a, b) => a.ix - b.ix);
+        for (let i = 0; i < intersectPoints.length; i++) {
+            const pt = intersectPoints[i];
+
+            // 점 찍기
+            ctx.fillStyle = '#805ad5';
+            ctx.beginPath();
+            ctx.arc(pt.ix, pt.iy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 수선의 발 (점선)
+            ctx.strokeStyle = 'rgba(128, 90, 213, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(pt.ix, pt.iy);
+            ctx.lineTo(pt.ix, cy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 좌표 텍스트
+            const xStr = formatXValue(pt.realX);
+            ctx.font = 'bold 12px Outfit';
+            ctx.fillStyle = '#553c9a';
+            ctx.textAlign = 'center';
+
+            // y 오프셋 계산 (겹침 방지)
+            let yOffset = 18;
+            if (i > 0 && (pt.ix - intersectPoints[i - 1].ix) < 40) {
+                // 이전 점과 가까우면 다른 높이에 출력
+                yOffset = intersectPoints[i - 1].yOffset === 18 ? 32 : 18;
+            }
+            pt.yOffset = yOffset;
+
+            ctx.fillText(xStr, pt.ix, cy + yOffset);
+        }
+
+        const infoEl = document.getElementById('intersectInfo');
+        if (infoEl) {
+            infoEl.innerHTML = `서로 다른 교점의 개수: <span style="color:#e53e3e">${intersections}</span>개`;
+        }
+    }
+
     function drawCompose() {
         const W = canvas.width, H = canvas.height;
         const cx = W / 2, cy = H / 2;
@@ -237,8 +552,8 @@
             ctx.strokeStyle = 'rgba(160,174,192,0.3)';
             ctx.setLineDash([4, 4]);
             ctx.lineWidth = 1;
-            for(let n = -10; n <= 10; n++) {
-                let asympX = Math.PI/2 + n * Math.PI;
+            for (let n = -10; n <= 10; n++) {
+                let asympX = Math.PI / 2 + n * Math.PI;
                 let asympPx = cx + asympX * xScale;
                 ctx.beginPath(); ctx.moveTo(asympPx, 0); ctx.lineTo(asympPx, H); ctx.stroke();
             }
@@ -273,8 +588,8 @@
             ctx.strokeStyle = 'rgba(229,62,62,0.4)';
             ctx.setLineDash([4, 4]);
             ctx.lineWidth = 1;
-            for(let n = -20; n <= 20; n++) {
-                let asympX = (Math.PI/2 + n * Math.PI) / composeB - composeC;
+            for (let n = -20; n <= 20; n++) {
+                let asympX = (Math.PI / 2 + n * Math.PI) / composeB - composeC;
                 let asympPx = cx + asympX * xScale;
                 if (asympPx >= 0 && asympPx <= W) {
                     ctx.beginPath(); ctx.moveTo(asympPx, 0); ctx.lineTo(asympPx, H); ctx.stroke();
@@ -319,7 +634,7 @@
             // 중심선 (d) 표시
             ctx.strokeStyle = 'rgba(56,161,105,0.4)';
             ctx.beginPath(); ctx.moveTo(0, cy - composeD * yScale); ctx.lineTo(W, cy - composeD * yScale); ctx.stroke();
-            
+
             ctx.setLineDash([]);
             ctx.fillStyle = '#e53e3e'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'right';
             ctx.fillText(`|a| = ${Math.abs(composeA).toFixed(1)}`, cx - 8, cy - (Math.abs(composeA) + composeD) * yScale - 4);
@@ -814,7 +1129,7 @@
     }
 
     function updateTextExtended() {
-        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose') {
+        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose' || currentFunc === 'intersect') {
             infoText.style.display = 'none';
             return;
         }
