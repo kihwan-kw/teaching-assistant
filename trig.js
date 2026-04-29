@@ -37,7 +37,7 @@
     let currentR = 1.0;
     let minReachedAngle = 0;
     let maxReachedAngle = 0;
-    let composeA = 1.0, composeB = 1.0, composeC = 0.0;
+    let composeA = 1.0, composeB = 1.0, composeC = 0.0, composeD = 0.0;
     let composeFunc = 'sin';
 
     function initTrig() {
@@ -103,6 +103,11 @@
         document.getElementById('composeC').addEventListener('input', function () {
             composeC = parseFloat(this.value);
             document.getElementById('composeCVal').textContent = composeC.toFixed(1);
+            if (currentFunc === 'compose') drawTrig();
+        });
+        document.getElementById('composeD').addEventListener('input', function () {
+            composeD = parseFloat(this.value);
+            document.getElementById('composeDVal').textContent = composeD.toFixed(1);
             if (currentFunc === 'compose') drawTrig();
         });
 
@@ -261,7 +266,7 @@
         ctx.fillStyle = 'rgba(160,174,192,0.6)'; ctx.font = '13px Outfit'; ctx.textAlign = 'left';
         ctx.fillText(`y = ${composeFunc} x`, cx + Math.PI * xScale + 4, cy - yScale - 6);
 
-        // a·f(bx + c) — 메인 곡선 (tan은 branch 분리)
+        // a·f(b(x + c)) + d — 메인 곡선 (tan은 branch 분리)
         ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 3;
         if (composeFunc === 'tan') {
             ctx.save();
@@ -269,7 +274,7 @@
             ctx.setLineDash([4, 4]);
             ctx.lineWidth = 1;
             for(let n = -20; n <= 20; n++) {
-                let asympX = (Math.PI/2 - composeC + n * Math.PI) / composeB;
+                let asympX = (Math.PI/2 + n * Math.PI) / composeB - composeC;
                 let asympPx = cx + asympX * xScale;
                 if (asympPx >= 0 && asympPx <= W) {
                     ctx.beginPath(); ctx.moveTo(asympPx, 0); ctx.lineTo(asympPx, H); ctx.stroke();
@@ -281,8 +286,8 @@
             let prevY = null;
             for (let px = 0; px <= W; px++) {
                 const x = (px - cx) / xScale;
-                const val = Math.tan(composeB * x + composeC);
-                const y = cy - composeA * val * yScale;
+                const val = Math.tan(composeB * (x + composeC));
+                const y = cy - (composeA * val + composeD) * yScale;
                 // 점근선 감지: 값이 너무 크거나, 이전 픽셀과의 y 변화량이 캔버스 높이의 2배 이상이면 새 branch
                 const jump = prevY !== null && Math.abs(y - prevY) > H * 1.5;
                 if (!isFinite(val) || Math.abs(composeA * val) > H / yScale + 2 || jump) {
@@ -297,8 +302,8 @@
             ctx.beginPath();
             for (let px = 0; px <= W; px++) {
                 const x = (px - cx) / xScale;
-                const val = composeFunc === 'cos' ? Math.cos(composeB * x + composeC) : Math.sin(composeB * x + composeC);
-                const y = cy - composeA * val * yScale;
+                const val = composeFunc === 'cos' ? Math.cos(composeB * (x + composeC)) : Math.sin(composeB * (x + composeC));
+                const y = cy - (composeA * val + composeD) * yScale;
                 px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
             }
             ctx.stroke();
@@ -308,12 +313,16 @@
         if (composeFunc !== 'tan' && Math.abs(composeA) > 0.05) {
             ctx.setLineDash([6, 4]);
             ctx.strokeStyle = 'rgba(229,62,62,0.4)'; ctx.lineWidth = 1;
-            [composeA * yScale, -composeA * yScale].forEach(dy => {
+            [(composeA + composeD) * yScale, (-composeA + composeD) * yScale].forEach(dy => {
                 ctx.beginPath(); ctx.moveTo(0, cy - dy); ctx.lineTo(W, cy - dy); ctx.stroke();
             });
+            // 중심선 (d) 표시
+            ctx.strokeStyle = 'rgba(56,161,105,0.4)';
+            ctx.beginPath(); ctx.moveTo(0, cy - composeD * yScale); ctx.lineTo(W, cy - composeD * yScale); ctx.stroke();
+            
             ctx.setLineDash([]);
             ctx.fillStyle = '#e53e3e'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'right';
-            ctx.fillText(`|a| = ${Math.abs(composeA).toFixed(1)}`, cx - 8, cy - composeA * yScale - 4);
+            ctx.fillText(`|a| = ${Math.abs(composeA).toFixed(1)}`, cx - 8, cy - (Math.abs(composeA) + composeD) * yScale - 4);
         }
 
         // 주기 계산 (tan은 π/|b|, sin/cos는 2π/|b|)
@@ -333,22 +342,24 @@
             : `주기 = 2π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}`;
         ctx.fillText(periodLabel, cx + periodPx / 2, cy + 38);
 
-        // 위상이동 표시
+        // x축 평행이동 표시
         if (Math.abs(composeC) > 0.05) {
-            const shift = -composeC / composeB;
+            const shift = -composeC; // b(x+c) = 0 => x = -c
             const shiftPx = shift * xScale;
-            ctx.strokeStyle = '#38a169'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+            ctx.strokeStyle = '#805ad5'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
             ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + shiftPx, cy - 10); ctx.stroke();
             ctx.setLineDash([]);
-            ctx.fillStyle = '#38a169'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
-            ctx.fillText(`위상이동 ${shift > 0 ? '+' : ''}${shift.toFixed(2)}`, cx + shiftPx / 2, cy - 20);
+            ctx.fillStyle = '#805ad5'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
+            ctx.fillText(`x축 이동 ${shift > 0 ? '+' : ''}${shift.toFixed(2)}`, cx + shiftPx / 2, cy - 20);
         }
 
         // 수식 표시
         const aStr = composeA === 1 ? '' : composeA === -1 ? '-' : composeA.toFixed(1);
         const bStr = composeB === 1 ? '' : composeB.toFixed(1);
         const cStr = Math.abs(composeC) < 0.05 ? '' : (composeC > 0 ? ` + ${composeC.toFixed(1)}` : ` - ${Math.abs(composeC).toFixed(1)}`);
-        const formula = `y = ${aStr}${composeFunc}(${bStr}x${cStr})`;
+        const dStr = Math.abs(composeD) < 0.05 ? '' : (composeD > 0 ? ` + ${composeD.toFixed(1)}` : ` - ${Math.abs(composeD).toFixed(1)}`);
+        const bGroupStr = bStr === '' ? `x${cStr}` : `${bStr}(x${cStr})`;
+        const formula = `y = ${aStr}${composeFunc}(${bGroupStr})${dStr}`;
         ctx.fillStyle = '#2d3748'; ctx.font = 'bold 18px Outfit'; ctx.textAlign = 'left';
         ctx.fillText(formula, 20, 36);
 
@@ -360,7 +371,8 @@
         if (infoEl) infoEl.innerHTML =
             (composeFunc !== 'tan' ? `진폭 <b style="color:#e53e3e">${Math.abs(composeA).toFixed(1)}</b> &nbsp;|&nbsp; ` : '') +
             `주기 <b style="color:#3182ce">${periodStr}</b> &nbsp;|&nbsp; ` +
-            `위상이동 <b style="color:#38a169">${(-composeC / composeB).toFixed(2)}</b>`;
+            `x축 이동 <b style="color:#805ad5">${(-composeC).toFixed(2)}</b> &nbsp;|&nbsp; ` +
+            `y축 이동 <b style="color:#38a169">${composeD.toFixed(1)}</b>`;
     }
 
     function drawAxes() {
