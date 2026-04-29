@@ -3605,9 +3605,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* 드롭다운 패널 */
 .prob-nav-dropdown {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 4px);
     left: 50%;
     transform: translateX(-50%);
     background: white;
@@ -3617,26 +3619,32 @@ input[type="range"]::-webkit-slider-thumb:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
     z-index: 200;
     min-width: 150px;
-    flex-direction: column;
-    gap: 2px;
 }
 
-.prob-nav-group:hover .prob-nav-dropdown,
-.prob-nav-group.open .prob-nav-dropdown {
-    display: flex;
-}
-
-/* 드롭다운 사라지기 전 여유 시간 */
+/* 드롭다운: hover 끊김 방지 - visibility+opacity+pointer-events 방식 */
 .prob-nav-dropdown {
-    transition: visibility 0s linear 0.35s, opacity 0.15s ease;
     visibility: hidden;
     opacity: 0;
+    pointer-events: none;
+    transition: visibility 0s linear 0.25s, opacity 0.15s ease;
+}
+
+/* 버튼 아래 → 드롭다운 위 사이의 틈을 ::before로 채워 hover 유지 */
+.prob-nav-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: transparent;
 }
 
 .prob-nav-group:hover .prob-nav-dropdown,
 .prob-nav-group.open .prob-nav-dropdown {
     visibility: visible;
     opacity: 1;
+    pointer-events: auto;
     transition-delay: 0s;
 }
 
