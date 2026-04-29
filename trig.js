@@ -22,12 +22,12 @@
     };
 
     let CX = 150;
-    let CY = 200;
+    let CY = canvas.height / 2;
     let R_BASE = 108;
 
     const GRAPH_R_BASE = 108;
     const GX = 312;
-    const GY = 200;
+    let GY = canvas.height / 2;
     const X_SCALE_EXT = (Math.PI / 180) * GRAPH_R_BASE;
     const G_WIDTH = 720 * X_SCALE_EXT;
     const G_ORIGIN_X = GX + G_WIDTH / 2;
@@ -67,14 +67,28 @@
             updateTextExtended();
         });
 
+        const COMPOSE_BTN_STYLES = {
+            sin: { active: 'background:linear-gradient(135deg,#ff8bad,#e53e3e);color:#fff;border:none;box-shadow:0 4px 14px rgba(229,62,62,0.35);', inactive: 'background:rgba(255,255,255,0.7);color:#e53e3e;border:2px solid #ff8bad;box-shadow:none;' },
+            cos: { active: 'background:linear-gradient(135deg,#73a5ff,#3182ce);color:#fff;border:none;box-shadow:0 4px 14px rgba(49,130,206,0.35);', inactive: 'background:rgba(255,255,255,0.7);color:#3182ce;border:2px solid #73a5ff;box-shadow:none;' },
+            tan: { active: 'background:linear-gradient(135deg,#ffb86c,#dd6b20);color:#fff;border:none;box-shadow:0 4px 14px rgba(221,107,32,0.35);', inactive: 'background:rgba(255,255,255,0.7);color:#dd6b20;border:2px solid #ffb86c;box-shadow:none;' }
+        };
+
+        function updateComposeBtnStyles() {
+            document.querySelectorAll('.compose-func-btn').forEach(b => {
+                const fn = b.dataset.fn;
+                const base = 'font-weight:900;font-size:18px;padding:10px 36px;border-radius:50px;letter-spacing:1px;cursor:pointer;transition:all 0.25s;';
+                b.style.cssText = base + (b.dataset.fn === composeFunc ? COMPOSE_BTN_STYLES[fn].active : COMPOSE_BTN_STYLES[fn].inactive);
+            });
+        }
+
         document.querySelectorAll('.compose-func-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.compose-func-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
                 composeFunc = btn.dataset.fn;
+                updateComposeBtnStyles();
                 if (currentFunc === 'compose') drawTrig();
             });
         });
+        updateComposeBtnStyles();
 
         document.getElementById('composeA').addEventListener('input', function () {
             composeA = parseFloat(this.value);
@@ -105,8 +119,9 @@
                     rSliderWrapper.style.display = 'flex';
                 } else {
                     CX = 150;
-                    CY = 200;
+                    CY = canvas.height / 2;
                     R_BASE = 108;
+                    GY = canvas.height / 2;
                     rSliderWrapper.style.display = 'none';
                     currentR = 1.0;
                     rSlider.value = 1.0;
@@ -123,8 +138,12 @@
                     document.getElementById('composeControls').style.display = 'flex';
                     document.getElementById('radianControls').style.display = 'none';
                     rSliderWrapper.style.display = 'none';
+                    infoText.style.display = 'none';
+                    document.getElementById('trig-slider-row').style.display = 'none';
                 } else {
                     document.getElementById('composeControls').style.display = 'none';
+                    infoText.style.display = '';
+                    document.getElementById('trig-slider-row').style.display = 'flex';
                 }
 
                 slider.value = 0;
@@ -199,35 +218,63 @@
         }
         ctx.fillText('0', cx + 8, cy + 18);
 
-        // 기준 sin(x) — 회색
-        // 기준선 — 회색
-        ctx.beginPath(); ctx.strokeStyle = 'rgba(160,174,192,0.5)'; ctx.lineWidth = 1.5;
-        for (let px = 0; px <= W; px++) {
-            const x = (px - cx) / xScale;
-            const base = composeFunc === 'cos' ? Math.cos(x) : composeFunc === 'tan' ? Math.tan(x) : Math.sin(x);
-            if (composeFunc === 'tan' && Math.abs(base) > 10) { ctx.beginPath(); continue; }
-            const y = cy - base * yScale;
-            px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+        // 기준선 — 회색 (tan은 branch 분리)
+        ctx.strokeStyle = 'rgba(160,174,192,0.5)'; ctx.lineWidth = 1.5;
+        if (composeFunc === 'tan') {
+            let inPath = false;
+            for (let px = 0; px <= W; px++) {
+                const x = (px - cx) / xScale;
+                const base = Math.tan(x);
+                const y = cy - base * yScale;
+                if (Math.abs(base) > 12 || !isFinite(base)) { if (inPath) { ctx.stroke(); inPath = false; } ctx.beginPath(); continue; }
+                if (!inPath) { ctx.beginPath(); ctx.moveTo(px, y); inPath = true; } else { ctx.lineTo(px, y); }
+            }
+            if (inPath) ctx.stroke();
+        } else {
+            ctx.beginPath();
+            for (let px = 0; px <= W; px++) {
+                const x = (px - cx) / xScale;
+                const base = composeFunc === 'cos' ? Math.cos(x) : Math.sin(x);
+                const y = cy - base * yScale;
+                px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
         ctx.fillStyle = 'rgba(160,174,192,0.6)'; ctx.font = '13px Outfit'; ctx.textAlign = 'left';
         ctx.fillText(`y = ${composeFunc} x`, cx + Math.PI * xScale + 4, cy - yScale - 6);
 
-        // a·f(bx + c) — 메인 곡선
-        ctx.beginPath(); ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 3;
-        for (let px = 0; px <= W; px++) {
-            const x = (px - cx) / xScale;
-            const val = composeFunc === 'cos' ? Math.cos(composeB * x + composeC)
-                : composeFunc === 'tan' ? Math.tan(composeB * x + composeC)
-                    : Math.sin(composeB * x + composeC);
-            if (composeFunc === 'tan' && Math.abs(val) > 10) { ctx.beginPath(); continue; }
-            const y = cy - composeA * val * yScale;
-            px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+        // a·f(bx + c) — 메인 곡선 (tan은 branch 분리)
+        ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 3;
+        if (composeFunc === 'tan') {
+            let inPath = false;
+            let prevY = null;
+            for (let px = 0; px <= W; px++) {
+                const x = (px - cx) / xScale;
+                const val = Math.tan(composeB * x + composeC);
+                const y = cy - composeA * val * yScale;
+                // 점근선 감지: 값이 너무 크거나, 이전 픽셀과의 y 변화량이 캔버스 높이의 2배 이상이면 새 branch
+                const jump = prevY !== null && Math.abs(y - prevY) > H * 1.5;
+                if (!isFinite(val) || Math.abs(composeA * val) > H / yScale + 2 || jump) {
+                    if (inPath) { ctx.stroke(); inPath = false; }
+                    ctx.beginPath(); prevY = null; continue;
+                }
+                if (!inPath) { ctx.beginPath(); ctx.moveTo(px, y); inPath = true; } else { ctx.lineTo(px, y); }
+                prevY = y;
+            }
+            if (inPath) ctx.stroke();
+        } else {
+            ctx.beginPath();
+            for (let px = 0; px <= W; px++) {
+                const x = (px - cx) / xScale;
+                const val = composeFunc === 'cos' ? Math.cos(composeB * x + composeC) : Math.sin(composeB * x + composeC);
+                const y = cy - composeA * val * yScale;
+                px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
 
-        // 진폭선 표시
-        if (Math.abs(composeA) > 0.05) {
+        // 진폭선 표시 (tan 제외)
+        if (composeFunc !== 'tan' && Math.abs(composeA) > 0.05) {
             ctx.setLineDash([6, 4]);
             ctx.strokeStyle = 'rgba(229,62,62,0.4)'; ctx.lineWidth = 1;
             [composeA * yScale, -composeA * yScale].forEach(dy => {
@@ -238,8 +285,9 @@
             ctx.fillText(`|a| = ${Math.abs(composeA).toFixed(1)}`, cx - 8, cy - composeA * yScale - 4);
         }
 
-        // 주기 표시
-        const period = (2 * Math.PI) / Math.abs(composeB);
+        // 주기 계산 (tan은 π/|b|, sin/cos는 2π/|b|)
+        const isTan = composeFunc === 'tan';
+        const period = (isTan ? Math.PI : 2 * Math.PI) / Math.abs(composeB);
         const periodPx = period * xScale;
         ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
         ctx.beginPath(); ctx.moveTo(cx, cy + 20); ctx.lineTo(cx + periodPx, cy + 20); ctx.stroke();
@@ -249,7 +297,10 @@
         ctx.moveTo(cx + periodPx, cy + 15); ctx.lineTo(cx + periodPx, cy + 25);
         ctx.stroke();
         ctx.fillStyle = '#3182ce'; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
-        ctx.fillText(`주기 = 2π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}`, cx + periodPx / 2, cy + 38);
+        const periodLabel = isTan
+            ? `주기 = π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}`
+            : `주기 = 2π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}`;
+        ctx.fillText(periodLabel, cx + periodPx / 2, cy + 38);
 
         // 위상이동 표시
         if (Math.abs(composeC) > 0.05) {
@@ -272,9 +323,12 @@
 
         // 하단 정보 업데이트
         const infoEl = document.getElementById('composeInfo');
+        const periodStr = isTan
+            ? `π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}`
+            : `2π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}`;
         if (infoEl) infoEl.innerHTML =
-            `진폭 <b style="color:#e53e3e">${Math.abs(composeA).toFixed(1)}</b> &nbsp;|&nbsp; ` +
-            `주기 <b style="color:#3182ce">2π/${composeB % 1 === 0 ? composeB : composeB.toFixed(1)}</b> &nbsp;|&nbsp; ` +
+            (composeFunc !== 'tan' ? `진폭 <b style="color:#e53e3e">${Math.abs(composeA).toFixed(1)}</b> &nbsp;|&nbsp; ` : '') +
+            `주기 <b style="color:#3182ce">${periodStr}</b> &nbsp;|&nbsp; ` +
             `위상이동 <b style="color:#38a169">${(-composeC / composeB).toFixed(2)}</b>`;
     }
 
@@ -702,7 +756,7 @@
     }
 
     function updateTextExtended() {
-        if (currentFunc === 'definition' || currentFunc === 'radian') {
+        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose') {
             infoText.style.display = 'none';
             return;
         }
