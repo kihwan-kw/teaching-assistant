@@ -255,14 +255,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backBtn) backBtn.addEventListener('click', navigateHome);
 
-    /* 삼각함수 드롭다운 네비 */
-    document.querySelectorAll('#trig-nav [data-trigfunc]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('#trig-nav [data-trigfunc]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const trigTabBtn = document.querySelector(`.tab-btn[data-func="${btn.dataset.trigfunc}"]`);
+    /* 삼각함수 드롭다운 네비 — 아이템 클릭 */
+    const TRIG_TAB_GROUP = {
+        radian: 'raddef', definition: 'raddef',
+        sin: 'graph', cos: 'graph', tan: 'graph',
+        compose: 'compose', intersect: 'compose',
+        sineLaw: 'law', cosineLaw: 'law',
+    };
+    document.querySelectorAll('#trig-nav .prob-nav-item[data-trigfunc]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const fn = item.dataset.trigfunc;
+            document.querySelectorAll('#trig-nav .prob-nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            const group = TRIG_TAB_GROUP[fn];
+            document.querySelectorAll('#trig-nav .prob-nav-group-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.navgroup === group);
+            });
+            document.querySelectorAll('#trig-nav .prob-nav-group').forEach(g => g.classList.remove('open'));
+            const trigTabBtn = document.querySelector(`.tab-btn[data-func="${fn}"]`);
             if (trigTabBtn) trigTabBtn.click();
         });
+    });
+
+    /* 삼각함수 그룹 버튼 클릭 — 첫 번째 하위 탭으로 이동 */
+    document.querySelectorAll('#trig-nav .prob-nav-group-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const group = btn.closest('.prob-nav-group');
+            const isOpen = group.classList.contains('open');
+            document.querySelectorAll('#trig-nav .prob-nav-group').forEach(g => g.classList.remove('open'));
+            if (!isOpen) group.classList.add('open');
+        });
+    });
+
+    /* 외부 클릭 시 trig 드롭다운 닫기 */
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('#trig-nav')) {
+            document.querySelectorAll('#trig-nav .prob-nav-group').forEach(g => g.classList.remove('open'));
+        }
     });
 
     /* 수열 인덱스 탭 → seq.js 탭 연동 */

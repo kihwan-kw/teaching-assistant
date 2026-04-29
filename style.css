@@ -3626,6 +3626,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
     display: flex;
 }
 
+/* 드롭다운 사라지기 전 여유 시간 */
+.prob-nav-dropdown {
+    transition: visibility 0s linear 0.35s, opacity 0.15s ease;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.prob-nav-group:hover .prob-nav-dropdown,
+.prob-nav-group.open .prob-nav-dropdown {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 0s;
+}
+
 .prob-nav-item {
     padding: 9px 16px;
     background: transparent;

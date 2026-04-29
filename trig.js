@@ -45,6 +45,9 @@
     let intersectUseDomain = false;
     let intersectDomainMin = -4.0, intersectDomainMax = 4.0;
 
+    let sineLawAngleA = 70;
+    let sineLawProofMode = false;
+
     function initTrig() {
         slider.addEventListener('input', (e) => {
             currentAngle = parseInt(e.target.value);
@@ -191,6 +194,22 @@
             if (currentFunc === 'intersect') drawTrig();
         });
 
+        const sineLawAngleSlider = document.getElementById('sineLawAngleA');
+        if (sineLawAngleSlider) {
+            sineLawAngleSlider.addEventListener('input', function () {
+                sineLawAngleA = parseInt(this.value);
+                document.getElementById('sineLawAngleAVal').textContent = sineLawAngleA + '°';
+                if (currentFunc === 'sineLaw') drawTrig();
+            });
+        }
+        const sineLawProofToggle = document.getElementById('sineLawProofToggle');
+        if (sineLawProofToggle) {
+            sineLawProofToggle.addEventListener('change', function () {
+                sineLawProofMode = this.checked;
+                if (currentFunc === 'sineLaw') drawTrig();
+            });
+        }
+
         tabBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 tabBtns.forEach(b => b.classList.remove('active'));
@@ -219,9 +238,11 @@
                     document.getElementById('radianControls').style.display = 'none';
                 }
 
-                if (currentFunc === 'compose' || currentFunc === 'intersect') {
+                if (currentFunc === 'compose' || currentFunc === 'intersect' || currentFunc === 'sineLaw') {
                     document.getElementById('composeControls').style.display = currentFunc === 'compose' ? 'flex' : 'none';
                     document.getElementById('intersectControls').style.display = currentFunc === 'intersect' ? 'flex' : 'none';
+                    const slc = document.getElementById('sineLawControls');
+                    if (slc) slc.style.display = currentFunc === 'sineLaw' ? 'flex' : 'none';
                     document.getElementById('radianControls').style.display = 'none';
                     rSliderWrapper.style.display = 'none';
                     infoText.style.display = 'none';
@@ -229,6 +250,8 @@
                 } else {
                     document.getElementById('composeControls').style.display = 'none';
                     document.getElementById('intersectControls').style.display = 'none';
+                    const slc = document.getElementById('sineLawControls');
+                    if (slc) slc.style.display = 'none';
                     infoText.style.display = '';
                     document.getElementById('trig-slider-row').style.display = 'flex';
                 }
@@ -267,7 +290,10 @@
 
     function drawTrig() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawAxes();
+
+        if (currentFunc !== 'sineLaw') {
+            drawAxes();
+        }
 
         if (currentFunc === 'radian') {
             drawRadianConcept();
@@ -277,6 +303,8 @@
             drawCompose();
         } else if (currentFunc === 'intersect') {
             drawIntersect();
+        } else if (currentFunc === 'sineLaw') {
+            drawSineLaw();
         } else {
             drawUnitCircle();
             drawTraceExtended();
@@ -1129,7 +1157,7 @@
     }
 
     function updateTextExtended() {
-        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose' || currentFunc === 'intersect') {
+        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose' || currentFunc === 'intersect' || currentFunc === 'sineLaw') {
             infoText.style.display = 'none';
             return;
         }
@@ -1152,6 +1180,215 @@
 
         infoText.style.color = '#2d3748';
         infoText.innerHTML = `${currentFunc}(${currentAngle}°) = <span style="color: ${valColor};">${displayVal}</span>`;
+    }
+
+    function drawSineLaw() {
+        const W = canvas.width, H = canvas.height;
+        const cx = W / 2, cy = H / 2;
+        const R = 180;
+
+        // Draw circumcircle
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#4a5568';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Center point O
+        drawPoint(cx, cy, '#4a5568', 5, '#ffffff');
+        ctx.fillStyle = '#4a5568';
+        ctx.font = 'bold 16px Outfit';
+        ctx.textAlign = 'left';
+        ctx.fillText('O', cx + 10, cy + 22);
+
+        const alphaDeg = sineLawAngleA;
+        const alpha = alphaDeg * Math.PI / 180;
+
+        // A, B, C positions
+        // A is at top (-90 degrees)
+        const aAngle = -Math.PI / 2;
+        // B and C are placed symmetrically around bottom (90 degrees)
+        const bAngle = Math.PI / 2 + alpha;
+        const cAngle = Math.PI / 2 - alpha;
+
+        const Ax = cx + R * Math.cos(aAngle);
+        const Ay = cy + R * Math.sin(aAngle);
+        const Bx = cx + R * Math.cos(bAngle);
+        const By = cy + R * Math.sin(bAngle);
+        const Cx = cx + R * Math.cos(cAngle);
+        const Cy = cy + R * Math.sin(cAngle);
+
+        // Draw proof construction if enabled
+        if (sineLawProofMode) {
+            // A' is exactly opposite to B
+            const aPrimeAngle = bAngle - Math.PI;
+            const Apx = cx + R * Math.cos(aPrimeAngle);
+            const Apy = cy + R * Math.sin(aPrimeAngle);
+
+            // Diameter B -> A'
+            ctx.beginPath();
+            ctx.moveTo(Bx, By);
+            ctx.lineTo(Apx, Apy);
+            ctx.strokeStyle = '#e53e3e';
+            ctx.setLineDash([6, 6]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // A' -> C
+            ctx.beginPath();
+            ctx.moveTo(Apx, Apy);
+            ctx.lineTo(Cx, Cy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // A=90일 때는 A', 각도 표시 숨김
+            if (Math.abs(alphaDeg - 90) > 1) {
+                // Label A'
+                drawPoint(Apx, Apy, '#e53e3e', 5, '#ffffff');
+                ctx.font = 'bold 16px Outfit';
+                ctx.fillStyle = '#e53e3e';
+                ctx.textAlign = 'right';
+                ctx.fillText("A'", Apx - 10, Apy - 10);
+
+                // A' 각도 단일 호 (A와 같은 각도 표시)
+                {
+                    const ap2b = Math.atan2(By - Apy, Bx - Apx);
+                    const ap2c = Math.atan2(Cy - Apy, Cx - Apx);
+                    let arcS = Math.min(ap2b, ap2c), arcE = Math.max(ap2b, ap2c);
+                    if (arcE - arcS > Math.PI) { const tmp = arcS; arcS = arcE; arcE = tmp + Math.PI * 2; }
+                    ctx.beginPath();
+                    ctx.arc(Apx, Apy, 20, arcS, arcE);
+                    ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2; ctx.stroke();
+                }
+
+                // C에서 직각 표시
+                const len = 15;
+                const vx1 = (Bx - Cx) / Math.hypot(Bx - Cx, By - Cy);
+                const vy1 = (By - Cy) / Math.hypot(Bx - Cx, By - Cy);
+                const vx2 = (Apx - Cx) / Math.hypot(Apx - Cx, Apy - Cy);
+                const vy2 = (Apy - Cy) / Math.hypot(Apx - Cx, Apy - Cy);
+                ctx.beginPath();
+                ctx.moveTo(Cx + vx1 * len, Cy + vy1 * len);
+                ctx.lineTo(Cx + vx1 * len + vx2 * len, Cy + vy1 * len + vy2 * len);
+                ctx.lineTo(Cx + vx2 * len, Cy + vy2 * len);
+                ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 1.5; ctx.stroke();
+            }
+        }
+
+        // Draw triangle ABC
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Bx, By);
+        ctx.lineTo(Cx, Cy);
+        ctx.closePath();
+        ctx.strokeStyle = '#3182ce';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Labels A, B, C
+        drawPoint(Ax, Ay, '#3182ce', 6, '#ffffff');
+        ctx.font = 'bold 18px Outfit';
+        ctx.fillStyle = '#3182ce';
+        ctx.textAlign = 'center';
+        ctx.fillText('A', Ax, Ay - 15);
+        // 각도 A 단일 호
+        {
+            const a2b = Math.atan2(By - Ay, Bx - Ax);
+            const a2c = Math.atan2(Cy - Ay, Cx - Ax);
+            let arcS = Math.min(a2b, a2c), arcE = Math.max(a2b, a2c);
+            if (arcE - arcS > Math.PI) { const tmp = arcS; arcS = arcE; arcE = tmp + Math.PI * 2; }
+            ctx.beginPath();
+            ctx.arc(Ax, Ay, 20, arcS, arcE);
+            ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        drawPoint(Bx, By, '#3182ce', 6, '#ffffff');
+        ctx.font = 'bold 18px Outfit';
+        ctx.fillStyle = '#3182ce';
+        ctx.textAlign = 'right';
+        ctx.fillText('B', Bx - 12, By + 20);
+
+        drawPoint(Cx, Cy, '#3182ce', 6, '#ffffff');
+        ctx.font = 'bold 18px Outfit';
+        ctx.fillStyle = '#3182ce';
+        ctx.textAlign = 'left';
+        ctx.fillText('C', Cx + 12, Cy + 20);
+
+        // Label 'a' on BC
+        ctx.fillStyle = '#2d3748';
+        ctx.textAlign = 'center';
+        ctx.font = 'italic bold 18px Outfit';
+        ctx.fillText('a', cx, By + 22);
+
+        // Label R
+        if (!sineLawProofMode) {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(Ax, Ay);
+            ctx.strokeStyle = 'rgba(74, 85, 104, 0.4)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#4a5568';
+            ctx.font = 'italic bold 16px Outfit';
+            ctx.fillText('R', cx + (Ax - cx) / 2 + 15, cy + (Ay - cy) / 2);
+        } else {
+            // Label 2R on BA'
+            const Apx = cx + R * Math.cos(bAngle - Math.PI);
+            const Apy = cy + R * Math.sin(bAngle - Math.PI);
+            ctx.fillStyle = '#e53e3e';
+            ctx.font = 'italic bold 16px Outfit';
+            ctx.fillText('2R', cx - 10, cy - 15);
+        }
+
+        updateSineLawInfo();
+    }
+
+    function updateSineLawInfo() {
+        const infoEl = document.getElementById('sineLawInfo');
+        if (!infoEl) return;
+
+        const A = sineLawAngleA;
+        const showProof = sineLawProofMode;
+
+        let html = '';
+
+        if (!showProof) {
+            html = `<span style="color:#718096; font-size:15px;">증명선(지름 BA')을 켜서 확인해보세요!</span><br/>`;
+            html += `<span style="font-size:22px; color:#3182ce;">$\\frac{a}{\\sin A} = 2R$</span>`;
+        } else {
+            if (A < 90) {
+                html = `<div style="color:#e53e3e; margin-bottom:8px;">[ $\\angle A < 90^\\circ$ 일 때 (예각) ]</div>`;
+                html += `점 B에서 중심 O를 지나는 지름 BA'을 그으면<br/>`;
+                html += `$\\angle A = \\angle A'$ 이고, $\\angle A'CB = 90^\\circ$ 이므로<br/>`;
+                html += `<span style="font-size:20px; display:inline-block; margin-top:8px; color:#2b6cb0;">$\\sin A = \\sin A' = \\frac{a}{2R}$</span>`;
+            } else if (A === 90) {
+                html = `<div style="color:#38a169; margin-bottom:8px;">[ $\\angle A = 90^\\circ$ 일 때 (직각) ]</div>`;
+                html += `지름이 BC 이므로 $a = 2R$ 이고,<br/>`;
+                html += `$\\sin A = \\sin 90^\\circ = 1$ 이므로<br/>`;
+                html += `<span style="font-size:20px; display:inline-block; margin-top:8px; color:#2b6cb0;">$\\sin A = \\frac{a}{2R} = 1$</span>`;
+            } else {
+                html = `<div style="color:#3182ce; margin-bottom:8px;">[ $\\angle A > 90^\\circ$ 일 때 (둔각) ]</div>`;
+                html += `점 B에서 중심 O를 지나는 지름 BA'을 그으면<br/>`;
+                html += `내접사각형 성질에 의해 $\\angle A = 180^\\circ - \\angle A'$ 이고, $\\angle A'CB = 90^\\circ$ 이므로<br/>`;
+                html += `<span style="font-size:20px; display:inline-block; margin-top:8px; color:#2b6cb0;">$\\sin A = \\sin(180^\\circ - A') = \\sin A' = \\frac{a}{2R}$</span>`;
+            }
+        }
+
+        infoEl.innerHTML = html;
+        if (window.katex) {
+            infoEl.innerHTML = infoEl.innerHTML
+                .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
+                    try { return katex.renderToString(expr.trim(), { throwOnError: false, displayMode: true }); }
+                    catch (e) { return _; }
+                })
+                .replace(/\$([^$\n]+?)\$/g, (_, expr) => {
+                    try { return katex.renderToString(expr.trim(), { throwOnError: false, displayMode: false }); }
+                    catch (e) { return _; }
+                });
+        }
     }
 
     window.initTrig = initTrig;
