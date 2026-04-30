@@ -926,6 +926,8 @@ window.initPascal = (function () {
    ===================================================== */
 window.initBinom = (function () {
     let initialized = false;
+    let barRects = [];  /* [{k, x, y, w, h}] */
+    let selectedK = null;
 
     return function () {
         const canvas = document.getElementById('binom-canvas');
@@ -995,9 +997,6 @@ window.initBinom = (function () {
     }
 
     /* ---------- 클릭한 막대 식별 ---------- */
-    let barRects = [];  /* [{k, x, y, w, h}] */
-    let selectedK = null;
-
     function handleClick(mx, my) {
         for (const b of barRects) {
             if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
@@ -1657,6 +1656,14 @@ window.initNormal = (function () {
 
             // UI 수치 업데이트
             document.getElementById('normal-prob-val').innerText = (prob * 100).toFixed(1) + '%';
+            
+            // 표준화 Z값 업데이트
+            const zA = sigma === 0 ? 0 : (rangeA - mu) / sigma;
+            const zB = sigma === 0 ? 0 : (rangeB - mu) / sigma;
+            const elZA = document.getElementById('normal-z-a');
+            const elZB = document.getElementById('normal-z-b');
+            if (elZA) elZA.innerText = zA.toFixed(2);
+            if (elZB) elZB.innerText = zB.toFixed(2);
         }
 
         // 슬라이더 이벤트

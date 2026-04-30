@@ -899,6 +899,50 @@
                         <!-- 동적 텍스트가 여기에 표시됩니다. -->
                     </div>
                 </div>
+
+                <!-- 코사인법칙 전용 컨트롤 -->
+                <div id="cosineLawControls"
+                    style="display:none; flex-direction:column; gap:14px; width:100%; max-width:860px; align-items:center;">
+
+                    <!-- 슬라이더 행 -->
+                    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center;
+                                background:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.9);
+                                border-radius:50px;padding:14px 30px;box-shadow:0 4px 16px rgba(0,0,0,0.04);">
+                        <!-- 각도 C -->
+                        <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
+                            <span style="font-weight:800;font-size:15px;color:#38a169;">∠C =</span>
+                            <input type="range" id="cosineLawAngleC" min="5" max="175" step="1" value="60" style="width:140px;">
+                            <span id="cosineLawAngleCVal" style="font-weight:900;font-size:15px;color:#38a169;min-width:40px;">60°</span>
+                        </div>
+                        <div style="width:1px;height:24px;background:rgba(0,0,0,0.1);"></div>
+                        <!-- 변 b -->
+                        <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
+                            <span style="font-weight:800;font-size:15px;color:#3182ce;">b =</span>
+                            <input type="range" id="cosineLawSideBNew" min="2" max="8" step="0.5" value="5" style="width:110px;">
+                            <span id="cosineLawSideBNewVal" style="font-weight:900;font-size:15px;color:#3182ce;min-width:24px;">5</span>
+                        </div>
+                        <div style="width:1px;height:24px;background:rgba(0,0,0,0.1);"></div>
+                        <!-- 변 a -->
+                        <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
+                            <span style="font-weight:800;font-size:15px;color:#e53e3e;">a =</span>
+                            <input type="range" id="cosineLawSideANew" min="2" max="8" step="0.5" value="6" style="width:110px;">
+                            <span id="cosineLawSideANewVal" style="font-weight:900;font-size:15px;color:#e53e3e;min-width:24px;">6</span>
+                        </div>
+                        <div style="width:1px;height:24px;background:rgba(0,0,0,0.1);"></div>
+                        <!-- 수선 토글 -->
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700;font-size:14px;color:#718096;white-space:nowrap;">
+                            <input type="checkbox" id="cosineLawProofToggle" checked style="width:16px;height:16px;cursor:pointer;accent-color:#38a169;">
+                            수선 AH 표시
+                        </label>
+                    </div>
+
+                    <!-- 정보 패널 -->
+                    <div id="cosineLawInfo"
+                        style="background:rgba(255,255,255,0.95);border:2px solid #e2e8f0;border-radius:18px;
+                               padding:16px 28px;font-size:15px;font-weight:700;color:#2d3748;line-height:2;
+                               text-align:center;min-width:420px;box-shadow:0 4px 16px rgba(0,0,0,0.05);">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -921,37 +965,8 @@
                             <input type="number" class="m-input" id="m11" value="1" step="0.1">
                         </div>
 
-                        <!-- 코사인법칙 전용 컨트롤 -->
-                        <div id="cosineLawControls"
-                            style="display:none; flex-direction:column; gap:12px; width:100%; max-width:700px; align-items:center;">
-                            <div
-                                style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:24px;padding:14px 28px;">
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-weight:800;color:#ed8936;">A = </span>
-                                    <input type="range" id="cosineLawAngleA" min="10" max="170" step="1" value="60"
-                                        style="width:140px;">
-                                    <span id="cosineLawAngleAVal"
-                                        style="font-weight:800;color:#ed8936;width:36px;">60°</span>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-weight:800;color:#38a169;">b = </span>
-                                    <input type="range" id="cosineLawSideB" min="1" max="10" step="0.5" value="5"
-                                        style="width:120px;">
-                                    <span id="cosineLawSideBVal"
-                                        style="font-weight:800;color:#38a169;width:28px;">5</span>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-weight:800;color:#e53e3e;">c = </span>
-                                    <input type="range" id="cosineLawSideC" min="1" max="10" step="0.5" value="7"
-                                        style="width:120px;">
-                                    <span id="cosineLawSideCVal"
-                                        style="font-weight:800;color:#e53e3e;width:28px;">7</span>
-                                </div>
-                            </div>
-                            <div id="cosineLawInfo"
-                                style="background:rgba(255,255,255,0.9);border:2px solid #e2e8f0;border-radius:15px;padding:15px 25px;font-size:15px;font-weight:700;color:#2d3748;line-height:1.8;text-align:center;min-width:360px;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
-                            </div>
-                        </div>
+                        <!-- 코사인법칙은 trig 단원으로 이동됨 -->
+
                         <div class="matrix-label-grid">
                             <span>a</span><span>b</span>
                             <span>c</span><span>d</span>
@@ -1802,6 +1817,16 @@
                                         style="color:#e53e3e;">99.7%</span></button>
                             </div>
                         </div>
+
+                        <!-- 표준정규분포 Z 변환 -->
+                        <div class="matrix-section" style="background:#ebf8ff; border-color:#bee3f8;">
+                            <h3 class="matrix-section-title" style="color:#2b6cb0;">🔄 표준정규분포 Z 변환</h3>
+                            <div style="font-size:14px; color:#4a5568; line-height:2.0; font-weight:600; text-align:center;">
+                                <div style="margin-bottom: 5px; font-size:15px;">Z = (X - μ) / σ</div>
+                                <div><span id="normal-z-a" style="color:#e53e3e; font-weight:800;">-1.00</span> ≤ Z ≤ <span id="normal-z-b" style="color:#e53e3e; font-weight:800;">1.00</span></div>
+                                <div style="font-size:12px; color:#718096; margin-top:5px;">P(a ≤ X ≤ b) = P(Z<sub>a</sub> ≤ Z ≤ Z<sub>b</sub>)</div>
+                            </div>
+                        </div>
                     </div><!-- /.prob-panel-normal -->
 
                     <!-- 큰수의 법칙 컨트롤 패널 -->
@@ -1993,12 +2018,12 @@
                         </div>
 
                         <div class="matrix-section" style="background:#f0fff4; border-color:#c6f6d5;">
-                            <h3 class="matrix-section-title" style="color:#276749;">🎯 포함 비율 (성공률)</h3>
+                            <h3 class="matrix-section-title" style="color:#276749;">🎯 신뢰구간의 모평균 포함 비율</h3>
                             <div style="text-align:center;">
-                                <div style="font-size:14px; color:#4a5568;">전체 시행: <span id="conf-total-val"
-                                        style="font-weight:800;">0</span></div>
-                                <div style="font-size:14px; color:#4a5568;">성공 (포함): <span id="conf-hit-val"
-                                        style="color:#38a169; font-weight:800;">0</span></div>
+                                <div style="font-size:14px; color:#4a5568;">생성된 신뢰구간: <span id="conf-total-val"
+                                        style="font-weight:800;">0</span>개</div>
+                                <div style="font-size:14px; color:#4a5568;">모평균 포함: <span id="conf-hit-val"
+                                        style="color:#38a169; font-weight:800;">0</span>개</div>
                                 <div style="font-size:36px; font-weight:900; color:#276749; margin-top:8px;"
                                     id="conf-ratio-val">0.0%</div>
                             </div>
@@ -2138,15 +2163,16 @@
                             </div>
                             <div
                                 style="position:absolute; top:15px; right:20px; font-size:12px; font-weight:700; color:#718096; background:rgba(255,255,255,0.8); padding:8px; border-radius:8px; border:1px solid #edf2f7; z-index:10;">
+                                <div style="margin-bottom:6px; font-size:13px; color:#4a5568;">선분 = <strong>신뢰구간</strong></div>
                                 <div style="display:flex; align-items:center; margin-bottom:4px;">
                                     <span
                                         style="display:inline-block; width:12px; height:3px; background:#38a169; margin-right:6px;"></span>
-                                    모평균 포함
+                                    신뢰구간 (모평균 포함)
                                 </div>
                                 <div style="display:flex; align-items:center;">
                                     <span
                                         style="display:inline-block; width:12px; height:3px; background:#e53e3e; margin-right:6px;"></span>
-                                    모평균 미포함
+                                    신뢰구간 (모평균 미포함)
                                 </div>
                             </div>
                             <canvas id="confCanvas" width="760" height="500"

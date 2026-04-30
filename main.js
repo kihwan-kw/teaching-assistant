@@ -212,6 +212,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (geomNav) geomNav.style.display = unit.id === 'geom' ? 'flex' : 'none';
         const trigNav = document.getElementById('trig-nav');
         if (trigNav) trigNav.style.display = unit.id === 'trig' ? 'flex' : 'none';
+
+        /* 삼각함수 진입 시 현재 활성 탭에 맞게 그룹 버튼 active 초기화 */
+        if (unit.id === 'trig') {
+            const activeTrigItem = document.querySelector('#trig-nav .prob-nav-item.active');
+            const activeFn = activeTrigItem ? activeTrigItem.dataset.trigfunc : 'radian';
+            const TRIG_TAB_GROUP_INIT = {
+                radian: 'raddef', definition: 'raddef',
+                sin: 'graph', cos: 'graph', tan: 'graph',
+                compose: 'compose', intersect: 'compose',
+                sineLaw: 'law', cosineLaw: 'law',
+            };
+            const activeGroup = TRIG_TAB_GROUP_INIT[activeFn] || 'raddef';
+            document.querySelectorAll('#trig-nav .prob-nav-group-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.navgroup === activeGroup);
+            });
+        }
+
+        /* 기하 진입 시 현재 활성 탭에 맞게 그룹 버튼 active 초기화 */
+        if (unit.id === 'geom') {
+            const activeGeomItem = document.querySelector('#geom-nav .prob-nav-item.active');
+            const activeTab = activeGeomItem ? activeGeomItem.dataset.geomtab : 'conic';
+            document.querySelectorAll('#geom-nav .prob-nav-group-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.navgroup === activeTab);
+            });
+        }
+
+
         if (unit.init && !initialized.has(unit.id)) {
             initialized.add(unit.id);
             setTimeout(unit.init, 300);

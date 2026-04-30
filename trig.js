@@ -48,6 +48,12 @@
     let sineLawAngleA = 70;
     let sineLawProofMode = false;
 
+    // 코사인법칙 상태
+    let cosineLawAngleC = 60;  // ∠C (도)
+    let cosineLawSideB = 5;    // 변 b (CA)
+    let cosineLawSideA = 6;    // 변 a (BC)
+    let cosineLawShowProof = true;
+
     function initTrig() {
         slider.addEventListener('input', (e) => {
             currentAngle = parseInt(e.target.value);
@@ -210,6 +216,39 @@
             });
         }
 
+        // 코사인법칙 슬라이더 이벤트
+        const clAngleC = document.getElementById('cosineLawAngleC');
+        if (clAngleC) {
+            clAngleC.addEventListener('input', function () {
+                cosineLawAngleC = parseInt(this.value);
+                document.getElementById('cosineLawAngleCVal').textContent = cosineLawAngleC + '°';
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+        const clSideB = document.getElementById('cosineLawSideBNew');
+        if (clSideB) {
+            clSideB.addEventListener('input', function () {
+                cosineLawSideB = parseFloat(this.value);
+                document.getElementById('cosineLawSideBNewVal').textContent = cosineLawSideB;
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+        const clSideA = document.getElementById('cosineLawSideANew');
+        if (clSideA) {
+            clSideA.addEventListener('input', function () {
+                cosineLawSideA = parseFloat(this.value);
+                document.getElementById('cosineLawSideANewVal').textContent = cosineLawSideA;
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+        const clProofToggle = document.getElementById('cosineLawProofToggle');
+        if (clProofToggle) {
+            clProofToggle.addEventListener('change', function () {
+                cosineLawShowProof = this.checked;
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+
         tabBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 tabBtns.forEach(b => b.classList.remove('active'));
@@ -238,11 +277,14 @@
                     document.getElementById('radianControls').style.display = 'none';
                 }
 
-                if (currentFunc === 'compose' || currentFunc === 'intersect' || currentFunc === 'sineLaw') {
+                const isSpecial = ['compose', 'intersect', 'sineLaw', 'cosineLaw'].includes(currentFunc);
+                if (isSpecial) {
                     document.getElementById('composeControls').style.display = currentFunc === 'compose' ? 'flex' : 'none';
                     document.getElementById('intersectControls').style.display = currentFunc === 'intersect' ? 'flex' : 'none';
                     const slc = document.getElementById('sineLawControls');
                     if (slc) slc.style.display = currentFunc === 'sineLaw' ? 'flex' : 'none';
+                    const clc = document.getElementById('cosineLawControls');
+                    if (clc) clc.style.display = currentFunc === 'cosineLaw' ? 'flex' : 'none';
                     document.getElementById('radianControls').style.display = 'none';
                     rSliderWrapper.style.display = 'none';
                     infoText.style.display = 'none';
@@ -252,6 +294,8 @@
                     document.getElementById('intersectControls').style.display = 'none';
                     const slc = document.getElementById('sineLawControls');
                     if (slc) slc.style.display = 'none';
+                    const clc = document.getElementById('cosineLawControls');
+                    if (clc) clc.style.display = 'none';
                     infoText.style.display = '';
                     document.getElementById('trig-slider-row').style.display = 'flex';
                 }
@@ -305,6 +349,8 @@
             drawIntersect();
         } else if (currentFunc === 'sineLaw') {
             drawSineLaw();
+        } else if (currentFunc === 'cosineLaw') {
+            drawCosineLaw();
         } else {
             drawUnitCircle();
             drawTraceExtended();
@@ -1157,7 +1203,7 @@
     }
 
     function updateTextExtended() {
-        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose' || currentFunc === 'intersect' || currentFunc === 'sineLaw') {
+        if (currentFunc === 'definition' || currentFunc === 'radian' || currentFunc === 'compose' || currentFunc === 'intersect' || currentFunc === 'sineLaw' || currentFunc === 'cosineLaw') {
             infoText.style.display = 'none';
             return;
         }
@@ -1377,9 +1423,8 @@
             }
         }
 
-        infoEl.innerHTML = html;
         if (window.katex) {
-            infoEl.innerHTML = infoEl.innerHTML
+            html = html
                 .replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
                     try { return katex.renderToString(expr.trim(), { throwOnError: false, displayMode: true }); }
                     catch (e) { return _; }
@@ -1389,6 +1434,255 @@
                     catch (e) { return _; }
                 });
         }
+        infoEl.innerHTML = html;
+    }
+
+    /* =====================================================
+       코사인법칙 시각화
+       삼각형 ABC에서 ∠C 조절, 수선의 발 H 표시
+       c² = a² + b² - 2ab·cosC 증명 (3케이스)
+    ===================================================== */
+    function drawCosineLaw() {
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const SCALE = 62;
+        const a = cosineLawSideA;   // BC = a
+        const b = cosineLawSideB;   // CA = b
+        const C = cosineLawAngleC * Math.PI / 180;
+
+        // c² = a² + b² - 2ab·cosC
+        const c2 = a * a + b * b - 2 * a * b * Math.cos(C);
+        const c = Math.sqrt(Math.max(c2, 0));
+
+        // ── 좌표 배치 (각도 C가 꼭짓점 C에서의 내각) ──
+        // B = (0, 0),  C = (a, 0)
+        // A = C + b·(C→A 방향)
+        //   C→B 방향각 = π,  C→A는 C→B에서 C° 만큼 회전(반시계)
+        //   → A = (a, 0) + b·(cos(π-C), sin(π-C)) = (a - b·cosC, b·sinC)
+        const Bx_raw = 0;
+        const Cx_raw = a;
+        const Ax_raw = a - b * Math.cos(C);   // ← 수정: 꼭짓점 C 기준
+        const Ay_raw = b * Math.sin(C);
+
+        // H = A에서 BC(x축)에 내린 수선의 발 → H_x = Ax_raw
+        const Hx_raw = Ax_raw;  // = a - b·cosC
+
+        // bounding box (H 포함)
+        const minX = Math.min(0, Bx_raw, Cx_raw, Ax_raw, Hx_raw);
+        const maxX = Math.max(Bx_raw, Cx_raw, Ax_raw, Hx_raw);
+        const minY = 0;
+        const maxY = Ay_raw;
+
+        const triW = (maxX - minX) * SCALE;
+        const triH = (maxY - minY) * SCALE;
+        const offX = (W - triW) / 2 - minX * SCALE;
+        const offY = (H - triH) / 2 - minY * SCALE + triH * 0.15;
+
+        const toScreen = (rx, ry) => [offX + rx * SCALE, offY + (maxY - ry) * SCALE];
+
+        const [Bx, By]   = toScreen(Bx_raw, 0);
+        const [Cx, Cy2]  = toScreen(Cx_raw, 0);
+        const [Ax, Ay]   = toScreen(Ax_raw, Ay_raw);
+        const [Hx, Hy]   = toScreen(Hx_raw, 0);
+
+        const isAcute  = cosineLawAngleC < 89.5;
+        const isRight  = cosineLawAngleC >= 89.5 && cosineLawAngleC <= 90.5;
+        const isObtuse = cosineLawAngleC > 90.5;
+
+        // ── 삼각형 면 채우기 ──
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.lineTo(Cx, Cy2); ctx.closePath();
+        ctx.fillStyle = 'rgba(99,179,237,0.10)';
+        ctx.fill();
+
+        // ── 수선 및 보조선 ──
+        if (cosineLawShowProof) {
+            // A → H 수선 (점선)
+            ctx.save();
+            ctx.strokeStyle = '#805ad5'; ctx.lineWidth = 1.8;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Hx, Hy); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // 직각 마크 at H
+            if (!isRight) {
+                const sq = 10;
+                ctx.save(); ctx.strokeStyle = '#805ad5'; ctx.lineWidth = 1.5;
+                // H에서: BC방향(+x), A방향(-y in screen)
+                // 예각: H는 BC 사이 → 마크를 C 방향(+x)
+                // 둔각: H는 C 오른쪽 → 마크를 B 방향(-x)
+                const hd = isAcute ? sq : -sq;
+                ctx.beginPath();
+                ctx.moveTo(Hx + hd, Hy);
+                ctx.lineTo(Hx + hd, Hy - sq);
+                ctx.lineTo(Hx, Hy - sq);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 둔각: C 오른쪽으로 연장선 (BC의 연장)
+            if (isObtuse) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(128,90,213,0.4)'; ctx.lineWidth = 1.8;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.moveTo(Cx, Cy2);       // C에서 오른쪽으로
+                ctx.lineTo(Hx + 20, Hy);   // H를 지나서
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+        }
+
+        // ── 삼각형 변 ──
+        ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.moveTo(Bx, By); ctx.lineTo(Cx, Cy2); ctx.stroke();   // a
+        ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.moveTo(Cx, Cy2); ctx.lineTo(Ax, Ay); ctx.stroke();   // b
+        ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.stroke();    // c
+
+        // ── 꼭짓점 점 ──
+        const drawDot = (x, y, color) => {
+            ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff'; ctx.fill();
+            ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+        };
+        drawDot(Bx, By, '#e53e3e');
+        drawDot(Cx, Cy2, '#38a169');
+        drawDot(Ax, Ay, '#d97706');
+        if (cosineLawShowProof && !isRight) drawDot(Hx, Hy, '#805ad5');
+
+        // ── 꼭짓점 레이블 ──
+        ctx.font = 'bold 20px Outfit';
+        ctx.fillStyle = '#d97706'; ctx.textAlign = 'center';
+        ctx.fillText('A', Ax, Ay - 18);
+        ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'right';
+        ctx.fillText('B', Bx - 14, By + 8);
+        ctx.fillStyle = '#38a169'; ctx.textAlign = 'left';
+        ctx.fillText('C', Cx + 14, Cy2 + 8);
+        if (cosineLawShowProof && !isRight) {
+            ctx.fillStyle = '#805ad5'; ctx.textAlign = 'center';
+            // 예각: H는 B~C 사이 / 둔각: H는 C 오른쪽
+            ctx.fillText('H', Hx, Hy + 22);
+        }
+
+        // ── 변 길이 레이블 ──
+        ctx.font = 'italic bold 18px Outfit';
+        ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'center';
+        ctx.fillText('a = ' + a.toFixed(1), (Bx + Cx) / 2, By + 28);   // a on BC (아래)
+        const bmx = (Cx + Ax) / 2, bmy = (Cy2 + Ay) / 2;
+        ctx.fillStyle = '#3182ce';
+        // A가 C 왼쪽이면 b 레이블을 오른쪽에, 오른쪽이면 왼쪽에
+        ctx.textAlign = Ax_raw < Cx_raw ? 'right' : 'left';
+        ctx.fillText('b = ' + b.toFixed(1), bmx + (Ax_raw < Cx_raw ? -12 : 12), bmy);
+        const cmx = (Ax + Bx) / 2, cmy = (Ay + By) / 2;
+        ctx.fillStyle = '#d97706'; ctx.textAlign = 'left';
+        ctx.fillText('c = ' + c.toFixed(2), cmx - 60, cmy);
+
+        // ── 각도 C 호 표시 ──
+        {
+            const dirCB = Math.atan2(By - Cy2, Bx - Cx);   // C→B 방향각
+            const dirCA = Math.atan2(Ay - Cy2, Ax - Cx);   // C→A 방향각
+
+            // dirCB(왼쪽=π) → dirCA(상단 왼쪽) 시계방향으로 그리면 내각(작은 호)
+            ctx.beginPath();
+            ctx.arc(Cx, Cy2, 28, dirCB, dirCA, false);
+            ctx.strokeStyle = '#38a169'; ctx.lineWidth = 2.5; ctx.stroke();
+
+            // 레이블: 호 중간 방향
+            let diffCW = dirCA - dirCB;
+            while (diffCW <= 0) diffCW += Math.PI * 2;
+            const midAng = dirCB + diffCW / 2;
+            ctx.fillStyle = '#38a169'; ctx.font = 'bold 14px Outfit'; ctx.textAlign = 'center';
+            ctx.fillText(cosineLawAngleC + '°', Cx + 50 * Math.cos(midAng), Cy2 + 50 * Math.sin(midAng));
+        }
+
+        // ── 수선 보조 레이블 (BH, AH) ──
+        if (cosineLawShowProof && !isRight) {
+            const AH_len = Ay_raw;   // = b·sinC
+            ctx.font = '13px Outfit'; ctx.fillStyle = '#805ad5';
+            ctx.textAlign = 'center';
+            if (isAcute) {
+                // H가 B~C 사이
+                ctx.fillText('BH = a – b·cosC', (Bx + Hx) / 2, By - 14);
+                ctx.fillStyle = 'rgba(128,90,213,0.7)';
+                ctx.fillText('CH = b·cosC', (Hx + Cx) / 2, By - 14);
+            } else {
+                // H가 C 오른쪽 (둔각)
+                ctx.fillText('BH = a – b·cosC', (Bx + Cx) / 2, By - 14);  // B~C 전체 구간 위
+                ctx.fillStyle = 'rgba(128,90,213,0.7)';
+                ctx.fillText('CH = –b·cosC', (Cx + Hx) / 2, Cy2 + 36);    // C~H 구간 아래
+            }
+            ctx.fillStyle = '#553c9a'; ctx.textAlign = 'right';
+            ctx.fillText('AH = b·sinC = ' + AH_len.toFixed(2), Hx - 8, (Ay + Hy) / 2);
+        }
+
+        // ── 케이스 배지 ──
+        let caseTxt, caseColor, caseBg;
+        if (isAcute)       { caseTxt = '① C < 90° (예각)'; caseColor = '#2b6cb0'; caseBg = 'rgba(235,248,255,0.95)'; }
+        else if (isRight)  { caseTxt = '② C = 90° (직각)'; caseColor = '#276749'; caseBg = 'rgba(240,255,244,0.95)'; }
+        else               { caseTxt = '③ C > 90° (둔각)'; caseColor = '#c05621'; caseBg = 'rgba(255,250,240,0.95)'; }
+        const badgeW = 190, badgeH = 32, badgeX = W - badgeW - 16, badgeY = 16;
+        ctx.fillStyle = caseBg;
+        ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 10); ctx.fill();
+        ctx.strokeStyle = caseColor; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 10); ctx.stroke();
+        ctx.fillStyle = caseColor; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
+        ctx.fillText(caseTxt, badgeX + badgeW / 2, badgeY + 21);
+
+        updateCosineLawInfo(a, b, c, c2);
+    }
+
+    function updateCosineLawInfo(a, b, c, c2_actual) {
+        const infoEl = document.getElementById('cosineLawInfo');
+        if (!infoEl) return;
+
+        const C = cosineLawAngleC;
+        const Crad = C * Math.PI / 180;
+        const isAcute  = C < 89.5;
+        const isRight  = C >= 89.5 && C <= 90.5;
+        const isObtuse = C > 90.5;
+
+        const lhs = c2_actual;
+        const rhs = a * a + b * b - 2 * a * b * Math.cos(Crad);
+
+        let caseHtml = '';
+        if (isAcute) {
+            caseHtml = `
+                <div style="color:#2b6cb0;font-size:14px;margin-bottom:4px;">꼭짓점 A에서 BC에 내린 수선의 발을 H라 하면</div>
+                <div style="color:#553c9a;font-size:13px;">
+                    BH = BC − CH = <b>a − b·cos C</b>,&nbsp; AH = <b>b·sin C</b>
+                </div>`;
+        } else if (isRight) {
+            caseHtml = `
+                <div style="color:#276749;font-size:14px;margin-bottom:4px;">cos C = cos 90° = 0 이므로</div>
+                <div style="color:#276749;font-size:13px;">c² = a² + b² (피타고라스 정리와 일치)</div>`;
+        } else {
+            caseHtml = `
+                <div style="color:#c05621;font-size:14px;margin-bottom:4px;">꼭짓점 A에서 BC의 연장선에 내린 수선의 발을 H라 하면</div>
+                <div style="color:#553c9a;font-size:13px;">
+                    BH = BC + CH = <b>a − b·cos C</b>,&nbsp; AH = <b>b·sin(180°−C)</b>
+                </div>`;
+        }
+
+        let html = caseHtml;
+        html += `<div style="margin:8px 0; border-top:1px solid #e2e8f0;"></div>`;
+        html += `<div style="font-size:17px; color:#2d3748;">`;
+        html += `c² = BH² + AH² = (a − b·cos C)² + (b·sin C)²`;
+        html += `</div><div style="font-size:17px; color:#2d3748; margin-top:2px;">`;
+        html += `= a² + b² − 2ab·cos C`;
+        html += `</div>`;
+        html += `<div style="margin:8px 0; border-top:1px solid #e2e8f0;"></div>`;
+        html += `<div style="font-size:15px; display:flex; gap:24px; justify-content:center; flex-wrap:wrap;">`;
+        html += `<span>c² = <b style="color:#d97706;">${lhs.toFixed(3)}</b></span>`;
+        html += `<span>a² + b² − 2ab·cos C = <b style="color:#38a169;">${rhs.toFixed(3)}</b></span>`;
+        html += `<span style="color:#2b6cb0; font-weight:900;">✓ ${Math.abs(lhs - rhs) < 0.001 ? '일치' : '오차: ' + Math.abs(lhs - rhs).toFixed(4)}</span>`;
+        html += `</div>`;
+
+        infoEl.innerHTML = html;
     }
 
     window.initTrig = initTrig;
