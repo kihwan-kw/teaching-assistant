@@ -5,6 +5,11 @@
 
     const canvas = document.getElementById('mathCanvas');
     const ctx = canvas.getContext('2d');
+
+    // ★ 법칙 전용 캔버스
+    const lawCanvas = document.getElementById('lawCanvas');
+    const lawCtx = lawCanvas ? lawCanvas.getContext('2d') : null;
+
     const slider = document.getElementById('angleSlider');
     const rSlider = document.getElementById('rSlider');
     const rVal = document.getElementById('rVal');
@@ -255,6 +260,30 @@
                 e.target.classList.add('active');
                 currentFunc = e.target.dataset.func;
 
+                const isLaw = (currentFunc === 'sineLaw' || currentFunc === 'cosineLaw');
+
+                // ★ 법칙 탭: 전용 레이아웃 표시 / 일반 탭: 기존 레이아웃 표시
+                const lawLayout = document.getElementById('trig-law-layout');
+                const normalLayout = document.getElementById('trig-layout-container');
+                if (lawLayout && normalLayout) {
+                    if (isLaw) {
+                        lawLayout.style.display = 'flex';
+                        normalLayout.style.display = 'none';
+                        // 법칙 컨트롤 패널 전환
+                        const sl2 = document.getElementById('sineLawControls2');
+                        const cl2 = document.getElementById('cosineLawControls2');
+                        if (sl2) sl2.style.display = currentFunc === 'sineLaw' ? 'flex' : 'none';
+                        if (cl2) cl2.style.display = currentFunc === 'cosineLaw' ? 'flex' : 'none';
+                        // lawCanvas 크기 동기화 후 그리기
+                        syncLawCanvas();
+                        drawTrig();
+                        return;
+                    } else {
+                        lawLayout.style.display = 'none';
+                        normalLayout.style.display = 'flex';
+                    }
+                }
+
                 if (currentFunc === 'radian' || currentFunc === 'definition') {
                     CX = canvas.width / 2 - 250;
                     CY = canvas.height / 2;
@@ -277,14 +306,10 @@
                     document.getElementById('radianControls').style.display = 'none';
                 }
 
-                const isSpecial = ['compose', 'intersect', 'sineLaw', 'cosineLaw'].includes(currentFunc);
+                const isSpecial = ['compose', 'intersect'].includes(currentFunc);
                 if (isSpecial) {
                     document.getElementById('composeControls').style.display = currentFunc === 'compose' ? 'flex' : 'none';
                     document.getElementById('intersectControls').style.display = currentFunc === 'intersect' ? 'flex' : 'none';
-                    const slc = document.getElementById('sineLawControls');
-                    if (slc) slc.style.display = currentFunc === 'sineLaw' ? 'flex' : 'none';
-                    const clc = document.getElementById('cosineLawControls');
-                    if (clc) clc.style.display = currentFunc === 'cosineLaw' ? 'flex' : 'none';
                     document.getElementById('radianControls').style.display = 'none';
                     rSliderWrapper.style.display = 'none';
                     infoText.style.display = 'none';
@@ -292,10 +317,6 @@
                 } else {
                     document.getElementById('composeControls').style.display = 'none';
                     document.getElementById('intersectControls').style.display = 'none';
-                    const slc = document.getElementById('sineLawControls');
-                    if (slc) slc.style.display = 'none';
-                    const clc = document.getElementById('cosineLawControls');
-                    if (clc) clc.style.display = 'none';
                     infoText.style.display = '';
                     document.getElementById('trig-slider-row').style.display = 'flex';
                 }
@@ -322,6 +343,65 @@
         document.getElementById('btnRad3').addEventListener('click', () => setAngleFromRad(3));
         document.getElementById('btnRadPi').addEventListener('click', () => setAngleFromRad(Math.PI));
 
+        // ★ 새 법칙 컨트롤 이벤트리스너
+        const sl2AngleA = document.getElementById('sineLawAngleA2');
+        if (sl2AngleA) {
+            sl2AngleA.addEventListener('input', function () {
+                sineLawAngleA = parseInt(this.value);
+                document.getElementById('sineLawAngleAVal2').textContent = sineLawAngleA + '°';
+                if (currentFunc === 'sineLaw') drawTrig();
+            });
+        }
+        const sl2ProofToggle = document.getElementById('sineLawProofToggle2');
+        if (sl2ProofToggle) {
+            sl2ProofToggle.addEventListener('change', function () {
+                sineLawProofMode = this.checked;
+                if (currentFunc === 'sineLaw') drawTrig();
+            });
+        }
+        const cl2AngleC = document.getElementById('cosineLawAngleC2');
+        if (cl2AngleC) {
+            cl2AngleC.addEventListener('input', function () {
+                cosineLawAngleC = parseInt(this.value);
+                document.getElementById('cosineLawAngleCVal2').textContent = cosineLawAngleC + '°';
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+        const cl2SideB = document.getElementById('cosineLawSideB2');
+        if (cl2SideB) {
+            cl2SideB.addEventListener('input', function () {
+                cosineLawSideB = parseFloat(this.value);
+                document.getElementById('cosineLawSideBVal2').textContent = cosineLawSideB;
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+        const cl2SideA = document.getElementById('cosineLawSideA2');
+        if (cl2SideA) {
+            cl2SideA.addEventListener('input', function () {
+                cosineLawSideA = parseFloat(this.value);
+                document.getElementById('cosineLawSideAVal2').textContent = cosineLawSideA;
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+        const cl2ProofToggle = document.getElementById('cosineLawProofToggle2');
+        if (cl2ProofToggle) {
+            cl2ProofToggle.addEventListener('change', function () {
+                cosineLawShowProof = this.checked;
+                if (currentFunc === 'cosineLaw') drawTrig();
+            });
+        }
+
+        // ★ ResizeObserver: lawCanvas 크기 변화 감지 → 해상도 동기화 후 재그리기
+        if (lawCanvas) {
+            const lawRO = new ResizeObserver(() => {
+                if (currentFunc === 'sineLaw' || currentFunc === 'cosineLaw') {
+                    syncLawCanvas();
+                    drawTrig();
+                }
+            });
+            lawRO.observe(lawCanvas);
+        }
+
         CX = canvas.width / 2 - 250;
         CY = canvas.height / 2;
         R_BASE = 180;
@@ -332,7 +412,30 @@
         updateTextExtended();
     }
 
+    // ★ lawCanvas 실제 픽셀 해상도를 DOM 크기에 맞게 동기화
+    function syncLawCanvas() {
+        if (!lawCanvas) return;
+        const rect = lawCanvas.getBoundingClientRect();
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        if (w > 0 && h > 0 && (lawCanvas.width !== w || lawCanvas.height !== h)) {
+            lawCanvas.width = w;
+            lawCanvas.height = h;
+        }
+    }
+
     function drawTrig() {
+        const isLaw = (currentFunc === 'sineLaw' || currentFunc === 'cosineLaw');
+
+        if (isLaw) {
+            // ★ 법칙 탭: lawCanvas만 클리어 후 그리기
+            if (!lawCtx) return;
+            lawCtx.clearRect(0, 0, lawCanvas.width, lawCanvas.height);
+            if (currentFunc === 'sineLaw') drawSineLaw();
+            else drawCosineLaw();
+            return;
+        }
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (currentFunc !== 'sineLaw') {
@@ -844,14 +947,15 @@
         }
     }
 
-    function drawPoint(x, y, borderCol, radius = 5, fillCol = '#ffffff') {
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = fillCol;
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = borderCol;
-        ctx.stroke();
+    function drawPoint(x, y, borderCol, radius = 5, fillCol = '#ffffff', customCtx) {
+        const c = customCtx || ctx;
+        c.beginPath();
+        c.arc(x, y, radius, 0, Math.PI * 2);
+        c.fillStyle = fillCol;
+        c.fill();
+        c.lineWidth = 2;
+        c.strokeStyle = borderCol;
+        c.stroke();
     }
 
     function drawDefinition() {
@@ -1229,31 +1333,33 @@
     }
 
     function drawSineLaw() {
-        const W = canvas.width, H = canvas.height;
+        if (!lawCtx) return;
+        const lc = lawCtx;
+        const W = lawCanvas.width, H = lawCanvas.height;
+
+        // ★ 기준 크기(800×560) 대비 현재 캔버스 비율로 스케일 계산
+        const scale = Math.min(W / 800, H / 560);
         const cx = W / 2, cy = H / 2;
-        const R = 180;
+        const R = 230 * scale;
 
         // Draw circumcircle
-        ctx.beginPath();
-        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
-        ctx.strokeStyle = '#4a5568';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        lc.beginPath();
+        lc.arc(cx, cy, R, 0, 2 * Math.PI);
+        lc.strokeStyle = '#4a5568';
+        lc.lineWidth = 2 * scale;
+        lc.stroke();
 
         // Center point O
-        drawPoint(cx, cy, '#4a5568', 5, '#ffffff');
-        ctx.fillStyle = '#4a5568';
-        ctx.font = 'bold 16px Outfit';
-        ctx.textAlign = 'left';
-        ctx.fillText('O', cx + 10, cy + 22);
+        drawPoint(cx, cy, '#4a5568', 6 * scale, '#ffffff', lc);
+        lc.fillStyle = '#4a5568';
+        lc.font = `bold ${Math.round(22 * scale)}px Outfit`;
+        lc.textAlign = 'left';
+        lc.fillText('O', cx + 12 * scale, cy + 28 * scale);
 
         const alphaDeg = sineLawAngleA;
         const alpha = alphaDeg * Math.PI / 180;
 
-        // A, B, C positions
-        // A is at top (-90 degrees)
         const aAngle = -Math.PI / 2;
-        // B and C are placed symmetrically around bottom (90 degrees)
         const bAngle = Math.PI / 2 + alpha;
         const cAngle = Math.PI / 2 - alpha;
 
@@ -1264,136 +1370,121 @@
         const Cx = cx + R * Math.cos(cAngle);
         const Cy = cy + R * Math.sin(cAngle);
 
-        // Draw proof construction if enabled
         if (sineLawProofMode) {
-            // A' is exactly opposite to B
             const aPrimeAngle = bAngle - Math.PI;
             const Apx = cx + R * Math.cos(aPrimeAngle);
             const Apy = cy + R * Math.sin(aPrimeAngle);
 
-            // Diameter B -> A'
-            ctx.beginPath();
-            ctx.moveTo(Bx, By);
-            ctx.lineTo(Apx, Apy);
-            ctx.strokeStyle = '#e53e3e';
-            ctx.setLineDash([6, 6]);
-            ctx.lineWidth = 2;
-            ctx.stroke();
+            lc.beginPath();
+            lc.moveTo(Bx, By);
+            lc.lineTo(Apx, Apy);
+            lc.strokeStyle = '#e53e3e';
+            lc.setLineDash([6 * scale, 6 * scale]);
+            lc.lineWidth = 2 * scale;
+            lc.stroke();
 
-            // A' -> C
-            ctx.beginPath();
-            ctx.moveTo(Apx, Apy);
-            ctx.lineTo(Cx, Cy);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            lc.beginPath();
+            lc.moveTo(Apx, Apy);
+            lc.lineTo(Cx, Cy);
+            lc.stroke();
+            lc.setLineDash([]);
 
-            // A=90일 때는 A', 각도 표시 숨김
             if (Math.abs(alphaDeg - 90) > 1) {
-                // Label A'
-                drawPoint(Apx, Apy, '#e53e3e', 5, '#ffffff');
-                ctx.font = 'bold 16px Outfit';
-                ctx.fillStyle = '#e53e3e';
-                ctx.textAlign = 'right';
-                ctx.fillText("A'", Apx - 10, Apy - 10);
+                drawPoint(Apx, Apy, '#e53e3e', 6 * scale, '#ffffff', lc);
+                lc.font = `bold ${Math.round(22 * scale)}px Outfit`;
+                lc.fillStyle = '#e53e3e';
+                lc.textAlign = 'right';
+                lc.fillText("A'", Apx - 14 * scale, Apy - 14 * scale);
 
-                // A' 각도 단일 호 (A와 같은 각도 표시)
                 {
                     const ap2b = Math.atan2(By - Apy, Bx - Apx);
                     const ap2c = Math.atan2(Cy - Apy, Cx - Apx);
                     let arcS = Math.min(ap2b, ap2c), arcE = Math.max(ap2b, ap2c);
                     if (arcE - arcS > Math.PI) { const tmp = arcS; arcS = arcE; arcE = tmp + Math.PI * 2; }
-                    ctx.beginPath();
-                    ctx.arc(Apx, Apy, 20, arcS, arcE);
-                    ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 2; ctx.stroke();
+                    lc.beginPath();
+                    lc.arc(Apx, Apy, 20 * scale, arcS, arcE);
+                    lc.strokeStyle = '#e53e3e'; lc.lineWidth = 2 * scale; lc.stroke();
                 }
 
-                // C에서 직각 표시
-                const len = 15;
+                const len = 15 * scale;
                 const vx1 = (Bx - Cx) / Math.hypot(Bx - Cx, By - Cy);
                 const vy1 = (By - Cy) / Math.hypot(Bx - Cx, By - Cy);
                 const vx2 = (Apx - Cx) / Math.hypot(Apx - Cx, Apy - Cy);
                 const vy2 = (Apy - Cy) / Math.hypot(Apx - Cx, Apy - Cy);
-                ctx.beginPath();
-                ctx.moveTo(Cx + vx1 * len, Cy + vy1 * len);
-                ctx.lineTo(Cx + vx1 * len + vx2 * len, Cy + vy1 * len + vy2 * len);
-                ctx.lineTo(Cx + vx2 * len, Cy + vy2 * len);
-                ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 1.5; ctx.stroke();
+                lc.beginPath();
+                lc.moveTo(Cx + vx1 * len, Cy + vy1 * len);
+                lc.lineTo(Cx + vx1 * len + vx2 * len, Cy + vy1 * len + vy2 * len);
+                lc.lineTo(Cx + vx2 * len, Cy + vy2 * len);
+                lc.strokeStyle = '#e53e3e'; lc.lineWidth = 1.5 * scale; lc.stroke();
             }
         }
 
-        // Draw triangle ABC
-        ctx.beginPath();
-        ctx.moveTo(Ax, Ay);
-        ctx.lineTo(Bx, By);
-        ctx.lineTo(Cx, Cy);
-        ctx.closePath();
-        ctx.strokeStyle = '#3182ce';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        lc.beginPath();
+        lc.moveTo(Ax, Ay);
+        lc.lineTo(Bx, By);
+        lc.lineTo(Cx, Cy);
+        lc.closePath();
+        lc.strokeStyle = '#3182ce';
+        lc.lineWidth = 3 * scale;
+        lc.stroke();
 
-        // Labels A, B, C
-        drawPoint(Ax, Ay, '#3182ce', 6, '#ffffff');
-        ctx.font = 'bold 18px Outfit';
-        ctx.fillStyle = '#3182ce';
-        ctx.textAlign = 'center';
-        ctx.fillText('A', Ax, Ay - 15);
-        // 각도 A 단일 호
+        drawPoint(Ax, Ay, '#3182ce', 8 * scale, '#ffffff', lc);
+        lc.font = `bold ${Math.round(26 * scale)}px Outfit`;
+        lc.fillStyle = '#3182ce';
+        lc.textAlign = 'center';
+        lc.fillText('A', Ax, Ay - 20 * scale);
         {
             const a2b = Math.atan2(By - Ay, Bx - Ax);
             const a2c = Math.atan2(Cy - Ay, Cx - Ax);
             let arcS = Math.min(a2b, a2c), arcE = Math.max(a2b, a2c);
             if (arcE - arcS > Math.PI) { const tmp = arcS; arcS = arcE; arcE = tmp + Math.PI * 2; }
-            ctx.beginPath();
-            ctx.arc(Ax, Ay, 20, arcS, arcE);
-            ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 2; ctx.stroke();
+            lc.beginPath();
+            lc.arc(Ax, Ay, 20 * scale, arcS, arcE);
+            lc.strokeStyle = '#3182ce'; lc.lineWidth = 2 * scale; lc.stroke();
         }
 
-        drawPoint(Bx, By, '#3182ce', 6, '#ffffff');
-        ctx.font = 'bold 18px Outfit';
-        ctx.fillStyle = '#3182ce';
-        ctx.textAlign = 'right';
-        ctx.fillText('B', Bx - 12, By + 20);
+        drawPoint(Bx, By, '#3182ce', 8 * scale, '#ffffff', lc);
+        lc.font = `bold ${Math.round(26 * scale)}px Outfit`;
+        lc.fillStyle = '#3182ce';
+        lc.textAlign = 'right';
+        lc.fillText('B', Bx - 16 * scale, By + 28 * scale);
 
-        drawPoint(Cx, Cy, '#3182ce', 6, '#ffffff');
-        ctx.font = 'bold 18px Outfit';
-        ctx.fillStyle = '#3182ce';
-        ctx.textAlign = 'left';
-        ctx.fillText('C', Cx + 12, Cy + 20);
+        drawPoint(Cx, Cy, '#3182ce', 8 * scale, '#ffffff', lc);
+        lc.font = `bold ${Math.round(26 * scale)}px Outfit`;
+        lc.fillStyle = '#3182ce';
+        lc.textAlign = 'left';
+        lc.fillText('C', Cx + 16 * scale, Cy + 28 * scale);
 
-        // Label 'a' on BC
-        ctx.fillStyle = '#2d3748';
-        ctx.textAlign = 'center';
-        ctx.font = 'italic bold 18px Outfit';
-        ctx.fillText('a', cx, By + 22);
+        lc.fillStyle = '#2d3748';
+        lc.textAlign = 'center';
+        lc.font = `italic bold ${Math.round(24 * scale)}px Outfit`;
+        lc.fillText('a', cx, By + 32 * scale);
 
-        // Label R
         if (!sineLawProofMode) {
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(Ax, Ay);
-            ctx.strokeStyle = 'rgba(74, 85, 104, 0.4)';
-            ctx.setLineDash([4, 4]);
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.setLineDash([]);
+            lc.beginPath();
+            lc.moveTo(cx, cy);
+            lc.lineTo(Ax, Ay);
+            lc.strokeStyle = 'rgba(74, 85, 104, 0.4)';
+            lc.setLineDash([4 * scale, 4 * scale]);
+            lc.lineWidth = 1.5 * scale;
+            lc.stroke();
+            lc.setLineDash([]);
 
-            ctx.fillStyle = '#4a5568';
-            ctx.font = 'italic bold 16px Outfit';
-            ctx.fillText('R', cx + (Ax - cx) / 2 + 15, cy + (Ay - cy) / 2);
+            lc.fillStyle = '#4a5568';
+            lc.font = `italic bold ${Math.round(22 * scale)}px Outfit`;
+            lc.fillText('R', cx + (Ax - cx) / 2 + 18 * scale, cy + (Ay - cy) / 2);
         } else {
-            // Label 2R on BA'
-            const Apx = cx + R * Math.cos(bAngle - Math.PI);
-            const Apy = cy + R * Math.sin(bAngle - Math.PI);
-            ctx.fillStyle = '#e53e3e';
-            ctx.font = 'italic bold 16px Outfit';
-            ctx.fillText('2R', cx - 10, cy - 15);
+            lc.fillStyle = '#e53e3e';
+            lc.font = `italic bold ${Math.round(16 * scale)}px Outfit`;
+            lc.fillText('2R', cx - 10 * scale, cy - 15 * scale);
         }
 
         updateSineLawInfo();
     }
 
     function updateSineLawInfo() {
-        const infoEl = document.getElementById('sineLawInfo');
+        // 새 전용 패널 (sineLawInfo2) 우선, 없으면 기존 패널
+        const infoEl = document.getElementById('sineLawInfo2') || document.getElementById('sineLawInfo');
         if (!infoEl) return;
 
         const A = sineLawAngleA;
@@ -1437,38 +1528,29 @@
         infoEl.innerHTML = html;
     }
 
-    /* =====================================================
-       코사인법칙 시각화
-       삼각형 ABC에서 ∠C 조절, 수선의 발 H 표시
-       c² = a² + b² - 2ab·cosC 증명 (3케이스)
-    ===================================================== */
     function drawCosineLaw() {
-        const W = canvas.width, H = canvas.height;
-        ctx.clearRect(0, 0, W, H);
+        if (!lawCtx) return;
+        const lc = lawCtx;
+        const W = lawCanvas.width, H = lawCanvas.height;
+        lc.clearRect(0, 0, W, H);
 
-        const SCALE = 62;
-        const a = cosineLawSideA;   // BC = a
-        const b = cosineLawSideB;   // CA = b
+        // ★ 기준 크기(800×560) 대비 스케일
+        const scale = Math.min(W / 800, H / 560);
+
+        const SCALE = 70 * scale;
+        const a = cosineLawSideA;
+        const b = cosineLawSideB;
         const C = cosineLawAngleC * Math.PI / 180;
 
-        // c² = a² + b² - 2ab·cosC
         const c2 = a * a + b * b - 2 * a * b * Math.cos(C);
         const c = Math.sqrt(Math.max(c2, 0));
 
-        // ── 좌표 배치 (각도 C가 꼭짓점 C에서의 내각) ──
-        // B = (0, 0),  C = (a, 0)
-        // A = C + b·(C→A 방향)
-        //   C→B 방향각 = π,  C→A는 C→B에서 C° 만큼 회전(반시계)
-        //   → A = (a, 0) + b·(cos(π-C), sin(π-C)) = (a - b·cosC, b·sinC)
         const Bx_raw = 0;
         const Cx_raw = a;
-        const Ax_raw = a - b * Math.cos(C);   // ← 수정: 꼭짓점 C 기준
+        const Ax_raw = a - b * Math.cos(C);
         const Ay_raw = b * Math.sin(C);
+        const Hx_raw = Ax_raw;
 
-        // H = A에서 BC(x축)에 내린 수선의 발 → H_x = Ax_raw
-        const Hx_raw = Ax_raw;  // = a - b·cosC
-
-        // bounding box (H 포함)
         const minX = Math.min(0, Bx_raw, Cx_raw, Ax_raw, Hx_raw);
         const maxX = Math.max(Bx_raw, Cx_raw, Ax_raw, Hx_raw);
         const minY = 0;
@@ -1481,169 +1563,157 @@
 
         const toScreen = (rx, ry) => [offX + rx * SCALE, offY + (maxY - ry) * SCALE];
 
-        const [Bx, By]   = toScreen(Bx_raw, 0);
-        const [Cx, Cy2]  = toScreen(Cx_raw, 0);
-        const [Ax, Ay]   = toScreen(Ax_raw, Ay_raw);
-        const [Hx, Hy]   = toScreen(Hx_raw, 0);
+        const [Bx, By] = toScreen(Bx_raw, 0);
+        const [Cx, Cy2] = toScreen(Cx_raw, 0);
+        const [Ax, Ay] = toScreen(Ax_raw, Ay_raw);
+        const [Hx, Hy] = toScreen(Hx_raw, 0);
 
-        const isAcute  = cosineLawAngleC < 89.5;
-        const isRight  = cosineLawAngleC >= 89.5 && cosineLawAngleC <= 90.5;
+        const isAcute = cosineLawAngleC < 89.5;
+        const isRight = cosineLawAngleC >= 89.5 && cosineLawAngleC <= 90.5;
         const isObtuse = cosineLawAngleC > 90.5;
 
-        // ── 삼각형 면 채우기 ──
-        ctx.beginPath();
-        ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.lineTo(Cx, Cy2); ctx.closePath();
-        ctx.fillStyle = 'rgba(99,179,237,0.10)';
-        ctx.fill();
+        // 삼각형 면 채우기
+        lc.beginPath();
+        lc.moveTo(Ax, Ay); lc.lineTo(Bx, By); lc.lineTo(Cx, Cy2); lc.closePath();
+        lc.fillStyle = 'rgba(99,179,237,0.10)';
+        lc.fill();
 
-        // ── 수선 및 보조선 ──
+        // 수선 및 보조선
         if (cosineLawShowProof) {
-            // A → H 수선 (점선)
-            ctx.save();
-            ctx.strokeStyle = '#805ad5'; ctx.lineWidth = 1.8;
-            ctx.setLineDash([6, 4]);
-            ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Hx, Hy); ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
+            lc.save();
+            lc.strokeStyle = '#805ad5'; lc.lineWidth = 1.8 * scale;
+            lc.setLineDash([6 * scale, 4 * scale]);
+            lc.beginPath(); lc.moveTo(Ax, Ay); lc.lineTo(Hx, Hy); lc.stroke();
+            lc.setLineDash([]);
+            lc.restore();
 
-            // 직각 마크 at H
             if (!isRight) {
-                const sq = 10;
-                ctx.save(); ctx.strokeStyle = '#805ad5'; ctx.lineWidth = 1.5;
-                // H에서: BC방향(+x), A방향(-y in screen)
-                // 예각: H는 BC 사이 → 마크를 C 방향(+x)
-                // 둔각: H는 C 오른쪽 → 마크를 B 방향(-x)
+                const sq = 10 * scale;
+                lc.save(); lc.strokeStyle = '#805ad5'; lc.lineWidth = 1.5 * scale;
                 const hd = isAcute ? sq : -sq;
-                ctx.beginPath();
-                ctx.moveTo(Hx + hd, Hy);
-                ctx.lineTo(Hx + hd, Hy - sq);
-                ctx.lineTo(Hx, Hy - sq);
-                ctx.stroke();
-                ctx.restore();
+                lc.beginPath();
+                lc.moveTo(Hx + hd, Hy);
+                lc.lineTo(Hx + hd, Hy - sq);
+                lc.lineTo(Hx, Hy - sq);
+                lc.stroke();
+                lc.restore();
             }
 
-            // 둔각: C 오른쪽으로 연장선 (BC의 연장)
             if (isObtuse) {
-                ctx.save();
-                ctx.strokeStyle = 'rgba(128,90,213,0.4)'; ctx.lineWidth = 1.8;
-                ctx.setLineDash([5, 4]);
-                ctx.beginPath();
-                ctx.moveTo(Cx, Cy2);       // C에서 오른쪽으로
-                ctx.lineTo(Hx + 20, Hy);   // H를 지나서
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.restore();
+                lc.save();
+                lc.strokeStyle = 'rgba(128,90,213,0.4)'; lc.lineWidth = 1.8 * scale;
+                lc.setLineDash([5 * scale, 4 * scale]);
+                lc.beginPath();
+                lc.moveTo(Cx, Cy2);
+                lc.lineTo(Hx + 20 * scale, Hy);
+                lc.stroke();
+                lc.setLineDash([]);
+                lc.restore();
             }
         }
 
-        // ── 삼각형 변 ──
-        ctx.strokeStyle = '#e53e3e'; ctx.lineWidth = 3.5;
-        ctx.beginPath(); ctx.moveTo(Bx, By); ctx.lineTo(Cx, Cy2); ctx.stroke();   // a
-        ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 3.5;
-        ctx.beginPath(); ctx.moveTo(Cx, Cy2); ctx.lineTo(Ax, Ay); ctx.stroke();   // b
-        ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3.5;
-        ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.stroke();    // c
+        // 삼각형 변
+        lc.strokeStyle = '#e53e3e'; lc.lineWidth = 3.5 * scale;
+        lc.beginPath(); lc.moveTo(Bx, By); lc.lineTo(Cx, Cy2); lc.stroke();
+        lc.strokeStyle = '#3182ce'; lc.lineWidth = 3.5 * scale;
+        lc.beginPath(); lc.moveTo(Cx, Cy2); lc.lineTo(Ax, Ay); lc.stroke();
+        lc.strokeStyle = '#d97706'; lc.lineWidth = 3.5 * scale;
+        lc.beginPath(); lc.moveTo(Ax, Ay); lc.lineTo(Bx, By); lc.stroke();
 
-        // ── 꼭짓점 점 ──
+        // 꼭짓점 점
         const drawDot = (x, y, color) => {
-            ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff'; ctx.fill();
-            ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+            lc.beginPath(); lc.arc(x, y, 6 * scale, 0, Math.PI * 2);
+            lc.fillStyle = '#fff'; lc.fill();
+            lc.strokeStyle = color; lc.lineWidth = 2.5 * scale; lc.stroke();
         };
         drawDot(Bx, By, '#e53e3e');
         drawDot(Cx, Cy2, '#38a169');
         drawDot(Ax, Ay, '#d97706');
         if (cosineLawShowProof && !isRight) drawDot(Hx, Hy, '#805ad5');
 
-        // ── 꼭짓점 레이블 ──
-        ctx.font = 'bold 20px Outfit';
-        ctx.fillStyle = '#d97706'; ctx.textAlign = 'center';
-        ctx.fillText('A', Ax, Ay - 18);
-        ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'right';
-        ctx.fillText('B', Bx - 14, By + 8);
-        ctx.fillStyle = '#38a169'; ctx.textAlign = 'left';
-        ctx.fillText('C', Cx + 14, Cy2 + 8);
+        // 꼭짓점 레이블
+        lc.font = `bold ${Math.round(20 * scale)}px Outfit`;
+        lc.fillStyle = '#d97706'; lc.textAlign = 'center';
+        lc.fillText('A', Ax, Ay - 18 * scale);
+        lc.fillStyle = '#e53e3e'; lc.textAlign = 'right';
+        lc.fillText('B', Bx - 14 * scale, By + 8 * scale);
+        lc.fillStyle = '#38a169'; lc.textAlign = 'left';
+        lc.fillText('C', Cx + 14 * scale, Cy2 + 8 * scale);
         if (cosineLawShowProof && !isRight) {
-            ctx.fillStyle = '#805ad5'; ctx.textAlign = 'center';
-            // 예각: H는 B~C 사이 / 둔각: H는 C 오른쪽
-            ctx.fillText('H', Hx, Hy + 22);
+            lc.fillStyle = '#805ad5'; lc.textAlign = 'center';
+            lc.fillText('H', Hx, Hy + 22 * scale);
         }
 
-        // ── 변 길이 레이블 ──
-        ctx.font = 'italic bold 18px Outfit';
-        ctx.fillStyle = '#e53e3e'; ctx.textAlign = 'center';
-        ctx.fillText('a = ' + a.toFixed(1), (Bx + Cx) / 2, By + 28);   // a on BC (아래)
+        // 변 길이 레이블
+        lc.font = `italic bold ${Math.round(18 * scale)}px Outfit`;
+        lc.fillStyle = '#e53e3e'; lc.textAlign = 'center';
+        lc.fillText('a = ' + a.toFixed(1), (Bx + Cx) / 2, By + 28 * scale);
         const bmx = (Cx + Ax) / 2, bmy = (Cy2 + Ay) / 2;
-        ctx.fillStyle = '#3182ce';
-        // A가 C 왼쪽이면 b 레이블을 오른쪽에, 오른쪽이면 왼쪽에
-        ctx.textAlign = Ax_raw < Cx_raw ? 'right' : 'left';
-        ctx.fillText('b = ' + b.toFixed(1), bmx + (Ax_raw < Cx_raw ? -12 : 12), bmy);
+        lc.fillStyle = '#3182ce';
+        lc.textAlign = Ax_raw < Cx_raw ? 'right' : 'left';
+        lc.fillText('b = ' + b.toFixed(1), bmx + (Ax_raw < Cx_raw ? -12 * scale : 12 * scale), bmy);
         const cmx = (Ax + Bx) / 2, cmy = (Ay + By) / 2;
-        ctx.fillStyle = '#d97706'; ctx.textAlign = 'left';
-        ctx.fillText('c = ' + c.toFixed(2), cmx - 60, cmy);
+        lc.fillStyle = '#d97706'; lc.textAlign = 'left';
+        lc.fillText('c = ' + c.toFixed(2), cmx - 60 * scale, cmy);
 
-        // ── 각도 C 호 표시 ──
+        // 각도 C 호 표시
         {
-            const dirCB = Math.atan2(By - Cy2, Bx - Cx);   // C→B 방향각
-            const dirCA = Math.atan2(Ay - Cy2, Ax - Cx);   // C→A 방향각
+            const dirCB = Math.atan2(By - Cy2, Bx - Cx);
+            const dirCA = Math.atan2(Ay - Cy2, Ax - Cx);
+            lc.beginPath();
+            lc.arc(Cx, Cy2, 28 * scale, dirCB, dirCA, false);
+            lc.strokeStyle = '#38a169'; lc.lineWidth = 2.5 * scale; lc.stroke();
 
-            // dirCB(왼쪽=π) → dirCA(상단 왼쪽) 시계방향으로 그리면 내각(작은 호)
-            ctx.beginPath();
-            ctx.arc(Cx, Cy2, 28, dirCB, dirCA, false);
-            ctx.strokeStyle = '#38a169'; ctx.lineWidth = 2.5; ctx.stroke();
-
-            // 레이블: 호 중간 방향
             let diffCW = dirCA - dirCB;
             while (diffCW <= 0) diffCW += Math.PI * 2;
             const midAng = dirCB + diffCW / 2;
-            ctx.fillStyle = '#38a169'; ctx.font = 'bold 14px Outfit'; ctx.textAlign = 'center';
-            ctx.fillText(cosineLawAngleC + '°', Cx + 50 * Math.cos(midAng), Cy2 + 50 * Math.sin(midAng));
+            lc.fillStyle = '#38a169'; lc.font = `bold ${Math.round(14 * scale)}px Outfit`; lc.textAlign = 'center';
+            lc.fillText(cosineLawAngleC + '°', Cx + 50 * scale * Math.cos(midAng), Cy2 + 50 * scale * Math.sin(midAng));
         }
 
-        // ── 수선 보조 레이블 (BH, AH) ──
+        // 수선 보조 레이블
         if (cosineLawShowProof && !isRight) {
-            const AH_len = Ay_raw;   // = b·sinC
-            ctx.font = '13px Outfit'; ctx.fillStyle = '#805ad5';
-            ctx.textAlign = 'center';
+            const AH_len = Ay_raw;
+            lc.font = `${Math.round(13 * scale)}px Outfit`; lc.fillStyle = '#805ad5';
+            lc.textAlign = 'center';
             if (isAcute) {
-                // H가 B~C 사이
-                ctx.fillText('BH = a – b·cosC', (Bx + Hx) / 2, By - 14);
-                ctx.fillStyle = 'rgba(128,90,213,0.7)';
-                ctx.fillText('CH = b·cosC', (Hx + Cx) / 2, By - 14);
+                lc.fillText('BH = a – b·cosC', (Bx + Hx) / 2, By - 14 * scale);
+                lc.fillStyle = 'rgba(128,90,213,0.7)';
+                lc.fillText('CH = b·cosC', (Hx + Cx) / 2, By - 14 * scale);
             } else {
-                // H가 C 오른쪽 (둔각)
-                ctx.fillText('BH = a – b·cosC', (Bx + Cx) / 2, By - 14);  // B~C 전체 구간 위
-                ctx.fillStyle = 'rgba(128,90,213,0.7)';
-                ctx.fillText('CH = –b·cosC', (Cx + Hx) / 2, Cy2 + 36);    // C~H 구간 아래
+                lc.fillText('BH = a – b·cosC', (Bx + Cx) / 2, By - 14 * scale);
+                lc.fillStyle = 'rgba(128,90,213,0.7)';
+                lc.fillText('CH = –b·cosC', (Cx + Hx) / 2, Cy2 + 36 * scale);
             }
-            ctx.fillStyle = '#553c9a'; ctx.textAlign = 'right';
-            ctx.fillText('AH = b·sinC = ' + AH_len.toFixed(2), Hx - 8, (Ay + Hy) / 2);
+            lc.fillStyle = '#553c9a'; lc.textAlign = 'right';
+            lc.fillText('AH = b·sinC = ' + AH_len.toFixed(2), Hx - 8 * scale, (Ay + Hy) / 2);
         }
 
-        // ── 케이스 배지 ──
+        // 케이스 배지
         let caseTxt, caseColor, caseBg;
-        if (isAcute)       { caseTxt = '① C < 90° (예각)'; caseColor = '#2b6cb0'; caseBg = 'rgba(235,248,255,0.95)'; }
-        else if (isRight)  { caseTxt = '② C = 90° (직각)'; caseColor = '#276749'; caseBg = 'rgba(240,255,244,0.95)'; }
-        else               { caseTxt = '③ C > 90° (둔각)'; caseColor = '#c05621'; caseBg = 'rgba(255,250,240,0.95)'; }
-        const badgeW = 190, badgeH = 32, badgeX = W - badgeW - 16, badgeY = 16;
-        ctx.fillStyle = caseBg;
-        ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 10); ctx.fill();
-        ctx.strokeStyle = caseColor; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 10); ctx.stroke();
-        ctx.fillStyle = caseColor; ctx.font = 'bold 13px Outfit'; ctx.textAlign = 'center';
-        ctx.fillText(caseTxt, badgeX + badgeW / 2, badgeY + 21);
+        if (isAcute) { caseTxt = '① C < 90° (예각)'; caseColor = '#2b6cb0'; caseBg = 'rgba(235,248,255,0.95)'; }
+        else if (isRight) { caseTxt = '② C = 90° (직각)'; caseColor = '#276749'; caseBg = 'rgba(240,255,244,0.95)'; }
+        else { caseTxt = '③ C > 90° (둔각)'; caseColor = '#c05621'; caseBg = 'rgba(255,250,240,0.95)'; }
+        const badgeW = 190 * scale, badgeH = 32 * scale, badgeX = W - badgeW - 16 * scale, badgeY = 16 * scale;
+        lc.fillStyle = caseBg;
+        lc.beginPath(); lc.roundRect(badgeX, badgeY, badgeW, badgeH, 10 * scale); lc.fill();
+        lc.strokeStyle = caseColor; lc.lineWidth = 1.5 * scale;
+        lc.beginPath(); lc.roundRect(badgeX, badgeY, badgeW, badgeH, 10 * scale); lc.stroke();
+        lc.fillStyle = caseColor; lc.font = `bold ${Math.round(13 * scale)}px Outfit`; lc.textAlign = 'center';
+        lc.fillText(caseTxt, badgeX + badgeW / 2, badgeY + 21 * scale);
 
         updateCosineLawInfo(a, b, c, c2);
     }
 
     function updateCosineLawInfo(a, b, c, c2_actual) {
-        const infoEl = document.getElementById('cosineLawInfo');
+        // 새 전용 패널 (cosineLawInfo2) 우선, 없으면 기존 패널
+        const infoEl = document.getElementById('cosineLawInfo2') || document.getElementById('cosineLawInfo');
         if (!infoEl) return;
 
         const C = cosineLawAngleC;
         const Crad = C * Math.PI / 180;
-        const isAcute  = C < 89.5;
-        const isRight  = C >= 89.5 && C <= 90.5;
+        const isAcute = C < 89.5;
+        const isRight = C >= 89.5 && C <= 90.5;
         const isObtuse = C > 90.5;
 
         const lhs = c2_actual;
